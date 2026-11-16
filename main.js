@@ -72,6 +72,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 660,
     title: 'Antigravity Theme Studio',
+    icon: path.join(__dirname, 'assets', 'icon.png'),
     backgroundColor: '#081826',
     autoHideMenuBar: true,
     webPreferences: {

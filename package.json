@@ -1,22 +1,62 @@
 {
-  "name": "antigravity-theme-studio-app",
+  "name": "antigravity-theme-studio",
   "version": "1.0.0",
   "description": "Standalone Desktop Theme Studio App for Google Antigravity",
   "main": "main.js",
   "scripts": {
-    "start": "npx electron ."
+    "start": "electron .",
+    "dev": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win",
+    "dist:portable": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.antigravity.themestudio",
+    "productName": "Antigravity Theme Studio",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "liveSync.js",
+      "patcher.js",
+      "palettes.js",
+      "run.bat",
+      "renderer/**/*",
+      "assets/**/*"
+    ]
   },
   "keywords": [
     "antigravity",
     "theme",
     "customizer",
     "wallpaper",
-    "glassmorphism"
+    "glassmorphism",
+    "electron"
   ],
-  "author": "Antigravity Theme Studio",
+  "author": "VuaThiLaiVaoE10",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^45.3.2"
+    "electron": "^45.3.2",
+    "electron-builder": "^26.0.20"
   },
   "dependencies": {
     "@electron/asar": "^4.3.2"

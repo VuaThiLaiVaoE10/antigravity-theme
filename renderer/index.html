@@ -38,6 +38,9 @@
         <button class="tab-btn" data-tab="tab-glass">
           <span class="tab-icon">✨</span> <span class="tab-text" data-i18n="tabGlass">Kính & Mờ</span>
         </button>
+        <button class="tab-btn" data-tab="tab-pet">
+          <span class="tab-icon">🐾</span> <span class="tab-text">Pet & Khung Chat</span>
+        </button>
         <button class="tab-btn" data-tab="tab-profiles">
           <span class="tab-icon">📁</span> <span class="tab-text" data-i18n="tabProfiles">Hồ sơ</span>
         </button>
@@ -236,7 +239,136 @@
           </div>
         </div>
 
-        <!-- 4. TAB: HỒ SƠ (PROFILES) -->
+        <!-- 4. TAB: PET & KHUNG CHAT (COMPOSER & INTERACTIVE MASCOT) -->
+        <div class="tab-pane" id="tab-pet">
+          <!-- PHẦN 1: KHUNG NHẬP LIỆU -->
+          <div class="section-title">PHẦN 1: TÙY BIẾN VIỀN KHUNG CHAT (COMPOSER GRADIENT)</div>
+          
+          <!-- Gradient Quick Presets -->
+          <div class="composer-presets-row">
+            <button class="comp-preset-btn active" data-preset="lime">🌟 Cyber Lime (Ảnh 1)</button>
+            <button class="comp-preset-btn" data-preset="aqua">🌊 Midnight Aqua</button>
+            <button class="comp-preset-btn" data-preset="sakura">🌸 Sakura Neon</button>
+            <button class="comp-preset-btn" data-preset="sunset">🔥 Sunset Gold</button>
+          </div>
+
+          <!-- Custom 4-Stop Gradient Color Pickers -->
+          <div class="gradient-custom-box">
+            <span class="sub-label">Tự phối 4 điểm màu Gradient viền:</span>
+            <div class="quad-colors-grid">
+              <div class="quad-item">
+                <label>Màu đầu 1:</label>
+                <div class="color-pick-wrap">
+                  <input type="color" id="pickGrad1" value="#E6FF80">
+                  <input type="text" id="hexGrad1" value="#E6FF80" class="mini-hex">
+                </div>
+              </div>
+              <div class="quad-item">
+                <label>Màu giữa 2:</label>
+                <div class="color-pick-wrap">
+                  <input type="color" id="pickGrad2" value="#38EF7D">
+                  <input type="text" id="hexGrad2" value="#38EF7D" class="mini-hex">
+                </div>
+              </div>
+              <div class="quad-item">
+                <label>Màu giữa 3:</label>
+                <div class="color-pick-wrap">
+                  <input type="color" id="pickGrad3" value="#11998E">
+                  <input type="text" id="hexGrad3" value="#11998E" class="mini-hex">
+                </div>
+              </div>
+              <div class="quad-item">
+                <label>Màu đuôi 4:</label>
+                <div class="color-pick-wrap">
+                  <input type="color" id="pickGrad4" value="#FFE066">
+                  <input type="text" id="hexGrad4" value="#FFE066" class="mini-hex">
+                </div>
+              </div>
+            </div>
+
+            <!-- Border Radius & Glow Sliders -->
+            <div class="slider-row" style="margin-top: 10px;">
+              <span class="slider-label">Độ bo góc khung (Radius)</span>
+              <input type="range" id="sliderCompRadius" min="8" max="28" value="18">
+              <span class="slider-val" id="valCompRadius">18px</span>
+            </div>
+            <div class="slider-row">
+              <span class="slider-label">Độ phát sáng viền (Glow)</span>
+              <input type="range" id="sliderCompGlow" min="0" max="30" value="16">
+              <span class="slider-val" id="valCompGlow">16px</span>
+            </div>
+          </div>
+
+          <!-- PHẦN 2: PET CƯNG ĐỒNG HÀNH -->
+          <div class="section-title" style="margin-top: 20px;">PHẦN 2: BÉ PET CƯNG ĐỒNG HÀNH (INTERACTIVE COMPANION PET)</div>
+          
+          <div class="pet-manager-card">
+            <!-- Pet Identity & Dialog Inputs -->
+            <div class="pet-info-inputs">
+              <div class="input-field-group">
+                <label>Tên bé Pet cưng:</label>
+                <input type="text" id="inputPetName" class="text-input" placeholder="Nhập tên pet..." value="Bé Golem Má Hồng">
+              </div>
+              <div class="input-field-group">
+                <label>Lời thoại khi nhấp chuột (Speech Bubble):</label>
+                <input type="text" id="inputPetSpeech" class="text-input" placeholder="Nhập câu nói của pet..." value="Chủ nhân cố lên nhé! Hôm nay code gì thế ạ? ✨">
+              </div>
+            </div>
+
+            <!-- Pet Choices -->
+            <span class="sub-label">Chọn bé Pet hoặc tải ảnh Pet riêng của bạn:</span>
+            <div class="mascot-presets-grid" id="mascotPresetsGrid2">
+              <button class="mascot-card active" data-mascot="pixel-pet">
+                <img src="../assets/mascot-pixel-pet.png" class="mascot-thumb" alt="Pixel Pet">
+                <span>Pixel Golem (Ảnh 2)</span>
+              </button>
+              <button class="mascot-card" data-mascot="waifu">
+                <span class="mascot-emoji">🌸</span>
+                <span>Chibi Waifu (Ảnh 1)</span>
+              </button>
+              <button class="mascot-card" data-mascot="custom" id="btnUploadPetCustom">
+                <span class="mascot-emoji">📂</span>
+                <span>Tải Pet PNG/GIF...</span>
+              </button>
+              <button class="mascot-card" data-mascot="none">
+                <span class="mascot-emoji">🚫</span>
+                <span>Tắt Pet</span>
+              </button>
+            </div>
+
+            <!-- Pet Interactive Settings -->
+            <div class="mascot-controls-row">
+              <div class="ctrl-group">
+                <label>Vị trí:</label>
+                <select id="selectPetPos" class="mini-select">
+                  <option value="top-right" selected>↗️ Góc trên phải khung chat</option>
+                  <option value="top-left">↖️ Góc trên trái khung chat</option>
+                  <option value="bottom-right">↘️ Góc dưới màn hình</option>
+                </select>
+              </div>
+              <div class="ctrl-group">
+                <label>Kích cỡ:</label>
+                <input type="range" id="sliderPetSize" min="32" max="84" value="52">
+                <span id="valPetSize">52px</span>
+              </div>
+              <div class="ctrl-group">
+                <label>Nhấp chuột phản hồi:</label>
+                <input type="checkbox" id="chkPetSpeech" checked>
+              </div>
+            </div>
+          </div>
+
+          <!-- PHẦN 3: HỌA TIẾT GÓC -->
+          <div class="section-title" style="margin-top: 20px;">PHẦN 3: HOA VĂN & HỌA TIẾT GÓC (CORNER ORNAMENTS)</div>
+          <div class="ornaments-row" id="ornamentsRow">
+            <button class="ornament-btn active" data-ornament="floral-bird">🌿 Chim én & Hoa đào (Ảnh 1)</button>
+            <button class="ornament-btn" data-ornament="sakura">🌸 Hoa anh đào</button>
+            <button class="ornament-btn" data-ornament="cyber">⚡ Cyber Tech</button>
+            <button class="ornament-btn" data-ornament="none">🚫 Không dùng</button>
+          </div>
+        </div>
+
+        <!-- 5. TAB: HỒ SƠ (PROFILES) -->
         <div class="tab-pane" id="tab-profiles">
           <div class="section-title" data-i18n="savedProfiles">DANH SÁCH HỒ SƠ THEME</div>
           <div class="profiles-list" id="profilesList">

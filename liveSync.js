@@ -194,8 +194,8 @@ function buildThemeCss(config) {
     .surface-composer {
       background: ${config.composerGradient || 'linear-gradient(90deg, #E6FF80 0%, #38EF7D 35%, #11998E 70%, #FFE066 100%)'} !important;
       padding: 2px !important;
-      border-radius: 18px !important;
-      box-shadow: 0 0 16px rgba(125, 207, 255, 0.28) !important;
+      border-radius: ${config.composerRadius || 18}px !important;
+      box-shadow: 0 0 ${config.composerGlow ?? 16}px rgba(125, 207, 255, 0.32) !important;
       position: relative !important;
       transition: all 0.3s ease !important;
     }
@@ -204,32 +204,71 @@ function buildThemeCss(config) {
     .surface-composer-card {
       background: rgba(12, 22, 34, 0.88) !important;
       backdrop-filter: blur(20px) !important;
-      border-radius: 16px !important;
+      border-radius: ${(config.composerRadius || 18) - 2}px !important;
     }
 
-    /* 13. Pet Mascot & Sticker Decorator (Like Image 1 & 2) */
-    ${config.mascotUrl ? `
-    .surface-composer::after {
-      content: '';
+    /* 13. Corner Floral Ornament */
+    ${config.ornament === 'floral-bird' ? `
+    .surface-composer::before {
+      content: '🕊️🌸';
       position: absolute;
-      top: -${(config.mascotSize || 52) - 4}px;
-      ${config.mascotPos === 'top-left' ? 'left: 20px;' : 'right: 20px;'};
-      width: ${config.mascotSize || 52}px;
-      height: ${config.mascotSize || 52}px;
-      background-image: url(${JSON.stringify(config.mascotUrl)});
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center bottom;
+      top: -24px;
+      left: 12px;
+      font-size: 20px;
       z-index: 50;
       pointer-events: none;
-      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
-      ${config.mascotBounce !== false ? 'animation: agMascotBounce 3s ease-in-out infinite alternate;' : ''}
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+    }
+    ` : ''}
+
+    /* 14. Interactive Pet Mascot Entity */
+    #ag-interactive-pet {
+      position: fixed;
+      z-index: 999999;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s ease, filter 0.2s ease;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+    }
+    #ag-interactive-pet:hover {
+      transform: scale(1.1) translateY(-2px);
+    }
+    #ag-interactive-pet:active {
+      transform: scale(0.95);
+    }
+    .ag-pet-bubble {
+      position: absolute;
+      bottom: 100%;
+      right: 0;
+      margin-bottom: 8px;
+      background: rgba(12, 24, 38, 0.95);
+      border: 1px solid #7DCFFF;
+      color: #fff;
+      border-radius: 10px;
+      padding: 6px 12px;
+      font-size: 11px;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+      animation: agPop 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+    .ag-pet-bubble::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      right: 18px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: #7DCFFF transparent transparent transparent;
+    }
+    @keyframes agPop {
+      0% { opacity: 0; transform: scale(0.6); }
+      100% { opacity: 1; transform: scale(1); }
     }
     @keyframes agMascotBounce {
       0% { transform: translateY(0); }
       100% { transform: translateY(-5px); }
     }
-    ` : ''}
   `;
 }
 
@@ -288,6 +327,58 @@ async function applyToAntigravity(config) {
             document.head.appendChild(style);
           }
           style.textContent = ${JSON.stringify(customCss)};
+
+          // 3. Injected Interactive Pet Mascot
+          let pet = document.getElementById('ag-interactive-pet');
+          if (!pet) {
+            pet = document.createElement('div');
+            pet.id = 'ag-interactive-pet';
+            document.body.appendChild(pet);
+          }
+
+          const mascotUrl = ${JSON.stringify(config.mascotUrl || '')};
+          if (mascotUrl) {
+            pet.style.display = 'block';
+            pet.style.backgroundImage = 'url(' + mascotUrl + ')';
+            pet.style.backgroundSize = 'contain';
+            pet.style.backgroundRepeat = 'no-repeat';
+            pet.style.backgroundPosition = 'center bottom';
+            const sz = ${config.mascotSize || 52};
+            pet.style.width = sz + 'px';
+            pet.style.height = sz + 'px';
+
+            const comp = document.querySelector('.surface-composer');
+            if (comp && '${config.mascotPos || 'top-right'}' !== 'bottom-right') {
+              const r = comp.getBoundingClientRect();
+              pet.style.bottom = (window.innerHeight - r.top - 4) + 'px';
+              if ('${config.mascotPos || 'top-right'}' === 'top-left') {
+                pet.style.left = (r.left + 24) + 'px';
+                pet.style.right = 'auto';
+              } else {
+                pet.style.right = (window.innerWidth - r.right + 24) + 'px';
+                pet.style.left = 'auto';
+              }
+            } else {
+              pet.style.bottom = '24px';
+              pet.style.right = '28px';
+              pet.style.left = 'auto';
+            }
+
+            // Click Interaction: Popup Speech Bubble
+            pet.onclick = () => {
+              let bubble = document.getElementById('ag-pet-bubble');
+              if (bubble) bubble.remove();
+              bubble = document.createElement('div');
+              bubble.id = 'ag-pet-bubble';
+              bubble.className = 'ag-pet-bubble';
+              bubble.textContent = ${JSON.stringify(config.petSpeech || 'Chủ nhân cố lên nhé! Hôm nay code gì thế ạ? ✨')};
+              pet.appendChild(bubble);
+              setTimeout(() => { if (bubble) bubble.remove(); }, 4500);
+            };
+          } else {
+            pet.style.display = 'none';
+          }
+
           return true;
         } catch (e) {
           return false;

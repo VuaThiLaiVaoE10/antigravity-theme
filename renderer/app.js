@@ -336,6 +336,104 @@ function setupEvents() {
     });
   });
 
+  // === 4-STOP GRADIENT COLOR PICKERS ===
+  function updateCustomGradient() {
+    const c1 = document.getElementById('pickGrad1')?.value || '#E6FF80';
+    const c2 = document.getElementById('pickGrad2')?.value || '#38EF7D';
+    const c3 = document.getElementById('pickGrad3')?.value || '#11998E';
+    const c4 = document.getElementById('pickGrad4')?.value || '#FFE066';
+    appState.composerGradient = `linear-gradient(90deg, ${c1} 0%, ${c2} 35%, ${c3} 70%, ${c4} 100%)`;
+    updateLivePreview();
+    saveConfig();
+  }
+
+  [1, 2, 3, 4].forEach(i => {
+    const pick = document.getElementById(`pickGrad${i}`);
+    const hex = document.getElementById(`hexGrad${i}`);
+    if (pick && hex) {
+      pick.addEventListener('input', (e) => {
+        hex.value = e.target.value.toUpperCase();
+        updateCustomGradient();
+      });
+      hex.addEventListener('input', (e) => {
+        if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+          pick.value = e.target.value;
+          updateCustomGradient();
+        }
+      });
+    }
+  });
+
+  const sliderCompRadius = document.getElementById('sliderCompRadius');
+  const valCompRadius = document.getElementById('valCompRadius');
+  if (sliderCompRadius && valCompRadius) {
+    sliderCompRadius.addEventListener('input', async (e) => {
+      valCompRadius.textContent = e.target.value + 'px';
+      appState.composerRadius = parseInt(e.target.value);
+      updateLivePreview();
+      await saveConfig();
+    });
+  }
+
+  const sliderCompGlow = document.getElementById('sliderCompGlow');
+  const valCompGlow = document.getElementById('valCompGlow');
+  if (sliderCompGlow && valCompGlow) {
+    sliderCompGlow.addEventListener('input', async (e) => {
+      valCompGlow.textContent = e.target.value + 'px';
+      appState.composerGlow = parseInt(e.target.value);
+      updateLivePreview();
+      await saveConfig();
+    });
+  }
+
+  // Pet Inputs (Name & Speech)
+  const inputPetName = document.getElementById('inputPetName');
+  if (inputPetName) {
+    inputPetName.addEventListener('input', (e) => {
+      appState.petName = e.target.value;
+      saveConfig();
+    });
+  }
+
+  const inputPetSpeech = document.getElementById('inputPetSpeech');
+  if (inputPetSpeech) {
+    inputPetSpeech.addEventListener('input', (e) => {
+      appState.petSpeech = e.target.value;
+      saveConfig();
+    });
+  }
+
+  // Upload Custom Pet in Tab 4
+  const btnUploadPetCustom = document.getElementById('btnUploadPetCustom');
+  if (btnUploadPetCustom) {
+    btnUploadPetCustom.addEventListener('click', async () => {
+      if (!window.api) return;
+      const res = await window.api.selectWallpaper();
+      if (res && !res.canceled && res.dataUrl) {
+        document.querySelectorAll('#mascotPresetsGrid2 .mascot-card').forEach(c => c.classList.remove('active'));
+        btnUploadPetCustom.classList.add('active');
+        appState.mascotType = 'custom';
+        appState.mascotUrl = res.dataUrl;
+        showStatus('Đã tải ảnh Pet riêng của bạn: ' + res.fileName);
+        updateLivePreview();
+        await saveConfig();
+      }
+    });
+  }
+
+  // Corner Ornaments
+  document.querySelectorAll('.ornament-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      document.querySelectorAll('.ornament-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const orn = btn.getAttribute('data-ornament');
+      appState.ornament = orn;
+      showStatus(`Đã chọn họa tiết góc: ${btn.textContent.trim()}`);
+      updateLivePreview();
+      await saveConfig();
+    });
+  });
+
   // Mascot Selection
   document.querySelectorAll('.mascot-card').forEach(card => {
     card.addEventListener('click', async () => {
@@ -910,6 +1008,17 @@ function updateLivePreview() {
         mascotBadge.style.left = 'auto';
       }
       mascotBadge.style.animation = (appState.mascotBounce !== false) ? 'agMascotBounce 3s ease-in-out infinite alternate' : 'none';
+      mascotBadge.style.cursor = 'pointer';
+      mascotBadge.onclick = () => {
+        let b = document.getElementById('previewSpeechBubble');
+        if (b) b.remove();
+        b = document.createElement('div');
+        b.id = 'previewSpeechBubble';
+        b.className = 'preview-speech-bubble';
+        b.textContent = appState.petSpeech || 'Chủ nhân cố lên nhé! Hôm nay code gì thế ạ? ✨';
+        previewComposer.appendChild(b);
+        setTimeout(() => { if (b) b.remove(); }, 3500);
+      };
     } else {
       mascotBadge.style.display = 'none';
     }

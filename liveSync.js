@@ -493,6 +493,140 @@ async function applyToAntigravity(config) {
             else bg.classList.remove('wallpaper-breathing');
           }
 
+          // 5. Motion Flow WebGL Engine (When custom animated flow is created)
+          const motion = ${JSON.stringify(config.motionFlow || null)};
+          let mc = document.getElementById('ag-theme-motion-canvas');
+          if (motion && motion.enabled && motion.arrows && motion.arrows.length > 0 && ${JSON.stringify(wallpaperUrl)}) {
+            if (!mc) {
+              mc = document.createElement('canvas');
+              mc.id = 'ag-theme-motion-canvas';
+              mc.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;transition:opacity 0.3s ease;';
+              document.body.prepend(mc);
+            }
+            mc.style.display = 'block';
+            mc.style.opacity = '${wallpaperOpacity}';
+            mc.width = window.innerWidth;
+            mc.height = window.innerHeight;
+
+            const gl = mc.getContext('webgl', { premultipliedAlpha: false });
+            if (gl) {
+              if (bg) bg.style.display = 'none';
+
+              const vsSrc = 'attribute vec2 p;varying vec2 u;void main(){u=(p+1.)*.5;u.y=1.-u.y;gl_Position=vec4(p,0.,1.);}';
+              const fsSrc = 'precision mediump float;uniform sampler2D img,flow;uniform float t,spd;varying vec2 u;' +
+                'void main(){vec4 f=texture2D(flow,u);vec2 d=(f.rg-.5)*2.;float s=f.b*spd;float m=f.a;' +
+                'if(m<.01||length(d)<.01){gl_FragColor=texture2D(img,u);return;}' +
+                'vec2 v=normalize(d)*s*0.075*m;float t1=fract(t*0.45);float t2=fract(t*0.45+0.5);' +
+                'vec2 u1=u-v*t1;vec2 u2=u-v*t2;float w=abs((t1-0.5)*2.0);' +
+                'gl_FragColor=mix(texture2D(img,clamp(u1,0.,1.)),texture2D(img,clamp(u2,0.,1.)),w);}';
+
+              const sh = (t, s) => { const x = gl.createShader(t); gl.shaderSource(x, s); gl.compileShader(x); return x; };
+              const prg = gl.createProgram();
+              gl.attachShader(prg, sh(gl.VERTEX_SHADER, vsSrc));
+              gl.attachShader(prg, sh(gl.FRAGMENT_SHADER, fsSrc));
+              gl.linkProgram(prg);
+
+              const buf = gl.createBuffer();
+              gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+              gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+              const pLoc = gl.getAttribLocation(prg, 'p');
+              gl.enableVertexAttribArray(pLoc);
+              gl.vertexAttribPointer(pLoc, 2, gl.FLOAT, false, 0, 0);
+
+              const fc = document.createElement('canvas');
+              fc.width = 128; fc.height = 128;
+              const fctx = fc.getContext('2d');
+              const idata = fctx.createImageData(128, 128);
+              const d = idata.data;
+              for (let i = 0; i < d.length; i += 4) { d[i] = 128; d[i+1] = 128; d[i+2] = 0; d[i+3] = 0; }
+
+              const arrows = motion.arrows || [];
+              const pins = motion.pins || [];
+
+              for (let py = 0; py < 128; py++) {
+                const ny = py / 128;
+                for (let px = 0; px < 128; px++) {
+                  const nx = px / 128;
+                  const idx = (py * 128 + px) * 4;
+
+                  let pinDist = 999;
+                  for (const p of pins) {
+                    const dist = Math.hypot(nx - p.x, ny - p.y);
+                    const r = p.radius || 0.08;
+                    if (dist < r) { pinDist = 0; break; }
+                    pinDist = Math.min(pinDist, (dist - r) / (r * 1.5));
+                  }
+                  if (pinDist <= 0) continue;
+
+                  let tw = 0, fdx = 0, fdy = 0, fspd = 0;
+                  for (const a of arrows) {
+                    const mx = (a.x1 + a.x2) / 2, my = (a.y1 + a.y2) / 2;
+                    const w = 1.0 / Math.pow(Math.max(Math.hypot(nx - mx, ny - my), 0.04), 2.2);
+                    const adx = a.x2 - a.x1, ady = a.y2 - a.y1;
+                    const alen = Math.hypot(adx, ady) || 1;
+                    fdx += (adx / alen) * w; fdy += (ady / alen) * w;
+                    fspd += (a.speed || 1.0) * w; tw += w;
+                  }
+                  if (tw > 0.001) {
+                    fdx /= tw; fdy /= tw; fspd /= tw;
+                    const mag = Math.hypot(fdx, fdy);
+                    if (mag > 0.001) {
+                      d[idx] = Math.round(((fdx / mag + 1) / 2) * 255);
+                      d[idx+1] = Math.round(((fdy / mag + 1) / 2) * 255);
+                      d[idx+2] = Math.round(Math.min(255, fspd * 100));
+                      d[idx+3] = Math.round(Math.min(1.0, pinDist) * 255);
+                    }
+                  }
+                }
+              }
+              fctx.putImageData(idata, 0, 0);
+
+              const flTex = gl.createTexture();
+              gl.bindTexture(gl.TEXTURE_2D, flTex);
+              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+              gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, fc);
+
+              const imTex = gl.createTexture();
+              const im = new Image();
+              im.onload = () => {
+                gl.bindTexture(gl.TEXTURE_2D, imTex);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
+
+                if (window._agMotionLoop) cancelAnimationFrame(window._agMotionLoop);
+                const st = Date.now();
+                const loop = () => {
+                  gl.useProgram(prg);
+                  gl.activeTexture(gl.TEXTURE0);
+                  gl.bindTexture(gl.TEXTURE_2D, imTex);
+                  gl.uniform1i(gl.getUniformLocation(prg, 'img'), 0);
+
+                  gl.activeTexture(gl.TEXTURE1);
+                  gl.bindTexture(gl.TEXTURE_2D, flTex);
+                  gl.uniform1i(gl.getUniformLocation(prg, 'flow'), 1);
+
+                  gl.uniform1f(gl.getUniformLocation(prg, 't'), (Date.now() - st) / 1000);
+                  gl.uniform1f(gl.getUniformLocation(prg, 'spd'), motion.flowSpeed || 1.0);
+
+                  gl.drawArrays(gl.TRIANGLES, 0, 6);
+                  window._agMotionLoop = requestAnimationFrame(loop);
+                };
+                loop();
+              };
+              im.src = ${JSON.stringify(wallpaperUrl)};
+            }
+          } else {
+            if (mc) mc.style.display = 'none';
+            if (window._agMotionLoop) cancelAnimationFrame(window._agMotionLoop);
+            if (bg) bg.style.display = 'block';
+          }
+
           return true;
         } catch (e) {
           return false;

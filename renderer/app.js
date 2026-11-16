@@ -138,6 +138,7 @@ let appState = null;
 let palettesList = [];
 let modStatus = null;
 let activeSubtab = 'dark'; // 'dark' | 'light'
+let motionStudioInstance = null;
 
 // === DOM ELEMENTS ===
 const badgePalette = document.getElementById('badgePalette');
@@ -229,6 +230,9 @@ function setupTabs() {
       const targetId = btn.getAttribute('data-tab');
       const pane = document.getElementById(targetId);
       if (pane) pane.classList.add('active');
+      if (targetId === 'tab-motion') {
+        initMotionStudio();
+      }
     });
   });
 
@@ -761,6 +765,75 @@ function setupEvents() {
     showStatus('Đang khởi động lại Antigravity...');
     await window.api.restartAntigravity();
   });
+
+  // === MOTION STUDIO INITIALIZATION ===
+  window.initMotionStudio = function() {
+    const mount = document.getElementById('motionStudioMount');
+    if (!mount) return;
+
+    if (!motionStudioInstance && typeof MotionStudio !== 'undefined') {
+      const initImg = appState.wallpaperUrl || '../assets/violinist-earth.jpg';
+      motionStudioInstance = new MotionStudio({
+        container: mount,
+        imgUrl: initImg,
+        onStateChange: (cfg) => {
+          appState.motionFlow = cfg;
+        }
+      });
+      motionStudioInstance.init();
+      if (appState.motionFlow) {
+        motionStudioInstance.importConfig(appState.motionFlow);
+      }
+      motionStudioInstance.onApply = async (cfg) => {
+        appState.motionFlow = cfg;
+        showStatus('✨ Đang lưu và áp dụng hiệu ứng chuyển động Flow Map vào Antigravity...');
+        await saveConfig();
+        showStatus('✓ Đã áp dụng ảnh chuyển động Flow Map vào Antigravity thành công!');
+      };
+    } else if (motionStudioInstance) {
+      motionStudioInstance.resizeCanvas();
+    }
+  };
+
+  const btnMotionUseWallpaper = document.getElementById('btnMotionUseWallpaper');
+  if (btnMotionUseWallpaper) {
+    btnMotionUseWallpaper.addEventListener('click', () => {
+      window.initMotionStudio();
+      if (motionStudioInstance) {
+        const url = appState.wallpaperUrl || '../assets/violinist-earth.jpg';
+        motionStudioInstance.loadImage(url);
+        showStatus('Đã nạp ảnh Wallpaper vào Motion Studio');
+      }
+    });
+  }
+
+  const btnMotionUsePet = document.getElementById('btnMotionUsePet');
+  if (btnMotionUsePet) {
+    btnMotionUsePet.addEventListener('click', () => {
+      window.initMotionStudio();
+      if (motionStudioInstance && appState.mascotUrl) {
+        motionStudioInstance.loadImage(appState.mascotUrl);
+        showStatus('Đã nạp ảnh Pet vào Motion Studio');
+      } else {
+        showStatus('Chưa có ảnh Pet. Hãy chọn hoặc tải ảnh Pet trước!');
+      }
+    });
+  }
+
+  const btnMotionUploadCustom = document.getElementById('btnMotionUploadCustom');
+  if (btnMotionUploadCustom) {
+    btnMotionUploadCustom.addEventListener('click', async () => {
+      if (!window.api) return;
+      const res = await window.api.selectWallpaper();
+      if (res && !res.canceled && res.dataUrl) {
+        window.initMotionStudio();
+        if (motionStudioInstance) {
+          motionStudioInstance.loadImage(res.dataUrl);
+          showStatus('Đã nạp ảnh mới từ máy tính: ' + res.fileName);
+        }
+      }
+    });
+  }
 }
 
 async function saveConfig() {

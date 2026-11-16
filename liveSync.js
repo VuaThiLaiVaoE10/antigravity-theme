@@ -375,28 +375,55 @@ async function applyToAntigravity(config) {
             pet.style.backgroundSize = 'contain';
             pet.style.backgroundRepeat = 'no-repeat';
             pet.style.backgroundPosition = 'center bottom';
-            const sz = ${config.mascotSize || 52};
+            const sz = ${config.mascotSize || 56};
             pet.style.width = sz + 'px';
             pet.style.height = sz + 'px';
 
-            const comp = document.querySelector('.surface-composer');
-            if (comp && '${config.mascotPos || 'top-right'}' !== 'bottom-right') {
-              const r = comp.getBoundingClientRect();
-              pet.style.bottom = (window.innerHeight - r.top - 4) + 'px';
-              if ('${config.mascotPos || 'top-right'}' === 'top-left') {
-                pet.style.left = (r.left + 24) + 'px';
+            const pos = '${config.mascotPos || 'composer-top-right'}';
+            const offX = ${config.petOffsetX || 0};
+            const offY = ${config.petOffsetY || 0};
+            const flip = ${config.petFlip ? -1 : 1};
+
+            function updatePetPosition() {
+              const comp = document.querySelector('.surface-composer');
+              if (pos.startsWith('composer') && comp) {
+                const r = comp.getBoundingClientRect();
+                pet.style.bottom = (window.innerHeight - r.top - 4 + offY) + 'px';
+                pet.style.top = 'auto';
+                if (pos === 'composer-top-left') {
+                  pet.style.left = (r.left + 24 + offX) + 'px';
+                  pet.style.right = 'auto';
+                } else if (pos === 'composer-top-center') {
+                  pet.style.left = (r.left + r.width / 2 - sz / 2 + offX) + 'px';
+                  pet.style.right = 'auto';
+                } else {
+                  pet.style.right = (window.innerWidth - r.right + 24 - offX) + 'px';
+                  pet.style.left = 'auto';
+                }
+              } else if (pos === 'screen-bottom-left') {
+                pet.style.bottom = (24 + offY) + 'px';
+                pet.style.left = (28 + offX) + 'px';
                 pet.style.right = 'auto';
+                pet.style.top = 'auto';
+              } else if (pos === 'sidebar-bottom') {
+                pet.style.bottom = (24 + offY) + 'px';
+                pet.style.left = (offX + 16) + 'px';
+                pet.style.right = 'auto';
+                pet.style.top = 'auto';
               } else {
-                pet.style.right = (window.innerWidth - r.right + 24) + 'px';
+                pet.style.bottom = (24 + offY) + 'px';
+                pet.style.right = (28 - offX) + 'px';
                 pet.style.left = 'auto';
+                pet.style.top = 'auto';
               }
-            } else {
-              pet.style.bottom = '24px';
-              pet.style.right = '28px';
-              pet.style.left = 'auto';
             }
 
+            updatePetPosition();
+            if (window.__agPetFollowInterval) clearInterval(window.__agPetFollowInterval);
+            window.__agPetFollowInterval = setInterval(updatePetPosition, 800);
+
             pet.className = 'anim-${config.petAnim || 'bob'}';
+            pet.style.transform = flip === -1 ? 'scaleX(-1)' : 'none';
 
             // Click Interaction: Popup Speech Bubble
             pet.onclick = () => {

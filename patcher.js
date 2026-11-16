@@ -159,6 +159,50 @@ ${HOOK_START}
           (doc.head || doc.documentElement).appendChild(style);
         }
         style.textContent = buildCss(cfg);
+
+        // 3. Pet Entity
+        let pet = doc.getElementById('ag-interactive-pet');
+        if (!pet) {
+          pet = doc.createElement('div');
+          pet.id = 'ag-interactive-pet';
+          doc.body.appendChild(pet);
+        }
+        if (cfg.mascotUrl) {
+          pet.style.display = 'block';
+          pet.style.backgroundImage = 'url(' + JSON.stringify(cfg.mascotUrl) + ')';
+          pet.style.backgroundSize = 'contain';
+          pet.style.backgroundRepeat = 'no-repeat';
+          pet.style.backgroundPosition = 'center bottom';
+          const sz = cfg.mascotSize || 56;
+          pet.style.width = sz + 'px';
+          pet.style.height = sz + 'px';
+          const pos = cfg.mascotPos || 'composer-top-right';
+          const offX = cfg.petOffsetX || 0;
+          const offY = cfg.petOffsetY || 0;
+          const flip = cfg.petFlip ? -1 : 1;
+          const comp = doc.querySelector('.surface-composer');
+          if (pos.startsWith('composer') && comp) {
+            const r = comp.getBoundingClientRect();
+            pet.style.bottom = (window.innerHeight - r.top - 4 + offY) + 'px';
+            if (pos === 'composer-top-left') {
+              pet.style.left = (r.left + 24 + offX) + 'px';
+              pet.style.right = 'auto';
+            } else if (pos === 'composer-top-center') {
+              pet.style.left = (r.left + r.width / 2 - sz / 2 + offX) + 'px';
+              pet.style.right = 'auto';
+            } else {
+              pet.style.right = (window.innerWidth - r.right + 24 - offX) + 'px';
+              pet.style.left = 'auto';
+            }
+          } else {
+            pet.style.bottom = (24 + offY) + 'px';
+            pet.style.right = (28 - offX) + 'px';
+          }
+          pet.className = 'anim-' + (cfg.petAnim || 'bob');
+          pet.style.transform = flip === -1 ? 'scaleX(-1)' : 'none';
+        } else {
+          pet.style.display = 'none';
+        }
       } catch (e) {}
     }
 

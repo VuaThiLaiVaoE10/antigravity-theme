@@ -360,6 +360,39 @@
               <button class="pet-fx-btn" data-anim="glow">⚡ Hào quang</button>
               <button class="pet-fx-btn" data-anim="sleep">💤 Ngủ Zzz</button>
             </div>
+
+            <!-- BỘ CHỈNH VỊ TRÍ & ĐẶT PET Ở ĐÂU -->
+            <span class="sub-label" style="margin-top:14px; font-weight: 600; color: #7DCFFF;">📍 Vị trí đặt Pet (Pet Placement):</span>
+            <div class="pet-pos-presets-row" id="petPosPresetsRow">
+              <button class="pet-pos-btn active" data-pos="composer-top-right">Khung chat (Phải)</button>
+              <button class="pet-pos-btn" data-pos="composer-top-left">Khung chat (Trái)</button>
+              <button class="pet-pos-btn" data-pos="composer-top-center">Khung chat (Giữa)</button>
+              <button class="pet-pos-btn" data-pos="screen-bottom-right">Góc dưới màn hình</button>
+              <button class="pet-pos-btn" data-pos="sidebar-bottom">Dưới Sidebar</button>
+            </div>
+
+            <!-- Tùy chỉnh tọa độ dời & kích thước Pet -->
+            <div class="pet-adjust-box">
+              <div class="slider-row">
+                <span class="slider-label">Kích cỡ Pet (Size)</span>
+                <input type="range" id="sliderPetSize" min="32" max="110" value="56">
+                <span class="slider-val" id="valPetSize">56px</span>
+              </div>
+              <div class="slider-row">
+                <span class="slider-label">Tọa độ dời ngang (X Offset)</span>
+                <input type="range" id="sliderPetOffsetX" min="-120" max="120" value="0">
+                <span class="slider-val" id="valPetOffsetX">0px</span>
+              </div>
+              <div class="slider-row">
+                <span class="slider-label">Tọa độ dời dọc (Y Offset)</span>
+                <input type="range" id="sliderPetOffsetY" min="-80" max="80" value="0">
+                <span class="slider-val" id="valPetOffsetY">0px</span>
+              </div>
+              <div class="pet-flip-row" style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
+                <span style="font-size: 11px; color: rgba(255,255,255,0.75);">Hướng quay mặt Pet:</span>
+                <button class="secondary-btn" id="btnTogglePetFlip" style="padding: 4px 12px; font-size: 11px;">🔄 Đổi hướng (Quay mặt)</button>
+              </div>
+            </div>
           </div>
 
           <!-- PHẦN 3: HỌA TIẾT GÓC -->

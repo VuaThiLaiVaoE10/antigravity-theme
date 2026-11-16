@@ -1332,3 +1332,44 @@ input[type="color"] {
   100% { transform: scale(1.06); }
 }
 
+/* Pet Placement & Positioning Controls */
+.pet-pos-presets-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.pet-pos-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pet-pos-btn:hover {
+  background: rgba(125, 207, 255, 0.15);
+  border-color: rgba(125, 207, 255, 0.35);
+}
+
+.pet-pos-btn.active {
+  background: rgba(125, 207, 255, 0.25);
+  border-color: #7DCFFF;
+  color: #7DCFFF;
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(125, 207, 255, 0.35);
+}
+
+.pet-adjust-box {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+

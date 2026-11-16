@@ -549,6 +549,65 @@ function setupEvents() {
     });
   });
 
+  // Pet Placement & Positioning Controls
+  document.querySelectorAll('#petPosPresetsRow .pet-pos-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      document.querySelectorAll('#petPosPresetsRow .pet-pos-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const pos = btn.getAttribute('data-pos');
+      appState.mascotPos = pos;
+      showStatus(`Vị trí đặt Pet: ${btn.textContent.trim()}`);
+      updateLivePreview();
+      await saveConfig();
+    });
+  });
+
+  const sliderPetSize = document.getElementById('sliderPetSize');
+  const valPetSize = document.getElementById('valPetSize');
+  if (sliderPetSize && valPetSize) {
+    sliderPetSize.addEventListener('input', async (e) => {
+      const sz = parseInt(e.target.value);
+      valPetSize.textContent = sz + 'px';
+      appState.mascotSize = sz;
+      updateLivePreview();
+      await saveConfig();
+    });
+  }
+
+  const sliderPetOffsetX = document.getElementById('sliderPetOffsetX');
+  const valPetOffsetX = document.getElementById('valPetOffsetX');
+  if (sliderPetOffsetX && valPetOffsetX) {
+    sliderPetOffsetX.addEventListener('input', async (e) => {
+      const offX = parseInt(e.target.value);
+      valPetOffsetX.textContent = offX + 'px';
+      appState.petOffsetX = offX;
+      updateLivePreview();
+      await saveConfig();
+    });
+  }
+
+  const sliderPetOffsetY = document.getElementById('sliderPetOffsetY');
+  const valPetOffsetY = document.getElementById('valPetOffsetY');
+  if (sliderPetOffsetY && valPetOffsetY) {
+    sliderPetOffsetY.addEventListener('input', async (e) => {
+      const offY = parseInt(e.target.value);
+      valPetOffsetY.textContent = offY + 'px';
+      appState.petOffsetY = offY;
+      updateLivePreview();
+      await saveConfig();
+    });
+  }
+
+  const btnTogglePetFlip = document.getElementById('btnTogglePetFlip');
+  if (btnTogglePetFlip) {
+    btnTogglePetFlip.addEventListener('click', async () => {
+      appState.petFlip = !appState.petFlip;
+      showStatus(appState.petFlip ? 'Đã lật Pet quay sang trái' : 'Đã lật Pet quay sang phải');
+      updateLivePreview();
+      await saveConfig();
+    });
+  }
+
   // Resolution Segments Selection
   document.querySelectorAll('.segment-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -996,6 +1055,37 @@ function renderSliders() {
     if (b.getAttribute('data-anim') === curAnim) b.classList.add('active');
     else b.classList.remove('active');
   });
+
+  // Pet Positioning Sliders & Active Presets
+  const sliderPetSize = document.getElementById('sliderPetSize');
+  const valPetSize = document.getElementById('valPetSize');
+  if (sliderPetSize && valPetSize) {
+    const sz = appState.mascotSize ?? 56;
+    sliderPetSize.value = sz;
+    valPetSize.textContent = sz + 'px';
+  }
+
+  const sliderPetOffsetX = document.getElementById('sliderPetOffsetX');
+  const valPetOffsetX = document.getElementById('valPetOffsetX');
+  if (sliderPetOffsetX && valPetOffsetX) {
+    const offX = appState.petOffsetX ?? 0;
+    sliderPetOffsetX.value = offX;
+    valPetOffsetX.textContent = offX + 'px';
+  }
+
+  const sliderPetOffsetY = document.getElementById('sliderPetOffsetY');
+  const valPetOffsetY = document.getElementById('valPetOffsetY');
+  if (sliderPetOffsetY && valPetOffsetY) {
+    const offY = appState.petOffsetY ?? 0;
+    sliderPetOffsetY.value = offY;
+    valPetOffsetY.textContent = offY + 'px';
+  }
+
+  const curPos = appState.mascotPos || 'composer-top-right';
+  document.querySelectorAll('#petPosPresetsRow .pet-pos-btn').forEach(b => {
+    if (b.getAttribute('data-pos') === curPos) b.classList.add('active');
+    else b.classList.remove('active');
+  });
 }
 
 function renderModStatus() {
@@ -1061,20 +1151,46 @@ function updateLivePreview() {
     if (appState.mascotUrl) {
       mascotBadge.style.display = 'block';
       mascotBadge.style.backgroundImage = `url(${appState.mascotUrl})`;
-      const sz = Math.round((appState.mascotSize || 52) * 0.75);
+      const sz = Math.round((appState.mascotSize || 56) * 0.75);
       mascotBadge.style.width = sz + 'px';
       mascotBadge.style.height = sz + 'px';
-      mascotBadge.style.top = '-' + (sz - 6) + 'px';
-      if (appState.mascotPos === 'top-left') {
-        mascotBadge.style.left = '16px';
+      
+      const pos = appState.mascotPos || 'composer-top-right';
+      const offX = Math.round((appState.petOffsetX || 0) * 0.75);
+      const offY = Math.round((appState.petOffsetY || 0) * 0.75);
+
+      if (pos === 'composer-top-left') {
+        mascotBadge.style.top = '-' + (sz - 6 - offY) + 'px';
+        mascotBadge.style.left = (16 + offX) + 'px';
+        mascotBadge.style.right = 'auto';
+        mascotBadge.style.bottom = 'auto';
+      } else if (pos === 'composer-top-center') {
+        mascotBadge.style.top = '-' + (sz - 6 - offY) + 'px';
+        mascotBadge.style.left = `calc(50% - ${sz/2}px + ${offX}px)`;
+        mascotBadge.style.right = 'auto';
+        mascotBadge.style.bottom = 'auto';
+      } else if (pos === 'screen-bottom-right') {
+        mascotBadge.style.top = 'auto';
+        mascotBadge.style.bottom = (6 + offY) + 'px';
+        mascotBadge.style.right = (16 - offX) + 'px';
+        mascotBadge.style.left = 'auto';
+      } else if (pos === 'sidebar-bottom') {
+        mascotBadge.style.top = 'auto';
+        mascotBadge.style.bottom = (6 + offY) + 'px';
+        mascotBadge.style.left = (16 + offX) + 'px';
         mascotBadge.style.right = 'auto';
       } else {
-        mascotBadge.style.right = '16px';
+        // composer-top-right default
+        mascotBadge.style.top = '-' + (sz - 6 - offY) + 'px';
+        mascotBadge.style.right = (16 - offX) + 'px';
         mascotBadge.style.left = 'auto';
+        mascotBadge.style.bottom = 'auto';
       }
+
       const petAnim = appState.petAnim || 'bob';
       mascotBadge.className = 'preview-mascot-badge ' + ((appState.mascotBounce !== false) ? ('anim-' + petAnim) : '');
       mascotBadge.style.animation = '';
+      mascotBadge.style.transform = appState.petFlip ? 'scaleX(-1)' : 'none';
       mascotBadge.style.cursor = 'pointer';
       mascotBadge.onclick = () => {
         let b = document.getElementById('previewSpeechBubble');

@@ -417,6 +417,40 @@ function setupEvents() {
     }
   });
 
+  const btnToggleAutoLaunch = document.getElementById('btnToggleAutoLaunch');
+  const labelAutoLaunch = document.getElementById('labelAutoLaunch');
+
+  if (window.api && window.api.getAutoLaunch && labelAutoLaunch) {
+    window.api.getAutoLaunch().then(res => {
+      if (res && res.openAtLogin) {
+        labelAutoLaunch.textContent = 'Khởi động cùng Windows: BẬT';
+        btnToggleAutoLaunch.classList.add('active');
+      } else {
+        labelAutoLaunch.textContent = 'Khởi động cùng Windows: TẮT';
+        btnToggleAutoLaunch.classList.remove('active');
+      }
+    });
+  }
+
+  if (btnToggleAutoLaunch) {
+    btnToggleAutoLaunch.addEventListener('click', async () => {
+      if (!window.api || !window.api.setAutoLaunch) return;
+      const cur = btnToggleAutoLaunch.classList.contains('active');
+      const res = await window.api.setAutoLaunch(!cur);
+      if (res && res.success) {
+        if (res.openAtLogin) {
+          labelAutoLaunch.textContent = 'Khởi động cùng Windows: BẬT';
+          btnToggleAutoLaunch.classList.add('active');
+          showStatus('✓ Đã bật tự động chạy ngầm cùng Windows để giữ theme vĩnh viễn!');
+        } else {
+          labelAutoLaunch.textContent = 'Khởi động cùng Windows: TẮT';
+          btnToggleAutoLaunch.classList.remove('active');
+          showStatus('Đã tắt khởi động cùng Windows.');
+        }
+      }
+    });
+  }
+
   btnRestoreOriginal.addEventListener('click', async () => {
     if (!window.api) return;
     if (!confirm('Bạn có chắc chắn muốn gỡ bỏ Theme Mod và khôi phục Antigravity về nguyên bản 100%?')) return;

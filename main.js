@@ -204,3 +204,37 @@ ipcMain.handle('restart-antigravity', async () => {
     return { success: false, error: err.message };
   }
 });
+
+ipcMain.handle('get-auto-launch', () => {
+  try {
+    return { success: true, openAtLogin: app.getLoginItemSettings().openAtLogin };
+  } catch {
+    return { success: true, openAtLogin: false };
+  }
+});
+
+ipcMain.handle('set-auto-launch', (_event, enable) => {
+  try {
+    app.setLoginItemSettings({ openAtLogin: !!enable });
+    return { success: true, openAtLogin: app.getLoginItemSettings().openAtLogin };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+// === BACKGROUND AUTO-SYNC GUARDIAN ===
+// Periodically ensures Antigravity always retains the theme when launched or restarted
+let lastSyncedPort = null;
+setInterval(async () => {
+  try {
+    const match = await liveSync.findAntigravityTarget();
+    if (match && match.port !== lastSyncedPort) {
+      lastSyncedPort = match.port;
+      const cfg = getInitialConfig();
+      if (cfg && cfg.enabled) {
+        await liveSync.applyToAntigravity(cfg);
+        try { fs.appendFileSync(logFile, `Auto-synced theme to freshly launched Antigravity on port ${match.port}\n`); } catch {}
+      }
+    }
+  } catch {}
+}, 4000);

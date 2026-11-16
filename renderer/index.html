@@ -73,6 +73,28 @@
             </div>
           </div>
 
+          <!-- 📥 NHẬP TỪ LINK TIKTOK / YOUTUBE (3 BƯỚC: CẮT VIỀN ➔ XỬ LÝ ẢNH ➔ NHẬP THEME ĐỘNG) -->
+          <div class="video-import-section">
+            <div class="section-title" style="color: #38BDF8; font-weight: 700; letter-spacing: 0.5px;">
+              📥 NHẬP TỪ LINK TIKTOK / YOUTUBE (3 BƯỚC: CẮT VIỀN ➔ XỬ LÝ ẢNH ➔ NHẬP THEME ĐỘNG)
+            </div>
+            <div class="video-url-input-card">
+              <div class="video-url-input-row">
+                <input type="text" id="inputVideoUrl" class="text-input video-url-input" placeholder="Dán link TikTok hoặc YouTube vào đây..." />
+                <button type="button" class="btn-fetch-video" id="btnFetchVideoUrl">
+                  🔍 Tải &amp; Phân tích
+                </button>
+              </div>
+              <div class="video-url-hints">
+                <span class="url-hint-pill">🎯 YouTube (Standard / Shorts / youtu.be)</span>
+                <span class="url-hint-pill">🎵 TikTok (Link video / Clip)</span>
+                <span class="url-hint-pill">🖼️ Direct Image / Video URL</span>
+              </div>
+            </div>
+            <!-- Mount container for VideoImportStudio -->
+            <div id="videoImportMount" class="video-import-mount"></div>
+          </div>
+
           <!-- Phân khúc tỷ lệ & Độ phân giải (Resolution Segments) -->
           <div class="section-title">PHÂN KHÚC ĐỘ PHÂN GIẢI MÀN HÌNH</div>
           <div class="segments-row" id="resSegmentsRow">
@@ -863,6 +885,7 @@
 
   <script src="../petModels.js"></script>
   <script src="motionStudio.js"></script>
+  <script src="videoImportStudio.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -139,6 +139,7 @@ let palettesList = [];
 let modStatus = null;
 let activeSubtab = 'dark'; // 'dark' | 'light'
 let motionStudioInstance = null;
+let videoImportStudioInstance = null;
 
 // === DOM ELEMENTS ===
 const badgePalette = document.getElementById('badgePalette');
@@ -237,22 +238,40 @@ async function init() {
   renderSliders();
   renderModStatus();
   updateLivePreview();
+  if (typeof window.initVideoImportStudio === 'function') {
+    window.initVideoImportStudio();
+  }
 }
 
 // === TABS SETUP ===
+function switchToTab(targetId) {
+  tabButtons.forEach(b => {
+    if (b.getAttribute('data-tab') === targetId) {
+      b.classList.add('active');
+    } else {
+      b.classList.remove('active');
+    }
+  });
+  tabPanes.forEach(p => {
+    if (p.id === targetId) {
+      p.classList.add('active');
+    } else {
+      p.classList.remove('active');
+    }
+  });
+  if (targetId === 'tab-motion') {
+    if (typeof window.initMotionStudio === 'function') {
+      window.initMotionStudio();
+    }
+  }
+}
+window.switchToTab = switchToTab;
+
 function setupTabs() {
   tabButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-      tabButtons.forEach(b => b.classList.remove('active'));
-      tabPanes.forEach(p => p.classList.remove('active'));
-
-      btn.classList.add('active');
       const targetId = btn.getAttribute('data-tab');
-      const pane = document.getElementById(targetId);
-      if (pane) pane.classList.add('active');
-      if (targetId === 'tab-motion') {
-        initMotionStudio();
-      }
+      switchToTab(targetId);
     });
   });
 
@@ -336,6 +355,51 @@ function setupEvents() {
         await saveConfig();
       } catch (e) {
         showStatus('Lỗi khi tối ưu: ' + e.message);
+      }
+    });
+  }
+
+  // === TIKTOK & YOUTUBE IMPORT STUDIO WIRE ===
+  const inputVideoUrl = document.getElementById('inputVideoUrl');
+  const btnFetchVideoUrl = document.getElementById('btnFetchVideoUrl');
+
+  if (btnFetchVideoUrl) {
+    btnFetchVideoUrl.addEventListener('click', async () => {
+      const rawUrl = inputVideoUrl ? inputVideoUrl.value.trim() : '';
+      if (!rawUrl) {
+        showStatus('⚠️ Vui lòng dán link TikTok hoặc YouTube vào ô nhập!');
+        if (inputVideoUrl) inputVideoUrl.focus();
+        return;
+      }
+
+      const studio = typeof window.initVideoImportStudio === 'function' ? window.initVideoImportStudio() : null;
+      if (!studio) {
+        showStatus('❌ Chưa thể khởi tạo bộ xử lý video. Hãy kiểm tra lại!');
+        return;
+      }
+
+      showStatus(`🔍 Đang tải và phân tích: ${rawUrl.length > 50 ? rawUrl.substring(0, 47) + '...' : rawUrl}`);
+      btnFetchVideoUrl.disabled = true;
+      try {
+        const ok = await studio.loadUrl(rawUrl);
+        if (ok) {
+          showStatus('✓ Đã tải media thành công! Bước 1: Hãy chỉnh khung cắt viền.');
+        } else {
+          showStatus('⚠️ Không thể trích xuất thumbnail/video từ URL này. Vui lòng kiểm tra lại!');
+        }
+      } catch (err) {
+        showStatus('❌ Lỗi tải video: ' + (err.message || err));
+      } finally {
+        btnFetchVideoUrl.disabled = false;
+      }
+    });
+  }
+
+  if (inputVideoUrl) {
+    inputVideoUrl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (btnFetchVideoUrl) btnFetchVideoUrl.click();
       }
     });
   }
@@ -923,6 +987,58 @@ function setupEvents() {
     showStatus('Đang khởi động lại Antigravity...');
     await window.api.restartAntigravity();
   });
+
+  // === VIDEO IMPORT STUDIO INITIALIZATION ===
+  window.initVideoImportStudio = function() {
+    const mount = document.getElementById('videoImportMount');
+    if (!mount) return null;
+
+    if (!videoImportStudioInstance && typeof VideoImportStudio !== 'undefined') {
+      videoImportStudioInstance = new VideoImportStudio({
+        container: mount,
+        imgUrl: '',
+        onApplyWallpaper: async (dataUrl) => {
+          if (!appState) return;
+          appState.wallpaperUrl = dataUrl;
+          if (currentWpName) {
+            currentWpName.textContent = 'Ảnh từ TikTok / YouTube (Đã xử lý)';
+          }
+          const badgeWpRes = document.getElementById('badgeWpRes');
+          if (badgeWpRes) {
+            badgeWpRes.textContent = '🖥️ Chuẩn Custom (TikTok/YouTube)';
+          }
+          updateLivePreview();
+          showStatus('✨ Đang lưu hình nền từ TikTok/YouTube sang Antigravity...');
+          await saveConfig();
+          showStatus('✓ Đã áp dụng hình nền từ TikTok/YouTube thành công!');
+        },
+        onSendToMotionStudio: async (dataUrl) => {
+          showStatus('🚀 Đang chuyển sang tab Vẽ Chuyển Động (Motion Studio)...');
+          switchToTab('tab-motion');
+          if (typeof window.initMotionStudio === 'function') {
+            window.initMotionStudio();
+          }
+          if (motionStudioInstance) {
+            await motionStudioInstance.loadImage(dataUrl);
+            showStatus('✓ Đã nạp ảnh vào Motion Studio thành công!');
+          }
+        },
+        onApplyPet: async (dataUrl) => {
+          if (!appState) return;
+          appState.mascotUrl = dataUrl;
+          showStatus('🐾 Đang áp dụng làm thú cưng Pet Companion...');
+          switchToTab('tab-pet');
+          renderPetControls();
+          updateLivePreview();
+          await saveConfig();
+          showStatus('✓ Đã áp dụng bé Pet từ TikTok/YouTube thành công!');
+        }
+      });
+      videoImportStudioInstance.init();
+      window.videoImportStudioInstance = videoImportStudioInstance;
+    }
+    return videoImportStudioInstance;
+  };
 
   // === MOTION STUDIO INITIALIZATION ===
   window.initMotionStudio = function() {

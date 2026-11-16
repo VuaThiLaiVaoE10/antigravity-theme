@@ -1,0 +1,584 @@
+/* motion.css - Styles for Motion Studio UI, Multi-Layer Management, Parallax Depth & Clean View */
+
+.motion-ui-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* ───────────────────────────────────────────────────────────── */
+/* Top Action Bar (Clean View, Compare & History Controls)       */
+/* ───────────────────────────────────────────────────────────── */
+
+.motion-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(10, 24, 38, 0.75);
+  border: 1px solid rgba(125, 207, 255, 0.22);
+  border-radius: 8px;
+  padding: 6px 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  flex-wrap: wrap;
+}
+
+.motion-bar-left, .motion-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.motion-btn-clean, .motion-btn-compare {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(125, 207, 255, 0.12);
+  border: 1px solid rgba(125, 207, 255, 0.35);
+  color: #7DCFFF;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.motion-btn-clean:hover, .motion-btn-compare:hover {
+  background: rgba(125, 207, 255, 0.25);
+  box-shadow: 0 0 10px rgba(125, 207, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.motion-btn-clean.is-active, .motion-btn-compare.is-active {
+  background: #7DCFFF;
+  color: #081826;
+  border-color: #7DCFFF;
+  box-shadow: 0 0 12px rgba(125, 207, 255, 0.6);
+}
+
+.motion-btn-hist {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 10.5px;
+  border-radius: 5px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.motion-btn-hist:hover:not(:disabled) {
+  background: rgba(125, 207, 255, 0.15);
+  border-color: #7DCFFF;
+  color: #fff;
+}
+
+.motion-btn-hist:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ───────────────────────────────────────────────────────────── */
+/* Compare Slider Bar (Before / After Split Screen)              */
+/* ───────────────────────────────────────────────────────────── */
+
+.motion-compare-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(125, 207, 255, 0.08);
+  border: 1px solid rgba(125, 207, 255, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  animation: compareFadeIn 0.25s ease-out;
+}
+
+@keyframes compareFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.compare-lead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.compare-tag-before {
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.compare-tag-after {
+  font-size: 10.5px;
+  color: #7DCFFF;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.compare-lead input[type="range"] {
+  flex: 1;
+  height: 6px;
+  accent-color: #7DCFFF;
+  cursor: pointer;
+}
+
+.compare-ratio-badge {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #7DCFFF;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(125, 207, 255, 0.3);
+}
+
+/* ───────────────────────────────────────────────────────────── */
+/* Intensity Preset Selector Bar: Tinh tế / Vừa / Mạnh          */
+/* ───────────────────────────────────────────────────────────── */
+
+.motion-intensity-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(8, 20, 32, 0.7);
+  border: 1px solid rgba(125, 207, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  flex-wrap: wrap;
+}
+
+.intensity-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.intensity-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.intensity-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 10.5px;
+  font-weight: 500;
+  border-radius: 5px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.intensity-btn:hover {
+  background: rgba(125, 207, 255, 0.15);
+  border-color: #7DCFFF;
+  color: #fff;
+}
+
+.intensity-btn.is-active {
+  background: rgba(125, 207, 255, 0.25);
+  border-color: #7DCFFF;
+  color: #7DCFFF;
+  font-weight: 700;
+  box-shadow: 0 0 8px rgba(125, 207, 255, 0.4);
+}
+
+/* ───────────────────────────────────────────────────────────── */
+/* Parallax & Depth Toolkit Bar                                  */
+/* ───────────────────────────────────────────────────────────── */
+
+.motion-depth-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(8, 20, 32, 0.65);
+  border: 1px solid rgba(125, 207, 255, 0.18);
+  border-radius: 8px;
+  padding: 8px 12px;
+  flex-wrap: wrap;
+}
+
+.depth-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #7DCFFF;
+  cursor: pointer;
+  user-select: none;
+}
+
+.depth-toggle-label input[type="checkbox"] {
+  accent-color: #7DCFFF;
+  cursor: pointer;
+}
+
+.depth-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.depth-btn-action {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(125, 207, 255, 0.25);
+  color: #7DCFFF;
+  font-size: 10.5px;
+  border-radius: 5px;
+  padding: 4px 9px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.depth-btn-action:hover {
+  background: rgba(125, 207, 255, 0.2);
+  border-color: #7DCFFF;
+  box-shadow: 0 0 8px rgba(125, 207, 255, 0.3);
+}
+
+.depth-btn-action.is-active {
+  background: #7DCFFF;
+  color: #081826;
+  font-weight: 700;
+  box-shadow: 0 0 10px #7DCFFF;
+}
+
+/* ───────────────────────────────────────────────────────────── */
+/* Presets Quick Loader Bar                                      */
+/* ───────────────────────────────────────────────────────────── */
+
+.motion-presets-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(8, 20, 32, 0.65);
+  border: 1px solid rgba(125, 207, 255, 0.18);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.presets-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.motion-presets-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.motion-preset-pill {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+  border-radius: 5px;
+  padding: 4px 9px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.motion-preset-pill:hover {
+  background: rgba(125, 207, 255, 0.2);
+  border-color: #7DCFFF;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.preset-demo-btn {
+  background: rgba(115, 218, 202, 0.18);
+  border-color: #73DACA;
+  color: #73DACA;
+  font-weight: 600;
+}
+
+.preset-demo-btn:hover {
+  background: rgba(115, 218, 202, 0.32);
+  border-color: #73DACA;
+  box-shadow: 0 0 10px rgba(115, 218, 202, 0.45);
+}
+
+/* ───────────────────────────────────────────────────────────── */
+/* Layers Management Panel                                       */
+/* ───────────────────────────────────────────────────────────── */
+
+.motion-layers-panel {
+  background: rgba(8, 20, 32, 0.85);
+  border: 1px solid rgba(125, 207, 255, 0.22);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.motion-layers-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.motion-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #7DCFFF;
+  letter-spacing: 0.4px;
+}
+
+.motion-btn-add-layer {
+  background: rgba(115, 218, 202, 0.15);
+  border: 1px solid rgba(115, 218, 202, 0.4);
+  color: #73DACA;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.motion-btn-add-layer:hover {
+  background: rgba(115, 218, 202, 0.3);
+  box-shadow: 0 0 8px rgba(115, 218, 202, 0.4);
+}
+
+.motion-layer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.motion-layer-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.motion-layer-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.motion-layer-item.is-active {
+  background: rgba(125, 207, 255, 0.12);
+  border-color: #7DCFFF;
+  box-shadow: 0 0 10px rgba(125, 207, 255, 0.25);
+}
+
+.motion-layer-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.motion-layer-lead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.motion-layer-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+
+.motion-layer-name-input {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 2px 4px;
+  outline: none;
+  max-width: 140px;
+  transition: all 0.2s ease;
+}
+
+.motion-layer-name-input:focus {
+  background: rgba(0, 0, 0, 0.5);
+  border-color: #7DCFFF;
+}
+
+.layer-item-badge {
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.motion-layer-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.motion-btn-icon {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  padding: 2px 4px;
+  cursor: pointer;
+  border-radius: 4px;
+  opacity: 0.75;
+  transition: all 0.15s ease;
+}
+
+.motion-btn-icon:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.btn-layer-del:hover {
+  background: rgba(255, 83, 112, 0.25);
+}
+
+/* Per-layer Dedicated Sliders Box (Speed, Intensity, Direction, Depth) */
+.layer-sliders-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.layer-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+}
+
+.layer-slider-row label {
+  width: 72px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.layer-slider-row input[type="range"] {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  accent-color: #7DCFFF;
+  cursor: pointer;
+}
+
+.slider-val {
+  width: 44px;
+  text-align: right;
+  font-family: monospace;
+  font-size: 10px;
+  color: #7DCFFF;
+  font-weight: 600;
+}
+
+.val-depth {
+  color: #73DACA !important;
+  width: 70px !important;
+}
+
+/* ───────────────────────────────────────────────────────────── */
+/* Advanced Settings (<details> Accordion, Default Closed)      */
+/* ───────────────────────────────────────────────────────────── */
+
+.motion-advanced-details {
+  background: rgba(8, 20, 32, 0.65);
+  border: 1px solid rgba(125, 207, 255, 0.18);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 11px;
+}
+
+.advanced-summary {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7DCFFF;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.advanced-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.adv-field-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10.5px;
+}
+
+.adv-field-row label {
+  width: 160px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.adv-field-row input[type="range"] {
+  flex: 1;
+  height: 4px;
+  accent-color: #7DCFFF;
+  cursor: pointer;
+}
+
+.adv-val {
+  width: 36px;
+  text-align: right;
+  font-family: monospace;
+  font-size: 10px;
+  color: #7DCFFF;
+}
+
+/* ───────────────────────────────────────────────────────────── */
+/* Clean View Mode Rules (Hides gizmos/pins/arrows completely)   */
+/* ───────────────────────────────────────────────────────────── */
+
+.clean-view .motion-overlay-tools,
+.clean-view .motion-arrows-canvas,
+.clean-view .motion-pins-layer,
+.clean-view .motion-gizmo,
+.clean-view .motion-point,
+.clean-view .motion-arrow-handle,
+.clean-view .motion-grid-overlay,
+.clean-view .motion-badge-tip {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

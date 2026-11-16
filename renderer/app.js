@@ -1049,6 +1049,10 @@ function setupEvents() {
     const mount = document.getElementById('motionStudioMount');
     if (!mount) return;
 
+    if (window.MotionUI && typeof window.MotionUI.init === 'function') {
+      window.MotionUI.init(mount);
+    }
+
     if (!motionStudioInstance && typeof MotionStudio !== 'undefined') {
       const initImg = appState.wallpaperUrl || '../assets/violinist-earth.jpg';
       motionStudioInstance = new MotionStudio({
@@ -1056,6 +1060,7 @@ function setupEvents() {
         imgUrl: initImg,
         onStateChange: (cfg) => {
           appState.motionFlow = cfg;
+          if (window.MotionEngine) window.MotionEngine.setConfig(cfg);
         }
       });
       motionStudioInstance.init();
@@ -1830,7 +1835,769 @@ function updateLivePreview() {
   root.style.setProperty('--ag-user-bubble-1', g.userBubble1 || '#15524D');
   root.style.setProperty('--ag-user-bubble-2', g.userBubble2 || '#082430');
   root.style.setProperty('--ag-user-bubble-border', g.userBubbleBorder || '#73DACA');
+
+  if (typeof window.mountPetOverlayInPreview === 'function') {
+    window.mountPetOverlayInPreview();
+  }
 }
+
+// ================================================================
+//  PET BUILDER STUDIO (PBS) — Integrated Canvas Editor
+// ================================================================
+(function initPetBuilderStudio() {
+  // --- State ---
+  let pbsOrigImageData = null; // original pixel data (pre-edit)
+  let pbsCanvas = null;
+  let pbsCtx = null;
+  let pbsOverlayCanvas = null;
+  let pbsOverlayCtx = null;
+  let pbsHistory = [];          // undo stack [{imageData}]
+  let pbsHistoryIndex = -1;
+  let pbsActiveTool = 'eraser';
+  let pbsZoom = 1.0;
+  let pbsPanX = 0, pbsPanY = 0;
+  let pbsIsPainting = false;
+  let pbsLastX = -1, pbsLastY = -1;
+  let pbsAnchor = null;         // {x, y}
+  let pbsHitbox = null;         // {x1, y1, x2, y2}
+  let pbsCropStart = null;
+  let pbsSourceImage = null;    // HTMLImageElement
+  // Sandbox state
+  let sbAnimId = null;
+  let sbFrames = [];            // array of ImageData or DataURL per frame
+  let sbActiveState = 'idle';
+  let sbStates = { idle: { start: 0, end: 0 }, walk: null, sleep: null, click: null, drag: null };
+  let sbFps = 12;
+  let sbFrameIdx = 0;
+  let sbLastTime = 0;
+
+  function domReady(fn) {
+    if (document.readyState !== 'loading') fn();
+    else document.addEventListener('DOMContentLoaded', fn);
+  }
+
+  domReady(() => {
+    pbsCanvas = document.getElementById('pbsCanvas');
+    if (!pbsCanvas) return;
+    pbsCtx = pbsCanvas.getContext('2d', { willReadFrequently: true });
+    pbsOverlayCanvas = document.getElementById('pbsOverlayCanvas');
+    if (pbsOverlayCanvas) pbsOverlayCtx = pbsOverlayCanvas.getContext('2d');
+
+    _bindDropzone();
+    _bindToolbar();
+    _bindControlsBar();
+    _bindCanvasEvents();
+    _bindZoomControls();
+    _bindAnimSection();
+    _bindSaveBtn();
+    _bindKeyboardShortcuts();
+    _bindFilterTargetSwitch();
+
+    // Mount PetOverlay in preview pane if available
+    _mountPetOverlayInPreview();
+  });
+
+  // ---- Dropzone ----
+  function _bindDropzone() {
+    const dz = document.getElementById('pbsDropzone');
+    const fi = document.getElementById('pbsFileInput');
+    const ub = document.getElementById('pbsUploadBtn');
+    if (!dz || !fi) return;
+
+    if (ub) ub.addEventListener('click', (e) => { e.stopPropagation(); fi.click(); });
+    dz.addEventListener('click', () => fi.click());
+
+    dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+    dz.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dz.classList.remove('drag-over');
+      const f = e.dataTransfer.files[0];
+      if (f) _loadFile(f);
+    });
+
+    fi.addEventListener('change', () => {
+      if (fi.files[0]) _loadFile(fi.files[0]);
+    });
+  }
+
+  function _loadFile(file) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        pbsSourceImage = img;
+        pbsCanvas.width = img.width;
+        pbsCanvas.height = img.height;
+        if (pbsOverlayCanvas) {
+          pbsOverlayCanvas.width = img.width;
+          pbsOverlayCanvas.height = img.height;
+        }
+        pbsCtx.clearRect(0, 0, pbsCanvas.width, pbsCanvas.height);
+        pbsCtx.drawImage(img, 0, 0);
+        pbsOrigImageData = pbsCtx.getImageData(0, 0, pbsCanvas.width, pbsCanvas.height);
+        pbsHistory = [];
+        pbsHistoryIndex = -1;
+        _pushHistory();
+        _zoomFit();
+        document.getElementById('pbsViewportWrap') && (document.getElementById('pbsViewportWrap').style.display = '');
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ---- History ----
+  function _pushHistory() {
+    if (!pbsCanvas) return;
+    const snap = pbsCtx.getImageData(0, 0, pbsCanvas.width, pbsCanvas.height);
+    pbsHistory = pbsHistory.slice(0, pbsHistoryIndex + 1);
+    pbsHistory.push(snap);
+    pbsHistoryIndex = pbsHistory.length - 1;
+    _updateUndoRedoState();
+  }
+
+  function _undo() {
+    if (pbsHistoryIndex <= 0) return;
+    pbsHistoryIndex--;
+    pbsCtx.putImageData(pbsHistory[pbsHistoryIndex], 0, 0);
+    _updateUndoRedoState();
+  }
+
+  function _redo() {
+    if (pbsHistoryIndex >= pbsHistory.length - 1) return;
+    pbsHistoryIndex++;
+    pbsCtx.putImageData(pbsHistory[pbsHistoryIndex], 0, 0);
+    _updateUndoRedoState();
+  }
+
+  function _updateUndoRedoState() {
+    const undoBtn = document.getElementById('pbsUndo');
+    const redoBtn = document.getElementById('pbsRedo');
+    if (undoBtn) undoBtn.disabled = pbsHistoryIndex <= 0;
+    if (redoBtn) redoBtn.disabled = pbsHistoryIndex >= pbsHistory.length - 1;
+  }
+
+  // ---- Toolbar ----
+  function _bindToolbar() {
+    document.querySelectorAll('.pbs-tool-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.pbs-tool-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        pbsActiveTool = btn.getAttribute('data-tool');
+        if (pbsActiveTool === 'autotrim') { _autoTrim(); }
+      });
+    });
+  }
+
+  // ---- Controls Bar ----
+  function _bindControlsBar() {
+    const br = document.getElementById('pbsBrushRadius');
+    const brv = document.getElementById('pbsBrushRadiusVal');
+    if (br && brv) br.addEventListener('input', () => { brv.textContent = br.value + 'px'; });
+
+    const wt = document.getElementById('pbsWandTolerance');
+    const wtv = document.getElementById('pbsWandToleranceVal');
+    if (wt && wtv) wt.addEventListener('input', () => { wtv.textContent = wt.value; });
+
+    const undoBtn = document.getElementById('pbsUndo');
+    const redoBtn = document.getElementById('pbsRedo');
+    if (undoBtn) undoBtn.addEventListener('click', _undo);
+    if (redoBtn) redoBtn.addEventListener('click', _redo);
+    _updateUndoRedoState();
+  }
+
+  // ---- Canvas Events ----
+  function _getCanvasPos(e) {
+    if (!pbsCanvas) return { x: 0, y: 0 };
+    const rect = pbsCanvas.getBoundingClientRect();
+    const scaleX = pbsCanvas.width / rect.width;
+    const scaleY = pbsCanvas.height / rect.height;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: Math.round((clientX - rect.left) * scaleX),
+      y: Math.round((clientY - rect.top) * scaleY)
+    };
+  }
+
+  function _bindCanvasEvents() {
+    if (!pbsCanvas) return;
+    pbsCanvas.addEventListener('mousedown', _onPaintStart);
+    pbsCanvas.addEventListener('mousemove', _onPaintMove);
+    pbsCanvas.addEventListener('mouseup', _onPaintEnd);
+    pbsCanvas.addEventListener('mouseleave', _onPaintEnd);
+    pbsCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); _onPaintStart(e); }, { passive: false });
+    pbsCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); _onPaintMove(e); }, { passive: false });
+    pbsCanvas.addEventListener('touchend', _onPaintEnd);
+  }
+
+  function _onPaintStart(e) {
+    if (!pbsCanvas || !pbsCtx) return;
+    pbsIsPainting = true;
+    const pos = _getCanvasPos(e);
+    pbsLastX = pos.x;
+    pbsLastY = pos.y;
+
+    switch (pbsActiveTool) {
+      case 'wand':
+        _magicWand(pos.x, pos.y);
+        break;
+      case 'colorkey':
+        _colorKeyErase(pos.x, pos.y);
+        break;
+      case 'anchor':
+        pbsAnchor = { x: pos.x, y: pos.y };
+        _drawOverlay();
+        break;
+      case 'hitbox':
+        pbsCropStart = { x: pos.x, y: pos.y };
+        pbsHitbox = null;
+        break;
+      case 'crop':
+        pbsCropStart = { x: pos.x, y: pos.y };
+        break;
+      default:
+        _paintBrush(pos.x, pos.y);
+    }
+  }
+
+  function _onPaintMove(e) {
+    if (!pbsIsPainting || !pbsCanvas) return;
+    const pos = _getCanvasPos(e);
+    switch (pbsActiveTool) {
+      case 'eraser':
+      case 'restore':
+        _paintBrush(pos.x, pos.y);
+        break;
+      case 'hitbox':
+        if (pbsCropStart) {
+          pbsHitbox = { x1: pbsCropStart.x, y1: pbsCropStart.y, x2: pos.x, y2: pos.y };
+          _drawOverlay();
+        }
+        break;
+      case 'crop':
+        if (pbsCropStart) {
+          pbsHitbox = { x1: pbsCropStart.x, y1: pbsCropStart.y, x2: pos.x, y2: pos.y };
+          _drawOverlay();
+        }
+        break;
+    }
+    pbsLastX = pos.x;
+    pbsLastY = pos.y;
+  }
+
+  function _onPaintEnd() {
+    if (!pbsIsPainting) return;
+    pbsIsPainting = false;
+    if (['eraser', 'restore', 'colorkey', 'wand'].includes(pbsActiveTool)) {
+      _pushHistory();
+    }
+    if (pbsActiveTool === 'crop' && pbsHitbox) {
+      _applyCrop();
+    }
+  }
+
+  function _paintBrush(cx, cy) {
+    if (!pbsCtx || !pbsCanvas) return;
+    const radius = parseInt(document.getElementById('pbsBrushRadius')?.value || '12');
+    if (pbsActiveTool === 'eraser') {
+      pbsCtx.save();
+      pbsCtx.globalCompositeOperation = 'destination-out';
+      pbsCtx.beginPath();
+      pbsCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+      pbsCtx.fill();
+      pbsCtx.restore();
+    } else if (pbsActiveTool === 'restore' && pbsOrigImageData) {
+      // Restore original pixels in brush area
+      const restored = pbsCtx.getImageData(0, 0, pbsCanvas.width, pbsCanvas.height);
+      const r2 = radius * radius;
+      for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+          if (dx * dx + dy * dy > r2) continue;
+          const px = cx + dx, py = cy + dy;
+          if (px < 0 || py < 0 || px >= pbsCanvas.width || py >= pbsCanvas.height) continue;
+          const idx = (py * pbsCanvas.width + px) * 4;
+          restored.data[idx]     = pbsOrigImageData.data[idx];
+          restored.data[idx + 1] = pbsOrigImageData.data[idx + 1];
+          restored.data[idx + 2] = pbsOrigImageData.data[idx + 2];
+          restored.data[idx + 3] = pbsOrigImageData.data[idx + 3];
+        }
+      }
+      pbsCtx.putImageData(restored, 0, 0);
+    }
+  }
+
+  // ---- Magic Wand ----
+  function _magicWand(sx, sy) {
+    if (!pbsCtx || !pbsCanvas) return;
+    const contiguous = document.getElementById('pbsContiguous')?.checked !== false;
+    const tolerance = parseInt(document.getElementById('pbsWandTolerance')?.value || '32');
+    const imgData = pbsCtx.getImageData(0, 0, pbsCanvas.width, pbsCanvas.height);
+    const W = pbsCanvas.width, H = pbsCanvas.height;
+    const data = imgData.data;
+    const idx0 = (sy * W + sx) * 4;
+    const tr = data[idx0], tg = data[idx0+1], tb = data[idx0+2], ta = data[idx0+3];
+
+    function colorDiff(i) {
+      return Math.abs(data[i]-tr) + Math.abs(data[i+1]-tg) + Math.abs(data[i+2]-tb) + Math.abs(data[i+3]-ta);
+    }
+
+    const visited = new Uint8Array(W * H);
+    const queue = [sy * W + sx];
+    visited[sy * W + sx] = 1;
+
+    while (queue.length) {
+      const pos = queue.shift();
+      const px = pos % W, py = (pos / W) | 0;
+      const i4 = pos * 4;
+      if (colorDiff(i4) <= tolerance * 4) {
+        // Erase this pixel
+        data[i4+3] = 0;
+        if (contiguous) {
+          const neighbors = [pos-1, pos+1, pos-W, pos+W];
+          for (const n of neighbors) {
+            if (n >= 0 && n < W*H && !visited[n]) {
+              const nx = n % W, ny = (n/W)|0;
+              if (nx >= 0 && nx < W && ny >= 0 && ny < H) {
+                visited[n] = 1;
+                queue.push(n);
+              }
+            }
+          }
+        }
+      }
+      if (!contiguous) {
+        // Flood whole image (non-contiguous = select by color everywhere)
+        for (let p = 0; p < W*H; p++) {
+          if (!visited[p]) {
+            visited[p] = 1;
+            const pi = p*4;
+            if (colorDiff(pi) <= tolerance * 4) data[pi+3] = 0;
+          }
+        }
+        break;
+      }
+    }
+    pbsCtx.putImageData(imgData, 0, 0);
+    _pushHistory();
+  }
+
+  // ---- 1-Tap Color Key ----
+  function _colorKeyErase(sx, sy) {
+    if (!pbsCtx || !pbsCanvas) return;
+    const tolerance = parseInt(document.getElementById('pbsWandTolerance')?.value || '32');
+    const imgData = pbsCtx.getImageData(0, 0, pbsCanvas.width, pbsCanvas.height);
+    const data = imgData.data;
+    const idx0 = (sy * pbsCanvas.width + sx) * 4;
+    const tr = data[idx0], tg = data[idx0+1], tb = data[idx0+2];
+    for (let i = 0; i < data.length; i += 4) {
+      const diff = Math.abs(data[i]-tr) + Math.abs(data[i+1]-tg) + Math.abs(data[i+2]-tb);
+      if (diff <= tolerance * 3) data[i+3] = 0;
+    }
+    pbsCtx.putImageData(imgData, 0, 0);
+    _pushHistory();
+  }
+
+  // ---- Auto-Trim ----
+  function _autoTrim() {
+    if (!pbsCtx || !pbsCanvas) return;
+    const imgData = pbsCtx.getImageData(0, 0, pbsCanvas.width, pbsCanvas.height);
+    const data = imgData.data;
+    const W = pbsCanvas.width, H = pbsCanvas.height;
+    let minX = W, minY = H, maxX = 0, maxY = 0;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const a = data[(y * W + x) * 4 + 3];
+        if (a > 8) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX <= minX || maxY <= minY) return;
+    const cropped = pbsCtx.getImageData(minX, minY, maxX - minX + 1, maxY - minY + 1);
+    pbsCanvas.width = cropped.width;
+    pbsCanvas.height = cropped.height;
+    if (pbsOverlayCanvas) { pbsOverlayCanvas.width = cropped.width; pbsOverlayCanvas.height = cropped.height; }
+    pbsCtx.putImageData(cropped, 0, 0);
+    _pushHistory();
+    _zoomFit();
+    if (typeof showStatus === 'function') showStatus('✓ Đã cắt viền tự động (Auto-trim)!');
+  }
+
+  // ---- Manual Crop ----
+  function _applyCrop() {
+    if (!pbsHitbox || !pbsCtx || !pbsCanvas) return;
+    const x1 = Math.min(pbsHitbox.x1, pbsHitbox.x2);
+    const y1 = Math.min(pbsHitbox.y1, pbsHitbox.y2);
+    const w  = Math.abs(pbsHitbox.x2 - pbsHitbox.x1);
+    const h  = Math.abs(pbsHitbox.y2 - pbsHitbox.y1);
+    if (w < 2 || h < 2) return;
+    const cropped = pbsCtx.getImageData(x1, y1, w, h);
+    pbsCanvas.width = w;
+    pbsCanvas.height = h;
+    if (pbsOverlayCanvas) { pbsOverlayCanvas.width = w; pbsOverlayCanvas.height = h; }
+    pbsCtx.putImageData(cropped, 0, 0);
+    pbsHitbox = null;
+    pbsCropStart = null;
+    _pushHistory();
+    _zoomFit();
+  }
+
+  // ---- Overlay (Anchor + Hitbox) ----
+  function _drawOverlay() {
+    if (!pbsOverlayCtx || !pbsOverlayCanvas) return;
+    pbsOverlayCtx.clearRect(0, 0, pbsOverlayCanvas.width, pbsOverlayCanvas.height);
+    // Hitbox
+    if (pbsHitbox) {
+      const x1 = Math.min(pbsHitbox.x1, pbsHitbox.x2);
+      const y1 = Math.min(pbsHitbox.y1, pbsHitbox.y2);
+      const w  = Math.abs(pbsHitbox.x2 - pbsHitbox.x1);
+      const h  = Math.abs(pbsHitbox.y2 - pbsHitbox.y1);
+      pbsOverlayCtx.save();
+      pbsOverlayCtx.setLineDash([4, 3]);
+      pbsOverlayCtx.strokeStyle = 'cyan';
+      pbsOverlayCtx.lineWidth = 1.5;
+      pbsOverlayCtx.strokeRect(x1, y1, w, h);
+      pbsOverlayCtx.restore();
+    }
+    // Anchor crosshair
+    if (pbsAnchor) {
+      const { x, y } = pbsAnchor;
+      pbsOverlayCtx.save();
+      pbsOverlayCtx.strokeStyle = '#FFB400';
+      pbsOverlayCtx.lineWidth = 1.5;
+      pbsOverlayCtx.beginPath();
+      pbsOverlayCtx.moveTo(x - 8, y); pbsOverlayCtx.lineTo(x + 8, y);
+      pbsOverlayCtx.moveTo(x, y - 8); pbsOverlayCtx.lineTo(x, y + 8);
+      pbsOverlayCtx.stroke();
+      pbsOverlayCtx.restore();
+    }
+  }
+
+  // ---- Zoom ----
+  function _bindZoomControls() {
+    const zi = document.getElementById('pbsZoomIn');
+    const zo = document.getElementById('pbsZoomOut');
+    const zr = document.getElementById('pbsZoomReset');
+    if (zi) zi.addEventListener('click', () => _setZoom(pbsZoom * 1.25));
+    if (zo) zo.addEventListener('click', () => _setZoom(pbsZoom / 1.25));
+    if (zr) zr.addEventListener('click', () => _zoomFit());
+  }
+
+  function _setZoom(z) {
+    pbsZoom = Math.max(0.1, Math.min(8, z));
+    if (pbsCanvas) {
+      pbsCanvas.style.transform = `scale(${pbsZoom})`;
+      pbsCanvas.style.transformOrigin = 'center center';
+      if (pbsOverlayCanvas) {
+        pbsOverlayCanvas.style.transform = `scale(${pbsZoom})`;
+        pbsOverlayCanvas.style.transformOrigin = 'center center';
+      }
+    }
+    const lbl = document.getElementById('pbsZoomLabel');
+    if (lbl) lbl.textContent = Math.round(pbsZoom * 100) + '%';
+  }
+
+  function _zoomFit() {
+    if (!pbsCanvas) return;
+    const vp = document.getElementById('pbsViewport');
+    if (!vp) { _setZoom(1); return; }
+    const vpW = vp.clientWidth || 400;
+    const vpH = vp.clientHeight || 280;
+    const z = Math.min(vpW / pbsCanvas.width, vpH / pbsCanvas.height, 1);
+    _setZoom(z);
+  }
+
+  // ---- Anim Section ----
+  function _bindAnimSection() {
+    const cols  = document.getElementById('pbsCols');
+    const rows  = document.getElementById('pbsRows');
+    const fpsEl = document.getElementById('pbsFps');
+    [cols, rows, fpsEl].forEach(el => {
+      if (el) el.addEventListener('change', _sliceFrames);
+    });
+
+    // State range inputs
+    ['Idle','Walk','Sleep','Click','Drag'].forEach(s => {
+      const el = document.getElementById(`pbsState${s}`);
+      if (el) el.addEventListener('change', () => _parseStates());
+    });
+
+    // Sandbox state buttons
+    document.querySelectorAll('.pbs-state-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.pbs-state-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        sbActiveState = btn.getAttribute('data-state');
+        sbFrameIdx = 0;
+      });
+    });
+
+    const showOvChk = document.getElementById('pbsSandboxShowOverlays');
+    if (showOvChk) showOvChk.addEventListener('change', _renderSandboxFrame);
+
+    _startSandboxLoop();
+  }
+
+  function _sliceFrames() {
+    if (!pbsCanvas || !pbsCtx) return;
+    const cols = parseInt(document.getElementById('pbsCols')?.value || '4');
+    const rows = parseInt(document.getElementById('pbsRows')?.value || '1');
+    sbFps = parseInt(document.getElementById('pbsFps')?.value || '12');
+    const fw = Math.floor(pbsCanvas.width / cols);
+    const fh = Math.floor(pbsCanvas.height / rows);
+    sbFrames = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        sbFrames.push(pbsCtx.getImageData(c * fw, r * fh, fw, fh));
+      }
+    }
+    _parseStates();
+  }
+
+  function _parseStates() {
+    ['idle','walk','sleep','click','drag'].forEach(s => {
+      const el = document.getElementById(`pbsState${s.charAt(0).toUpperCase() + s.slice(1)}`);
+      if (!el || !el.value.trim()) { sbStates[s] = null; return; }
+      const parts = el.value.split('-').map(n => parseInt(n.trim()));
+      sbStates[s] = { start: parts[0] || 0, end: (parts[1] !== undefined ? parts[1] : parts[0]) || 0 };
+    });
+    if (!sbStates.idle) sbStates.idle = { start: 0, end: Math.max(0, sbFrames.length - 1) };
+  }
+
+  function _startSandboxLoop() {
+    function loop(ts) {
+      sbAnimId = requestAnimationFrame(loop);
+      if (!sbFrames.length) return;
+      const delay = 1000 / Math.max(1, sbFps);
+      if (ts - sbLastTime < delay) return;
+      sbLastTime = ts;
+      const st = sbStates[sbActiveState] || sbStates.idle || { start: 0, end: sbFrames.length - 1 };
+      if (!st) return;
+      const range = st.end - st.start + 1;
+      sbFrameIdx = st.start + (sbFrameIdx - st.start + 1) % Math.max(1, range);
+      _renderSandboxFrame();
+    }
+    sbAnimId = requestAnimationFrame(loop);
+  }
+
+  function _renderSandboxFrame() {
+    const sbCanvas = document.getElementById('pbsSandboxCanvas');
+    if (!sbCanvas || !sbFrames.length) return;
+    const ctx = sbCanvas.getContext('2d');
+    const frame = sbFrames[sbFrameIdx] || sbFrames[0];
+    // Draw frame
+    const tmpC = document.createElement('canvas');
+    tmpC.width = frame.width; tmpC.height = frame.height;
+    tmpC.getContext('2d').putImageData(frame, 0, 0);
+    ctx.clearRect(0, 0, sbCanvas.width, sbCanvas.height);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(tmpC, 0, 0, sbCanvas.width, sbCanvas.height);
+
+    // Overlays
+    const showOv = document.getElementById('pbsSandboxShowOverlays')?.checked;
+    if (showOv) {
+      // Hitbox
+      if (pbsHitbox) {
+        const cols = parseInt(document.getElementById('pbsCols')?.value || '4');
+        const rows = parseInt(document.getElementById('pbsRows')?.value || '1');
+        if (cols > 0 && rows > 0 && pbsCanvas) {
+          const fw = sbCanvas.width; const fh = sbCanvas.height;
+          const scaleX = fw / (pbsCanvas.width / cols);
+          const scaleY = fh / (pbsCanvas.height / rows);
+          const x1 = Math.min(pbsHitbox.x1, pbsHitbox.x2) * scaleX;
+          const y1 = Math.min(pbsHitbox.y1, pbsHitbox.y2) * scaleY;
+          const w  = Math.abs(pbsHitbox.x2 - pbsHitbox.x1) * scaleX;
+          const h  = Math.abs(pbsHitbox.y2 - pbsHitbox.y1) * scaleY;
+          ctx.save(); ctx.setLineDash([3, 2]); ctx.strokeStyle = 'cyan'; ctx.lineWidth = 1;
+          ctx.strokeRect(x1, y1, w, h); ctx.restore();
+        }
+      }
+      // Anchor
+      if (pbsAnchor && pbsCanvas) {
+        const cols = parseInt(document.getElementById('pbsCols')?.value || '4');
+        const rows = parseInt(document.getElementById('pbsRows')?.value || '1');
+        const scaleX = sbCanvas.width / (pbsCanvas.width / Math.max(1, cols));
+        const scaleY = sbCanvas.height / (pbsCanvas.height / Math.max(1, rows));
+        const ax = pbsAnchor.x * scaleX, ay = pbsAnchor.y * scaleY;
+        ctx.save(); ctx.strokeStyle = '#FFB400'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(ax - 5, ay); ctx.lineTo(ax + 5, ay);
+        ctx.moveTo(ax, ay - 5); ctx.lineTo(ax, ay + 5);
+        ctx.stroke(); ctx.restore();
+      }
+    }
+  }
+
+  // ---- Save / Export ----
+  function _bindSaveBtn() {
+    const btn = document.getElementById('pbsSaveToLibrary');
+    if (!btn) return;
+    btn.addEventListener('click', _savePetToLibrary);
+  }
+
+  function _savePetToLibrary() {
+    if (!pbsCanvas) {
+      if (typeof showStatus === 'function') showStatus('⚠️ Chưa có ảnh Pet nào trong Editor!');
+      return;
+    }
+    const dataUrl = pbsCanvas.toDataURL('image/png');
+    const hint = document.getElementById('pbsSaveHint');
+
+    // Build animation config
+    const animConfig = _getAnimationConfig();
+
+    // Apply to appState
+    if (typeof appState !== 'undefined' && appState) {
+      appState.activePetModelId = 'custom-builder';
+      appState.mascotType = 'custom';
+      appState.mascotUrl = dataUrl;
+      appState.petAnimConfig = animConfig;
+      appState.petAnchor = pbsAnchor;
+      appState.petHitbox = pbsHitbox;
+      if (typeof updateLivePreview === 'function') updateLivePreview();
+      if (typeof saveConfig === 'function') saveConfig();
+    }
+
+    // Update library card preview
+    const customCard = document.getElementById('btnUploadPetModel');
+    if (customCard) {
+      let previewImg = customCard.querySelector('img.pbs-preview-thumb');
+      if (!previewImg) {
+        const wrap = customCard.querySelector('.pet-model-avatar-wrap');
+        if (wrap) {
+          previewImg = document.createElement('img');
+          previewImg.className = 'pet-model-thumb pbs-preview-thumb';
+          previewImg.alt = 'Custom Pet';
+          wrap.innerHTML = '';
+          wrap.appendChild(previewImg);
+        }
+      }
+      if (previewImg) previewImg.src = dataUrl;
+      document.querySelectorAll('#petModelsGrid .pet-model-card').forEach(c => c.classList.remove('active'));
+      customCard.classList.add('active');
+    }
+
+    // Also mount preview overlay
+    _mountPetOverlayInPreview();
+
+    if (hint) hint.textContent = '✓ Đã lưu và áp dụng!';
+    setTimeout(() => { if (hint) hint.textContent = ''; }, 3000);
+    if (typeof showStatus === 'function') showStatus('✓ Pet Builder: Đã lưu vào thư viện và áp dụng ngay!');
+  }
+
+  function _getAnimationConfig() {
+    const cols = parseInt(document.getElementById('pbsCols')?.value || '4');
+    const rows = parseInt(document.getElementById('pbsRows')?.value || '1');
+    const fps  = parseInt(document.getElementById('pbsFps')?.value || '12');
+    _parseStates();
+    return {
+      cols, rows, fps,
+      totalFrames: cols * rows,
+      states: { ...sbStates },
+      anchor: pbsAnchor,
+      hitbox: pbsHitbox
+    };
+  }
+  window.PetBuilderStudio = { getAnimationConfig: _getAnimationConfig };
+
+  // ---- Mount PetOverlay ----
+  function _mountPetOverlayInPreview() {
+    if (typeof window.PetOverlay !== 'function') return;
+    try {
+      if (!window._globalPetOverlay) {
+        window._globalPetOverlay = new window.PetOverlay({
+          doc: document,
+          appState: typeof appState !== 'undefined' ? appState : null,
+          posX: (typeof appState !== 'undefined' && appState && appState.petOffsetX) || 120,
+          posY: (typeof appState !== 'undefined' && appState && appState.petOffsetY) || 120,
+          showPedestal: (typeof appState !== 'undefined' && appState && appState.petPedestal) ?? true,
+          pedestalColor: (typeof appState !== 'undefined' && appState && appState.petPedestalColor) || '#7DCFFF',
+          petDataUrl: (typeof appState !== 'undefined' && appState && appState.mascotUrl) || '',
+          filterOnPet: (typeof appState !== 'undefined' && appState && appState.filterTargets && appState.filterTargets.pet) || false
+        });
+        window._globalPetOverlay.mount();
+        window.PetOverlayInstance = window._globalPetOverlay;
+        if (typeof window.PetEventsUI !== 'undefined' && window.PetEventsUI.init) {
+          window.PetEventsUI.init();
+        }
+      } else {
+        if (typeof appState !== 'undefined' && appState) {
+          window._globalPetOverlay.setPetData({
+            dataUrl: appState.mascotUrl || '',
+            anchorX: (appState.petAnchor && appState.petAnchor.x) || 0,
+            anchorY: (appState.petAnchor && appState.petAnchor.y) || 0,
+            hitbox: appState.petHitbox || null
+          });
+          window._globalPetOverlay.setPedestal(
+            appState.petPedestal ?? true,
+            appState.petPedestalColor || '#7DCFFF'
+          );
+          if (typeof window._globalPetOverlay.setFilterOnPet === 'function') {
+            window._globalPetOverlay.setFilterOnPet(appState.filterTargets && appState.filterTargets.pet);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('PetOverlay mount error:', err);
+    }
+  }
+  window.mountPetOverlayInPreview = _mountPetOverlayInPreview;
+
+  // ---- Keyboard Shortcuts ----
+  function _bindKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      // Only active when PBS canvas studio is visible/focused
+      const studio = document.getElementById('petBuilderStudio');
+      if (!studio) return;
+      // Allow globally when pet tab is active
+      const petPane = document.getElementById('tab-pet');
+      if (!petPane || !petPane.classList.contains('active')) return;
+
+      if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        _undo();
+      } else if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'z') || (e.shiftKey && e.key === 'Z'))) {
+        e.preventDefault();
+        _redo();
+      }
+    });
+  }
+
+  // ---- Filter Target Switch ----
+  function _bindFilterTargetSwitch() {
+    ['chkFilterBg','chkFilterUI','chkFilterPet'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', _applyFilterTargetSwitch);
+    });
+    _applyFilterTargetSwitch();
+  }
+
+  function _applyFilterTargetSwitch() {
+    const filterPet = document.getElementById('chkFilterPet')?.checked || false;
+    const filterBg  = document.getElementById('chkFilterBg')?.checked !== false;
+    const filterUI  = document.getElementById('chkFilterUI')?.checked !== false;
+    // Expose on appState for patcher/liveSync to consume
+    if (typeof appState !== 'undefined' && appState) {
+      appState.filterTargets = { pet: filterPet, bg: filterBg, ui: filterUI };
+      if (typeof saveConfig === 'function') saveConfig();
+    }
+    // Visual: prevent filters on the preview overlay mount if pet filter is off
+    const mount = document.getElementById('previewPetOverlayMount');
+    if (mount) {
+      mount.style.filter = filterPet ? '' : 'none';
+      mount.style.backdropFilter = filterPet ? '' : 'none';
+    }
+    if (typeof window.patcherApplyFilterTargets === 'function') {
+      window.patcherApplyFilterTargets({ pet: filterPet, bg: filterBg, ui: filterUI });
+    }
+  }
+
+})();
 
 // Start
 init();

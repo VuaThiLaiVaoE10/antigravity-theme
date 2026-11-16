@@ -6,6 +6,8 @@
   <title>Antigravity Theme Studio</title>
   <link rel="stylesheet" href="hallmarkTokens.css">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="motion.css">
+  <link rel="stylesheet" href="events.css">
   <script>
     function handlePetImageError(img) {
       if (!img) return;
@@ -562,8 +564,157 @@
             </div>
           </div>
 
-          <!-- PHẦN 3: HỌA TIẾT GÓC -->
-          <div class="section-title" style="margin-top: 20px;">PHẦN 3: HOA VĂN & HỌA TIẾT GÓC (CORNER ORNAMENTS)</div>
+          <!-- PHẦN 3: PET BUILDER STUDIO -->
+          <div class="section-title" style="margin-top: 20px;">PHẦN 3: PET BUILDER STUDIO — TẠO & CHỈNH SỬA PET TÙY CHỈNH</div>
+
+          <!-- Filter Target Switch -->
+          <div class="pet-filter-target-bar" id="petFilterTargetBar">
+            <span class="sub-label" style="margin:0;">Bộ lọc áp dụng cho:</span>
+            <label class="filter-seg-label">
+              <input type="checkbox" id="chkFilterBg" checked> Nền
+            </label>
+            <label class="filter-seg-label">
+              <input type="checkbox" id="chkFilterUI" checked> Giao diện
+            </label>
+            <label class="filter-seg-label">
+              <input type="checkbox" id="chkFilterPet"> Pet
+            </label>
+          </div>
+
+          <!-- Pet Builder Studio Card -->
+          <div class="pet-builder-studio" id="petBuilderStudio">
+
+            <!-- Dropzone / File Upload -->
+            <div class="pbs-dropzone" id="pbsDropzone">
+              <input type="file" id="pbsFileInput" accept="image/png,image/gif,image/apng,image/webp,image/*" style="display:none;">
+              <span class="pbs-dz-icon">🖼️</span>
+              <div class="pbs-dz-text">
+                <strong>Tải ảnh/GIF/APNG/WebP/Sprite sheet...</strong>
+                <span class="pbs-dz-hint">Kéo &amp; thả file vào đây hoặc</span>
+              </div>
+              <button class="secondary-btn pbs-upload-btn" id="pbsUploadBtn">📂 Chọn file</button>
+            </div>
+
+            <!-- Canvas Viewport -->
+            <div class="pbs-viewport-wrap" id="pbsViewportWrap">
+              <div class="pbs-viewport" id="pbsViewport">
+                <canvas id="pbsCanvas" width="512" height="512"></canvas>
+                <canvas id="pbsOverlayCanvas" width="512" height="512" style="position:absolute;top:0;left:0;pointer-events:none;"></canvas>
+              </div>
+              <div class="pbs-viewport-controls">
+                <button class="pbs-vc-btn" id="pbsZoomIn" title="Phóng to">＋</button>
+                <span class="pbs-zoom-label" id="pbsZoomLabel">100%</span>
+                <button class="pbs-vc-btn" id="pbsZoomOut" title="Thu nhỏ">－</button>
+                <button class="pbs-vc-btn" id="pbsZoomReset" title="Khôi phục zoom">↺</button>
+              </div>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="pbs-toolbar" id="pbsToolbar">
+              <button class="pbs-tool-btn active" data-tool="eraser" title="Cọ xóa (xóa vùng chọn)">🖌️ Cọ xóa</button>
+              <button class="pbs-tool-btn" data-tool="restore" title="Cọ khôi phục (phục hồi điểm ảnh)">🔄 Cọ khôi phục</button>
+              <button class="pbs-tool-btn" data-tool="wand" title="Đũa thần (chọn vùng màu)">✨ Đũa thần</button>
+              <button class="pbs-tool-btn" data-tool="colorkey" title="Xóa màu 1-chạm (chọn màu để xóa)">🎨 Xóa màu 1-chạm</button>
+              <button class="pbs-tool-btn" data-tool="autotrim" title="Cắt viền tự động (loại bỏ vùng trong suốt thừa)">✂️ Cắt viền tự động</button>
+              <button class="pbs-tool-btn" data-tool="crop" title="Cắt thủ công (kéo chọn vùng cần giữ)">🔲 Cắt thủ công</button>
+              <button class="pbs-tool-btn" data-tool="anchor" title="Điểm chân + (xác định điểm neo chân Pet)">📍 Điểm chân +</button>
+              <button class="pbs-tool-btn" data-tool="hitbox" title="Vùng nhận chuột (kéo để xác định hitbox)">🖱️ Vùng nhận chuột</button>
+            </div>
+
+            <!-- Controls Bar -->
+            <div class="pbs-controls-bar" id="pbsControlsBar">
+              <div class="pbs-ctrl-group">
+                <span class="pbs-ctrl-label">Bán kính cọ:</span>
+                <input type="range" id="pbsBrushRadius" min="1" max="60" value="12" class="pbs-slider">
+                <span class="pbs-ctrl-val" id="pbsBrushRadiusVal">12px</span>
+              </div>
+              <div class="pbs-ctrl-group">
+                <span class="pbs-ctrl-label">Độ nhạy Đũa thần:</span>
+                <input type="range" id="pbsWandTolerance" min="1" max="128" value="32" class="pbs-slider">
+                <span class="pbs-ctrl-val" id="pbsWandToleranceVal">32</span>
+              </div>
+              <div class="pbs-ctrl-group">
+                <label class="filter-seg-label">
+                  <input type="checkbox" id="pbsContiguous" checked> Chỉ vùng liền kề
+                </label>
+              </div>
+              <div class="pbs-ctrl-group pbs-undo-redo">
+                <button class="pbs-action-btn" id="pbsUndo" title="Hoàn tác (Ctrl+Z)">↩ Hoàn tác</button>
+                <button class="pbs-action-btn" id="pbsRedo" title="Làm lại (Ctrl+Y)">↪ Làm lại</button>
+              </div>
+            </div>
+
+            <!-- Sprite Sheet & Animation Controls -->
+            <div class="pbs-anim-section" id="pbsAnimSection">
+              <div class="section-title" style="font-size:11px;margin:8px 0 6px;">SPRITE SHEET &amp; HOẠT ẢNH</div>
+              <div class="pbs-anim-row">
+                <label>Cột (Columns):</label>
+                <input type="number" id="pbsCols" min="1" max="32" value="4" class="pbs-num-input">
+                <label>Hàng (Rows):</label>
+                <input type="number" id="pbsRows" min="1" max="32" value="1" class="pbs-num-input">
+                <label>FPS:</label>
+                <input type="number" id="pbsFps" min="1" max="60" value="12" class="pbs-num-input">
+              </div>
+              <!-- State Assignment -->
+              <div class="pbs-states-row" id="pbsStatesRow">
+                <span class="pbs-ctrl-label">Gán trạng thái:</span>
+                <div class="pbs-state-cards">
+                  <div class="pbs-state-card" data-state="idle">
+                    <span>🧍 Idle</span>
+                    <input type="text" placeholder="0-3" class="pbs-state-range" id="pbsStateIdle">
+                  </div>
+                  <div class="pbs-state-card" data-state="walk">
+                    <span>🚶 Walk</span>
+                    <input type="text" placeholder="4-7" class="pbs-state-range" id="pbsStateWalk">
+                  </div>
+                  <div class="pbs-state-card" data-state="sleep">
+                    <span>💤 Sleep</span>
+                    <input type="text" placeholder="8-11" class="pbs-state-range" id="pbsStateSleep">
+                  </div>
+                  <div class="pbs-state-card" data-state="click">
+                    <span>👆 Click</span>
+                    <input type="text" placeholder="12-15" class="pbs-state-range" id="pbsStateClick">
+                  </div>
+                  <div class="pbs-state-card" data-state="drag">
+                    <span>✋ Drag</span>
+                    <input type="text" placeholder="16-19" class="pbs-state-range" id="pbsStateDrag">
+                  </div>
+                </div>
+              </div>
+              <!-- Sandbox Preview -->
+              <div class="pbs-sandbox-wrap" id="pbsSandboxWrap">
+                <div class="section-title" style="font-size:11px;margin:8px 0 4px;">SANDBOX XEM TRƯỚC HOẠT ẢNH</div>
+                <div class="pbs-sandbox-stage">
+                  <canvas id="pbsSandboxCanvas" width="128" height="128" class="pbs-sandbox-canvas"></canvas>
+                  <div class="pbs-sandbox-state-btns">
+                    <button class="pbs-state-btn active" data-state="idle">Idle</button>
+                    <button class="pbs-state-btn" data-state="walk">Walk</button>
+                    <button class="pbs-state-btn" data-state="sleep">Sleep</button>
+                    <button class="pbs-state-btn" data-state="click">Click</button>
+                    <button class="pbs-state-btn" data-state="drag">Drag</button>
+                  </div>
+                  <label class="filter-seg-label" style="margin-top:4px;">
+                    <input type="checkbox" id="pbsSandboxShowOverlays"> Hiện Hitbox &amp; Điểm chân
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Save / Export Button -->
+            <div class="pbs-save-row">
+              <button class="primary-btn pbs-save-btn" id="pbsSaveToLibrary">
+                💾 Lưu vào Thư viện Pet & Áp dụng ngay
+              </button>
+              <span class="pbs-save-hint" id="pbsSaveHint"></span>
+            </div>
+          </div>
+          <!-- END Pet Builder Studio -->
+
+          <!-- BẢNG PHẢN ỨNG SỰ KIỆN CHO PET (PET EVENTS TABLE) -->
+          <div id="petEventsMount"></div>
+
+          <!-- PHẦN 4: HỌA TIẾT GÓC -->
+          <div class="section-title" style="margin-top: 20px;">PHẦN 4: HOA VĂN & HỌA TIẾT GÓC (CORNER ORNAMENTS)</div>
           <div class="ornaments-row" id="ornamentsRow">
             <button class="ornament-btn active" data-ornament="floral-bird">🌿 Chim én & Hoa đào (Ảnh 1)</button>
             <button class="ornament-btn" data-ornament="sakura">🌸 Hoa anh đào</button>
@@ -595,6 +746,7 @@
           </div>
 
           <div id="motionStudioMount"></div>
+          <div id="motionUIMount"></div>
         </div>
 
         <!-- 6. TAB: HỒ SƠ (PROFILES) -->
@@ -676,6 +828,9 @@
       <div class="preview-window" id="previewWindow">
         <!-- Injected Wallpaper Layer -->
         <div class="preview-wallpaper" id="previewWallpaper"></div>
+
+        <!-- Pet Overlay Mount (independent layer, no filter inheritance) -->
+        <div id="previewPetOverlayMount" style="position:absolute;inset:0;z-index:9999;pointer-events:none;overflow:hidden;"></div>
 
         <!-- Window Titlebar -->
         <div class="preview-titlebar">
@@ -868,6 +1023,9 @@
               </div>
             </div>
 
+            <!-- Live Pet Simulation Control Bar -->
+            <div id="previewPetSimBar"></div>
+
             <!-- Composer (.preview-composer): Floating command composer (.surface-composer & .surface-composer-card) -->
             <div class="preview-composer surface-composer" id="previewComposer">
               <!-- Mascot badge placeholder preserved for companion pet -->
@@ -913,8 +1071,15 @@
   </div>
 
   <script src="../petModels.js"></script>
+  <script src="motion.js"></script>
+  <script src="depth.js"></script>
   <script src="motionStudio.js"></script>
+  <script src="motion-ui.js"></script>
+  <script src="events.js"></script>
   <script src="videoImportStudio.js"></script>
+  <script src="petCanvasStudio.js"></script>
+  <script src="petAnimationEngine.js"></script>
+  <script src="petOverlay.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

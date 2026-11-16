@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync, spawn } = require('child_process');
 const asar = require('@electron/asar');
+const PetOverlay = require('./renderer/petOverlay');
 
 const LOCALAPPDATA = process.env.LOCALAPPDATA || 'C:\\Users\\Admin\\AppData\\Local';
 const ANTIGRAVITY_DIR = path.join(LOCALAPPDATA, 'Programs', 'antigravity');
@@ -1072,6 +1073,204 @@ ${HOOK_START}
           }
         }
 
+        // 6. Independent Pet Overlay Layer (Part C - Giai Doan 1)
+        // Mounts #ag-pet-overlay-container: position:fixed, inset:0, z-index:999999,
+        // pointer-events:none, with filter:none for full isolation from glass pipeline.
+        (function injectPetOverlay() {
+          try {
+            var OVERLAY_ID     = 'ag-pet-overlay-container';
+            var PET_ENTITY_ID  = 'ag-pet-entity';
+            var HITBOX_CLS     = 'ag-pet-hitbox';
+            var SPRITE_CLS     = 'ag-pet-sprite-canvas';
+            var PEDESTAL_CLS   = 'ag-pet-pedestal-holo';
+            var BUBBLE_CLS     = 'ag-pet-speech-bubble';
+            var STYLE_ID       = 'ag-pet-overlay-style';
+            var SPEECH = [
+              'Chu nhan co len nhe! \u2728',
+              'Code dep lam hom nay! \uD83C\uDF38',
+              'Nghi giai lao chut di nao~ \u2615',
+              'Toi luon o day ben ban! \uD83D\uDC3E',
+              'Hom nay build co pass khong? \uD83E\uDD1E'
+            ];
+
+            if (!doc.getElementById(STYLE_ID)) {
+              var st = doc.createElement('style');
+              st.id = STYLE_ID;
+              st.textContent = [
+                '#' + OVERLAY_ID + '{position:fixed!important;inset:0!important;z-index:999999!important;pointer-events:none!important;background:transparent!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;isolation:isolate!important;overflow:visible!important;}',
+                '#' + PET_ENTITY_ID + '{position:absolute;pointer-events:none;user-select:none;transform-origin:bottom center;will-change:transform,left,top;}',
+                '.' + HITBOX_CLS + '{position:absolute;pointer-events:auto!important;cursor:grab;background:transparent;}',
+                '.' + HITBOX_CLS + ':active{cursor:grabbing;}',
+                '.' + SPRITE_CLS + '{position:absolute;pointer-events:none;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.55));image-rendering:pixelated;}',
+                '.' + PEDESTAL_CLS + '{position:absolute;pointer-events:none;border-radius:50%;animation:agPedestalPulse 2.8s ease-in-out infinite alternate;}',
+                '@keyframes agPedestalPulse{0%{transform:translateX(-50%) scaleX(0.88);opacity:0.55;}100%{transform:translateX(-50%) scaleX(1.12);opacity:0.95;}}',
+                '.' + BUBBLE_CLS + '{position:absolute;pointer-events:none;background:rgba(10,20,36,0.95);border:1px solid rgba(125,207,255,0.7);color:#e8f4ff;border-radius:10px;padding:6px 12px;font-size:11px;font-family:system-ui,sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,0.5);animation:agBubblePop 0.22s cubic-bezier(0.18,0.89,0.32,1.28) forwards;transform-origin:bottom right;z-index:1000000;bottom:calc(100% + 10px);right:0;}',
+                '.' + BUBBLE_CLS + '::after{content:"";position:absolute;top:100%;right:14px;border:5px solid transparent;border-top-color:rgba(125,207,255,0.7);}',
+                '@keyframes agBubblePop{0%{opacity:0;transform:scale(0.55);}100%{opacity:1;transform:scale(1);}}'
+              ].join('\\n');
+              (doc.head || doc.documentElement).appendChild(st);
+            }
+
+            // Overlay container
+            var overlay = doc.getElementById(OVERLAY_ID);
+            if (!overlay) {
+              overlay = doc.createElement('div');
+              overlay.id = OVERLAY_ID;
+              doc.body.appendChild(overlay);
+            }
+            var filterEnabled = Boolean(cfg.petFilterEnabled);
+            overlay.style.filter = filterEnabled ? '' : 'none';
+            overlay.style.backdropFilter = filterEnabled ? '' : 'none';
+            overlay.style.webkitBackdropFilter = filterEnabled ? '' : 'none';
+
+            // Pet entity
+            var entity = doc.getElementById(PET_ENTITY_ID);
+            if (!entity) {
+              entity = doc.createElement('div');
+              entity.id = PET_ENTITY_ID;
+              overlay.appendChild(entity);
+            }
+
+            var anchorX = cfg.petAnchorX !== undefined ? cfg.petAnchorX : 40;
+            var anchorY = cfg.petAnchorY !== undefined ? cfg.petAnchorY : 80;
+            var hitboxW = cfg.petHitboxW || 80;
+            var hitboxH = cfg.petHitboxH || 80;
+            var posX    = cfg.petPosX !== undefined ? cfg.petPosX : 200;
+            var posY    = cfg.petPosY !== undefined ? cfg.petPosY : (window.innerHeight - 160);
+
+            entity.style.position = 'absolute';
+            entity.style.left = (posX - anchorX) + 'px';
+            entity.style.top  = (posY - anchorY) + 'px';
+            entity.style.pointerEvents = 'none';
+            entity.style.userSelect = 'none';
+
+            // Pedestal
+            var ped = entity.querySelector('.' + PEDESTAL_CLS);
+            if (!ped) {
+              ped = doc.createElement('div');
+              ped.className = PEDESTAL_CLS;
+              entity.appendChild(ped);
+            }
+            var pedColor = cfg.petPedestalColor || glowColor || '#7DCFFF';
+            if (Boolean(cfg.petPedestal)) {
+              var pw = Math.max(hitboxW * 0.9, 40), ph = 14;
+              ped.style.cssText = 'display:block;position:absolute;width:'+pw+'px;height:'+ph+'px;left:'+anchorX+'px;top:'+(anchorY-ph/2)+'px;transform:translateX(-50%);background:radial-gradient(ellipse at center,'+pedColor+' 0%,'+toRgba(pedColor,0.4)+' 50%,transparent 78%);box-shadow:0 0 10px '+toRgba(pedColor,0.45)+';animation:agPedestalPulse 2.8s ease-in-out infinite alternate;pointer-events:none;z-index:0;';
+            } else {
+              ped.style.display = 'none';
+            }
+
+            // Sprite canvas
+            var spriteCanvas = entity.querySelector('.' + SPRITE_CLS);
+            if (!spriteCanvas) {
+              spriteCanvas = doc.createElement('canvas');
+              spriteCanvas.className = SPRITE_CLS;
+              entity.appendChild(spriteCanvas);
+            }
+            var sw = hitboxW, sh = hitboxH;
+            spriteCanvas.width = sw; spriteCanvas.height = sh;
+            spriteCanvas.style.width  = sw + 'px';
+            spriteCanvas.style.height = sh + 'px';
+            spriteCanvas.style.left   = (anchorX - sw / 2) + 'px';
+            spriteCanvas.style.top    = (anchorY - sh) + 'px';
+
+            // Draw static mascot image if no animation engine
+            if (cfg.mascotUrl) {
+              var sCtx = spriteCanvas.getContext('2d');
+              var img = new Image();
+              img.onload = function() {
+                spriteCanvas.width  = img.naturalWidth  || sw;
+                spriteCanvas.height = img.naturalHeight || sh;
+                spriteCanvas.style.width  = spriteCanvas.width  + 'px';
+                spriteCanvas.style.height = spriteCanvas.height + 'px';
+                spriteCanvas.style.left   = (anchorX - spriteCanvas.width  / 2) + 'px';
+                spriteCanvas.style.top    = (anchorY - spriteCanvas.height)     + 'px';
+                sCtx.clearRect(0, 0, spriteCanvas.width, spriteCanvas.height);
+                sCtx.drawImage(img, 0, 0, spriteCanvas.width, spriteCanvas.height);
+              };
+              img.src = cfg.mascotUrl;
+            }
+
+            // Hitbox
+            var hitbox = entity.querySelector('.' + HITBOX_CLS);
+            if (!hitbox) {
+              hitbox = doc.createElement('div');
+              hitbox.className = HITBOX_CLS;
+              entity.appendChild(hitbox);
+            }
+            hitbox.style.width  = hitboxW + 'px';
+            hitbox.style.height = hitboxH + 'px';
+            hitbox.style.left   = (anchorX - hitboxW / 2) + 'px';
+            hitbox.style.top    = (anchorY - hitboxH) + 'px';
+
+            // Drag & Drop state
+            var dragging = false, faceDir = 1, speechIdx = 0;
+            var dragStartX, dragStartY, dragOriginX, dragOriginY, lastDragX = 0;
+            var bubbleTimer, clickTimer;
+
+            function onMouseDown(e) {
+              if (e.button !== 0) return;
+              e.preventDefault(); e.stopPropagation();
+              dragging = true;
+              dragStartX = e.clientX; dragStartY = e.clientY;
+              dragOriginX = posX; dragOriginY = posY;
+              lastDragX = e.clientX;
+              hitbox.style.cursor = 'grabbing';
+              doc.addEventListener('mousemove', onMouseMove);
+              doc.addEventListener('mouseup', onMouseUp);
+            }
+            function onMouseMove(e) {
+              if (!dragging) return;
+              var vx = e.clientX - lastDragX;
+              lastDragX = e.clientX;
+              if (Math.abs(vx) > 0.5) faceDir = vx > 0 ? 1 : -1;
+              posX = dragOriginX + (e.clientX - dragStartX);
+              posY = dragOriginY + (e.clientY - dragStartY);
+              entity.style.left = (posX - anchorX) + 'px';
+              entity.style.top  = (posY - anchorY) + 'px';
+              // Flip sprite for direction
+              spriteCanvas.style.transform = faceDir === -1 ? 'scaleX(-1)' : 'none';
+            }
+            function onMouseUp() {
+              if (!dragging) return;
+              dragging = false;
+              doc.removeEventListener('mousemove', onMouseMove);
+              doc.removeEventListener('mouseup', onMouseUp);
+              hitbox.style.cursor = 'grab';
+              if (window._agAppState) { window._agAppState.petPosX = posX; window._agAppState.petPosY = posY; }
+            }
+            function showBubble() {
+              var old = entity.querySelector('.' + BUBBLE_CLS);
+              if (old && old.parentNode) old.parentNode.removeChild(old);
+              var bub = doc.createElement('div');
+              bub.className = BUBBLE_CLS;
+              bub.textContent = (cfg.petSpeechLines && cfg.petSpeechLines[speechIdx % cfg.petSpeechLines.length]) || SPEECH[speechIdx % SPEECH.length];
+              speechIdx++;
+              entity.appendChild(bub);
+              clearTimeout(bubbleTimer);
+              bubbleTimer = setTimeout(function() { if (bub.parentNode) bub.parentNode.removeChild(bub); }, 3500);
+            }
+            function onClick(e) {
+              var dx = e.clientX - (dragStartX || e.clientX), dy = e.clientY - (dragStartY || e.clientY);
+              if (Math.sqrt(dx*dx+dy*dy) > 4) return;
+              e.stopPropagation();
+              showBubble();
+              clearTimeout(clickTimer);
+              clickTimer = setTimeout(function() {}, 3500);
+            }
+
+            hitbox.addEventListener('mousedown', onMouseDown);
+            hitbox.addEventListener('click', onClick);
+
+            // Expose control handle
+            window._agPetOverlay = {
+              setState: function() {},
+              setPosition: function(x, y) { posX = x; posY = y; entity.style.left = (posX - anchorX) + 'px'; entity.style.top = (posY - anchorY) + 'px'; },
+              getPosition: function() { return { x: posX, y: posY }; }
+            };
+          } catch (ovErr) {
+            try { console.warn('[AG Theme] PetOverlay injection error:', ovErr && ovErr.message); } catch {}
+          }
+        })();
         if (bg) {
           if (fx === 'breathing') bg.classList.add('wallpaper-breathing');
           else bg.classList.remove('wallpaper-breathing');

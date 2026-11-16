@@ -5,6 +5,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const PetOverlay = require('./renderer/petOverlay');
 
 const LS_LOG_PATH = path.join(
   process.env.APPDATA || 'C:\\Users\\Admin\\AppData\\Roaming',
@@ -1306,6 +1307,19 @@ async function applyToAntigravity(config) {
             if (window._agMotionLoop) cancelAnimationFrame(window._agMotionLoop);
             if (bg) bg.style.display = 'block';
           }
+
+          // 6. Independent Pet Overlay Layer (Part C - Giai Doan 1)
+          // Injected IIFE builds #ag-pet-overlay-container: position:fixed, inset:0,
+          // z-index:999999, pointer-events:none, filter:none (isolated from glass pipeline).
+          (function injectPetOverlay() {
+            try {
+              var overlayCode = ${JSON.stringify(PetOverlay.buildInjectionScript(config))};
+              // eslint-disable-next-line no-new-func
+              (new Function(overlayCode))();
+            } catch (ovErr) {
+              try { console.warn('[AG Theme] PetOverlay injection error:', ovErr && ovErr.message); } catch {}
+            }
+          })();
 
           return true;
         } catch (e) {

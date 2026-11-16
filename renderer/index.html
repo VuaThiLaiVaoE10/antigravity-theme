@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antigravity Theme Studio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- LEFT: Theme Studio Control Panel -->
+    <div class="studio-card">
+      <!-- Topbar -->
+      <div class="topbar">
+        <div class="topbar-left">
+          <span class="studio-title">Theme Studio</span>
+          <span class="palette-pill" id="badgePalette">midnight-aqua</span>
+          <button class="pill-btn mode-btn" id="btnToggleMode" title="Chuyển Dark / Light">
+            <span class="mode-icon">🌙</span> <span id="labelMode">Dark</span>
+          </button>
+        </div>
+        <div class="topbar-right">
+          <button class="pill-btn lang-btn" id="btnToggleLang" title="Ngôn ngữ / Language">VI</button>
+          <button class="primary-btn save-btn" id="btnSaveApply">
+            <span class="btn-icon">💾</span> <span id="labelSave">Lưu & Chạy</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="tabs-nav">
+        <button class="tab-btn active" data-tab="tab-wallpaper">
+          <span class="tab-icon">🖼️</span> <span class="tab-text" data-i18n="tabWallpaper">Hình nền</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-colors">
+          <span class="tab-icon">🎨</span> <span class="tab-text" data-i18n="tabColors">Màu & Avatar</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-glass">
+          <span class="tab-icon">✨</span> <span class="tab-text" data-i18n="tabGlass">Kính & Mờ</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-profiles">
+          <span class="tab-icon">📁</span> <span class="tab-text" data-i18n="tabProfiles">Hồ sơ</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-advanced">
+          <span class="tab-icon">⚙️</span> <span class="tab-text" data-i18n="tabAdvanced">Nâng cao</span>
+        </button>
+      </div>
+
+      <!-- Tab Contents -->
+      <div class="tab-body">
+        <!-- 1. TAB: HÌNH NỀN (WALLPAPER) -->
+        <div class="tab-pane active" id="tab-wallpaper">
+          <div class="section-title" data-i18n="wallpaperSelect">CHỌN HÌNH NỀN CHO ANTIGRAVITY</div>
+          
+          <div class="wallpaper-action-box">
+            <button class="big-action-btn" id="btnBrowseWallpaper">
+              <span class="big-icon">📂</span>
+              <div class="big-text">
+                <strong data-i18n="pickImageBtn">Chọn ảnh từ máy tính...</strong>
+                <span class="sub-text" id="currentWpName">Cô gái kéo đàn ngắm Trái Đất (Mặc định)</span>
+              </div>
+            </button>
+          </div>
+
+          <div class="section-title" data-i18n="presetWallpapers">HÌNH NỀN MẪU CÓ SẴN (PRESETS)</div>
+          <div class="wallpaper-presets-grid" id="wpPresetsGrid">
+            <!-- Dynamically populated -->
+          </div>
+
+          <div class="section-title" data-i18n="wallpaperSliders">TÙY CHỈNH HÌNH NỀN</div>
+          <div class="slider-row">
+            <span class="slider-label" data-i18n="wpOpacity">Độ hiển thị ảnh nền</span>
+            <input type="range" id="sliderWpOpacity" min="10" max="100" value="95">
+            <span class="slider-val" id="valWpOpacity">95%</span>
+          </div>
+        </div>
+
+        <!-- 2. TAB: MÀU & AVATAR -->
+        <div class="tab-pane" id="tab-colors">
+          <div class="section-title" data-i18n="quickPalettesTitle">BẢNG MÀU NHANH (GIỮ NGUYÊN HÌNH NỀN)</div>
+          <div class="quick-palettes-grid" id="quickPalettesGrid">
+            <!-- 6 buttons populated via JS -->
+          </div>
+
+          <div class="subtabs-bar">
+            <button class="subtab-btn active" id="subtabDark" data-i18n="paletteDark">🌙 Bảng màu Dark</button>
+            <button class="subtab-btn" id="subtabLight" data-i18n="paletteLight">☀️ Bảng màu Light</button>
+          </div>
+
+          <div class="tokens-grid" id="colorTokensGrid">
+            <!-- 17 color inputs populated via JS -->
+          </div>
+
+          <div class="section-title" data-i18n="gradientTitle">GRADIENT KHUNG NHẬP & BONG BÓNG USER</div>
+          <div class="tokens-grid" id="gradientTokensGrid">
+            <!-- 9 gradient inputs populated via JS -->
+          </div>
+        </div>
+
+        <!-- 3. TAB: KÍNH & MỜ (GLASS & BLUR) -->
+        <div class="tab-pane" id="tab-glass">
+          <div class="section-title" data-i18n="glassTitle">HIỆU ỨNG KÍNH MỜ (GLASSMORPHISM)</div>
+          
+          <div class="slider-row">
+            <span class="slider-label" data-i18n="blurLabel">Độ mờ hậu cảnh (Backdrop Blur)</span>
+            <input type="range" id="sliderBlur" min="0" max="32" value="16">
+            <span class="slider-val" id="valBlur">16px</span>
+          </div>
+
+          <div class="slider-row">
+            <span class="slider-label" data-i18n="sidebarOpacityLabel">Độ mờ thanh Sidebar</span>
+            <input type="range" id="sliderSidebarOpacity" min="20" max="100" value="75">
+            <span class="slider-val" id="valSidebarOpacity">75%</span>
+          </div>
+
+          <div class="slider-row">
+            <span class="slider-label" data-i18n="cardOpacityLabel">Độ mờ thẻ Card / Hộp thoại</span>
+            <input type="range" id="sliderCardOpacity" min="20" max="100" value="85">
+            <span class="slider-val" id="valCardOpacity">85%</span>
+          </div>
+
+          <div class="slider-row">
+            <span class="slider-label" data-i18n="scrimOpacityLabel">Độ phủ tối Scrim</span>
+            <input type="range" id="sliderScrimOpacity" min="10" max="100" value="60">
+            <span class="slider-val" id="valScrimOpacity">60%</span>
+          </div>
+        </div>
+
+        <!-- 4. TAB: HỒ SƠ (PROFILES) -->
+        <div class="tab-pane" id="tab-profiles">
+          <div class="section-title" data-i18n="savedProfiles">DANH SÁCH HỒ SƠ THEME</div>
+          <div class="profiles-list" id="profilesList">
+            <!-- Populated via JS -->
+          </div>
+          <div class="profile-actions">
+            <input type="text" id="inputNewProfileName" placeholder="Tên hồ sơ mới..." class="text-input">
+            <button class="secondary-btn" id="btnSaveNewProfile" data-i18n="btnSaveNewProfile">+ Lưu thành hồ sơ mới</button>
+          </div>
+        </div>
+
+        <!-- 5. TAB: NÂNG CAO (ADVANCED & MOD STATUS) -->
+        <div class="tab-pane" id="tab-advanced">
+          <div class="section-title" data-i18n="modStatusTitle">TRẠNG THÁI THEME MOD ANTIGRAVITY</div>
+          
+          <div class="status-card" id="modStatusCard" style="border: 1px solid rgba(125, 207, 255, 0.25); background: rgba(125, 207, 255, 0.05); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+            <div class="status-indicator-row" style="display: flex; align-items: center; gap: 8px;">
+              <span class="status-dot green" id="modStatusDot" style="width: 10px; height: 10px; border-radius: 50%; background: #4ADE80; box-shadow: 0 0 8px #4ADE80;"></span>
+              <strong id="modStatusText" style="color: #7DCFFF; font-size: 13px;">LIVE SYNC TỨC THÌ (ĐANG KÍCH HOẠT)</strong>
+            </div>
+            <p class="status-desc" id="modStatusDesc" style="color: rgba(255, 255, 255, 0.7); font-size: 12px; margin-top: 6px; line-height: 1.5;">
+              ✨ Bạn chỉ cần chọn ảnh nền hoặc bảng màu và nhấn nút <strong>Lưu & Chạy</strong> ở góc trên bên phải, Antigravity sẽ đổi giao diện ngay lập tức trong 0.01s mà không cần khởi động lại!
+            </p>
+          </div>
+
+          <div class="advanced-actions">
+            <button class="action-card-btn primary" id="btnInstallMod">
+              <span class="btn-big-icon">⚡</span>
+              <div>
+                <strong data-i18n="installModBtn">Cài đặt Theme Mod vào Antigravity</strong>
+                <p data-i18n="installModDesc">Tự động sao lưu an toàn và kích hoạt khả năng đổi hình nền & kính mờ.</p>
+              </div>
+            </button>
+
+            <button class="action-card-btn secondary" id="btnRestoreOriginal">
+              <span class="btn-big-icon">🔄</span>
+              <div>
+                <strong data-i18n="restoreModBtn">Khôi phục Antigravity nguyên bản</strong>
+                <p data-i18n="restoreModDesc">Gỡ bỏ mod và hoàn trả Antigravity 100% về trạng thái gốc của Google.</p>
+              </div>
+            </button>
+
+            <button class="action-card-btn tertiary" id="btnRestartAntigravity">
+              <span class="btn-big-icon">🚀</span>
+              <div>
+                <strong data-i18n="restartAgBtn">Khởi động lại Antigravity</strong>
+                <p data-i18n="restartAgDesc">Khởi động lại app Antigravity để nạp lại giao diện.</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="bottom-bar">
+        <span class="status-message" id="statusMessage">Sẵn sàng. Chọn ảnh và nhấn Lưu & Chạy!</span>
+        <span class="shortcut-tip" id="shortcutTip">Tự động đồng bộ theo thời gian thực</span>
+      </div>
+    </div>
+
+    <!-- RIGHT: Live Simulated Antigravity Window Preview -->
+    <div class="preview-container">
+      <div class="preview-header">
+        <span class="preview-tag">LIVE PREVIEW (MÔ PHỎNG ANTIGRAVITY)</span>
+        <span class="preview-badge" id="previewBadge">60 FPS Realtime</span>
+      </div>
+      
+      <div class="preview-window" id="previewWindow">
+        <!-- Injected Wallpaper Layer -->
+        <div class="preview-wallpaper" id="previewWallpaper"></div>
+
+        <!-- Window Titlebar -->
+        <div class="preview-titlebar">
+          <div class="win-controls">
+            <span class="dot close"></span>
+            <span class="dot min"></span>
+            <span class="dot max"></span>
+          </div>
+          <span class="win-title">Antigravity</span>
+          <span class="win-menu">Workspace &nbsp; View &nbsp; Window</span>
+        </div>
+
+        <!-- Antigravity Body -->
+        <div class="preview-body">
+          <!-- Sidebar -->
+          <div class="preview-sidebar" id="previewSidebar">
+            <button class="side-btn primary">+ New Conversation</button>
+            <button class="side-btn active">🕒 Automations</button>
+            <button class="side-btn">🧩 Customizations</button>
+            <div class="side-section">Projects</div>
+            <div class="side-section">Conversations</div>
+            <div class="side-footer">⚙️ Settings</div>
+          </div>
+
+          <!-- Main Content Area -->
+          <div class="preview-main">
+            <div class="main-header">
+              <h2>Automations</h2>
+              <div class="header-btns">
+                <button class="mini-btn">✨ Create with Prompt</button>
+                <button class="mini-btn">+ New</button>
+              </div>
+            </div>
+
+            <!-- Chat / Content Sample -->
+            <div class="chat-sample-area">
+              <div class="empty-state">
+                <p><strong>No automations yet</strong></p>
+                <span>Run a prompt on a schedule, like a morning summary of yesterday's changes. Runs show up here.</span>
+              </div>
+
+              <!-- User Bubble Sample -->
+              <div class="sample-bubble user" id="previewUserBubble">
+                <span>Đổi theme Antigravity sang giao diện Midnight Aqua với hình nền cô gái kéo đàn!</span>
+              </div>
+
+              <!-- Agent Bubble Sample -->
+              <div class="sample-bubble agent" id="previewAgentBubble">
+                <span>Đã áp dụng theme Midnight Aqua và hình nền tùy chỉnh thành công.</span>
+              </div>
+            </div>
+
+            <!-- Composer Input Sample -->
+            <div class="preview-composer" id="previewComposer">
+              <input type="text" placeholder="Type a message or press '/' for commands..." readonly>
+              <button class="send-sample-btn">➤</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

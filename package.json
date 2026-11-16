@@ -1,0 +1,24 @@
+{
+  "name": "antigravity-theme-studio-app",
+  "version": "1.0.0",
+  "description": "Standalone Desktop Theme Studio App for Google Antigravity",
+  "main": "main.js",
+  "scripts": {
+    "start": "npx electron ."
+  },
+  "keywords": [
+    "antigravity",
+    "theme",
+    "customizer",
+    "wallpaper",
+    "glassmorphism"
+  ],
+  "author": "Antigravity Theme Studio",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^45.3.2"
+  },
+  "dependencies": {
+    "@electron/asar": "^4.3.2"
+  }
+}

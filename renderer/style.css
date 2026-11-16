@@ -1373,6 +1373,306 @@ input[type="color"] {
 }
 
 /* ========================================================
+   PET MODELS LIBRARY & AURA/PEDESTAL CUSTOMIZER STYLES
+   ======================================================== */
+.pet-models-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  margin-top: 6px;
+  margin-bottom: 14px;
+}
+
+.pet-model-card {
+  background: rgba(15, 25, 38, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  text-align: center;
+  user-select: none;
+}
+
+.pet-model-card:hover {
+  background: rgba(25, 45, 68, 0.9);
+  border-color: rgba(125, 207, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.pet-model-card.active {
+  background: rgba(125, 207, 255, 0.16);
+  border-color: #7DCFFF;
+  box-shadow: 0 0 14px rgba(125, 207, 255, 0.35), inset 0 0 8px rgba(125, 207, 255, 0.15);
+}
+
+.pet-model-card.active::after {
+  content: '✓';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 10px;
+  font-weight: bold;
+  color: #7DCFFF;
+}
+
+.pet-model-avatar-wrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pet-model-thumb {
+  max-width: 38px;
+  max-height: 38px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+}
+
+.pet-model-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: linear-gradient(135deg, #7DCFFF, #38EF7D);
+  color: #081826;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.1;
+}
+
+.pet-model-info strong {
+  font-size: 11px;
+  display: block;
+  color: #E6F1FF;
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+
+.pet-model-tag {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.55);
+  display: block;
+}
+
+.custom-model-card .upload-wrap {
+  background: rgba(125, 207, 255, 0.08);
+  border: 1px dashed rgba(125, 207, 255, 0.4);
+}
+
+.pet-model-upload-icon {
+  font-size: 20px;
+}
+
+/* === PET AURA & PEDESTAL DEDICATED CUSTOMIZER === */
+.pet-border-box {
+  background: rgba(8, 24, 38, 0.55);
+  border: 1px solid rgba(125, 207, 255, 0.18);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 8px;
+  margin-bottom: 14px;
+}
+
+.pet-border-style-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  margin-bottom: 10px;
+}
+
+.pet-border-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.pet-border-btn:hover {
+  background: rgba(125, 207, 255, 0.15);
+  border-color: rgba(125, 207, 255, 0.35);
+}
+
+.pet-border-btn.active {
+  background: rgba(125, 207, 255, 0.25);
+  border-color: #7DCFFF;
+  color: #7DCFFF;
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(125, 207, 255, 0.35);
+}
+
+/* Switch Toggle Styling for Holographic Pedestal */
+.switch-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.switch-toggle .toggle-track {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.2);
+  transition: 0.25s ease;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.switch-toggle .toggle-track:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 2px;
+  bottom: 2px;
+  background-color: #ffffff;
+  transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.switch-toggle input:checked + .toggle-track {
+  background-color: #38EF7D;
+  border-color: #38EF7D;
+  box-shadow: 0 0 10px rgba(56, 239, 125, 0.5);
+}
+
+.switch-toggle input:checked + .toggle-track:before {
+  transform: translateX(18px);
+}
+
+/* === PEDESTAL & AURA FRAME COMPONENT STYLES === */
+.ag-pet-pedestal {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  height: 12px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(ellipse at center, var(--pet-pedestal-color, #7DCFFF) 0%, rgba(125, 207, 255, 0.4) 45%, transparent 75%);
+  box-shadow: 0 0 10px var(--pet-pedestal-color, #7DCFFF);
+  animation: agPedestalPulse 2.8s ease-in-out infinite alternate;
+}
+
+@keyframes agPedestalPulse {
+  0% { transform: translateX(-50%) scale(0.92); opacity: 0.7; }
+  100% { transform: translateX(-50%) scale(1.08); opacity: 1; }
+}
+
+.ag-pet-aura-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  transition: all 0.25s ease;
+  z-index: 2;
+  border-radius: 50%;
+}
+
+.ag-pet-aura-frame.border-theme-gradient {
+  border: 2px solid transparent;
+  background: linear-gradient(#081826, #081826) padding-box, var(--composer-gradient, linear-gradient(90deg, #E6FF80, #38EF7D, #11998E, #FFE066)) border-box;
+  box-shadow: 0 0 12px var(--pet-glow-color, #38EF7D);
+}
+
+.ag-pet-aura-frame.border-neon-glow {
+  border: 2px solid var(--pet-glow-color, #7DCFFF);
+  box-shadow: 0 0 14px var(--pet-glow-color, #7DCFFF), inset 0 0 6px var(--pet-glow-color, #7DCFFF);
+}
+
+.ag-pet-aura-frame.border-holo-pedestal {
+  border: 2px dashed var(--pet-pedestal-color, #7DCFFF);
+  box-shadow: 0 0 14px var(--pet-pedestal-color, #7DCFFF);
+  animation: agHoloBorderRotate 10s linear infinite;
+}
+
+@keyframes agHoloBorderRotate {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+.ag-pet-aura-frame.border-glass-bubble {
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 10px var(--pet-glow-color, #FFE066);
+  border-radius: 50%;
+}
+
+.ag-pet-aura-frame.border-none {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.ag-pet-sprite {
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  position: relative;
+  z-index: 3;
+}
+
+/* === PREVIEW WINDOW MASCOT REPRESENTATION === */
+.preview-mascot-badge {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-mascot-badge .ag-pet-pedestal {
+  bottom: -4px;
+  height: 10px;
+}
+
+.preview-mascot-badge .ag-pet-aura-frame {
+  width: 100%;
+  height: 100%;
+}
+
+.preview-mascot-badge:hover {
+  transform: scale(1.08) translateY(-2px);
+}
+
+/* ========================================================
    MOTION STUDIO (FLOW MAP & CINEMAGRAPH ENGINE)
    ======================================================== */
 .motion-studio-wrap {

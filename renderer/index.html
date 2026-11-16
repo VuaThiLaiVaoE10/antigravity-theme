@@ -333,8 +333,62 @@
               </div>
             </div>
 
+            <!-- THƯ VIỆN MẪU BÉ PET (PET MODELS LIBRARY) -->
+            <span class="sub-label" style="font-weight: 600; color: #7DCFFF; margin-top: 10px; display: block;">📚 Thư viện Mẫu Bé Pet (Pet Models Library):</span>
+            <div class="pet-models-grid" id="petModelsGrid">
+              <button class="pet-model-card active" data-model="model-pixel-golem" title="Bé Golem Má Hồng - Pixel art thân thiện">
+                <div class="pet-model-avatar-wrap">
+                  <img src="../assets/mascot-pixel-pet.png" class="pet-model-thumb" alt="Pixel Golem">
+                  <span class="pet-model-badge">Default</span>
+                </div>
+                <div class="pet-model-info">
+                  <strong>Bé Golem Má Hồng</strong>
+                  <span class="pet-model-tag">Pixel • Theme Gradient</span>
+                </div>
+              </button>
+              <button class="pet-model-card" data-model="model-chibi-waifu" title="Chibi Waifu - Anime companion dễ thương">
+                <div class="pet-model-avatar-wrap">
+                  <img src="../assets/composer-banner.jpg" class="pet-model-thumb" alt="Chibi Waifu">
+                  <span class="pet-model-badge">Waifu</span>
+                </div>
+                <div class="pet-model-info">
+                  <strong>Chibi Waifu</strong>
+                  <span class="pet-model-tag">Anime • Neon Pink</span>
+                </div>
+              </button>
+              <button class="pet-model-card" data-model="model-cyber-drone" title="Cyber Mecha Drone - Hệ thống bảo vệ mã nguồn">
+                <div class="pet-model-avatar-wrap">
+                  <img src="../assets/icon.png" class="pet-model-thumb" alt="Cyber Drone">
+                  <span class="pet-model-badge">Mecha</span>
+                </div>
+                <div class="pet-model-info">
+                  <strong>Cyber Mecha Drone</strong>
+                  <span class="pet-model-tag">Cyber • Neon Cyan</span>
+                </div>
+              </button>
+              <button class="pet-model-card" data-model="model-magic-cat" title="Mèo Thần Thoại - Mèo thần hộ mệnh xua tan bug">
+                <div class="pet-model-avatar-wrap">
+                  <img src="../assets/deco-floral-bird.png" class="pet-model-thumb" alt="Magic Cat">
+                  <span class="pet-model-badge">Mythic</span>
+                </div>
+                <div class="pet-model-info">
+                  <strong>Mèo Thần Thoại</strong>
+                  <span class="pet-model-tag">Fantasy • Glass Bubble</span>
+                </div>
+              </button>
+              <button class="pet-model-card custom-model-card" id="btnUploadPetModel" data-model="custom" title="Tạo hoặc tải ảnh Pet riêng của bạn">
+                <div class="pet-model-avatar-wrap upload-wrap">
+                  <span class="pet-model-upload-icon">✨➕</span>
+                </div>
+                <div class="pet-model-info">
+                  <strong>Tự tạo Pet riêng...</strong>
+                  <span class="pet-model-tag">Tải file PNG / GIF</span>
+                </div>
+              </button>
+            </div>
+
             <!-- Pet Choices -->
-            <span class="sub-label">Chọn bé Pet hoặc tải ảnh Pet riêng của bạn:</span>
+            <span class="sub-label">Chọn nhanh bé Pet hoặc tải ảnh Pet riêng của bạn:</span>
             <div class="mascot-presets-grid" id="mascotPresetsGrid2">
               <button class="mascot-card active" data-mascot="pixel-pet">
                 <img src="../assets/mascot-pixel-pet.png" class="mascot-thumb" alt="Pixel Pet">
@@ -352,6 +406,64 @@
                 <span class="mascot-emoji">🚫</span>
                 <span>Tắt Pet</span>
               </button>
+            </div>
+
+            <!-- TÙY CHỈNH VIỀN & BỆ ĐỠ RIÊNG CHO PET -->
+            <div class="section-title" style="margin-top: 18px;">TÙY CHỈNH VIỀN & BỆ ĐỠ RIÊNG CHO PET (AURA & PEDESTAL)</div>
+            <div class="pet-border-box">
+              <span class="sub-label">Kiểu viền hào quang (Border Style):</span>
+              <div class="pet-border-style-row" id="petBorderStyleRow">
+                <button class="pet-border-btn active" data-style="theme-gradient" title="Viền đổi theo dải màu Gradient của Theme">🌈 Viền đổi theo theme</button>
+                <button class="pet-border-btn" data-style="neon-glow" title="Hào quang neon đơn sắc phát sáng rực rỡ">⚡ Hào quang neon</button>
+                <button class="pet-border-btn" data-style="holo-pedestal" title="Bệ đỡ kết hợp viền ánh sáng Hologram">🛸 Bệ đỡ Hologram</button>
+                <button class="pet-border-btn" data-style="glass-bubble" title="Bong bóng kính mờ Glassmorphism">🫧 Bong bóng kính mờ</button>
+                <button class="pet-border-btn" data-style="none" title="Không dùng viền bao quanh">🚫 Không viền</button>
+              </div>
+
+              <!-- Màu Hào quang & Màu Bệ đỡ -->
+              <div class="pet-colors-dual-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                <div class="pet-color-group">
+                  <label style="font-size: 11px; color: rgba(255,255,255,0.8); display: block; margin-bottom: 4px;">Màu Hào quang (Pet Glow Color):</label>
+                  <div class="color-pick-wrap">
+                    <input type="color" id="pickerPetGlow" value="#38EF7D">
+                    <input type="text" id="hexPetGlow" value="#38EF7D" class="mini-hex">
+                  </div>
+                </div>
+                <div class="pet-color-group">
+                  <label style="font-size: 11px; color: rgba(255,255,255,0.8); display: block; margin-bottom: 4px;">Màu Bệ đỡ (Pedestal Color):</label>
+                  <div class="color-pick-wrap">
+                    <input type="color" id="pickerPetPedestalColor" value="#7DCFFF">
+                    <input type="text" id="hexPetPedestalColor" value="#7DCFFF" class="mini-hex">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sliders: Glow Radius & Border Width -->
+              <div class="slider-row" style="margin-top: 12px;">
+                <span class="slider-label">Độ tỏa sáng hào quang (Glow Radius)</span>
+                <input type="range" id="sliderPetGlowRadius" min="0" max="24" value="12">
+                <span class="slider-val" id="valPetGlowRadius">12px</span>
+              </div>
+              <div class="slider-row">
+                <span class="slider-label">Độ dày viền quanh Pet (Border Width)</span>
+                <input type="range" id="sliderPetBorderWidth" min="0" max="6" value="2">
+                <span class="slider-val" id="valPetBorderWidth">2px</span>
+              </div>
+
+              <!-- Checkbox/Toggle for Holographic Pedestal -->
+              <div class="pedestal-toggle-wrap" style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding: 8px 12px; background: rgba(125, 207, 255, 0.08); border: 1px solid rgba(125, 207, 255, 0.2); border-radius: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 18px;">🛸</span>
+                  <div>
+                    <strong style="font-size: 12px; color: #7DCFFF; display: block;">Bệ đỡ ánh sáng Holographic Pedestal</strong>
+                    <span style="font-size: 10px; color: rgba(255,255,255,0.65);">Đĩa sáng đa chiều nhấp nháy thở nhẹ dưới chân Pet</span>
+                  </div>
+                </div>
+                <label class="switch-toggle" style="position: relative; display: inline-block; width: 38px; height: 20px; margin: 0; cursor: pointer;">
+                  <input type="checkbox" id="chkPetPedestal" checked>
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
             </div>
 
             <!-- Pet Dynamic Animation Effects -->
@@ -575,6 +687,7 @@
     </div>
   </div>
 
+  <script src="../petModels.js"></script>
   <script src="motionStudio.js"></script>
   <script src="app.js"></script>
 </body>

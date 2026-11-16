@@ -204,9 +204,29 @@ async function init() {
       language: 'vi',
       wallpaperName: 'Cô gái kéo đàn ngắm Trái Đất (Mặc định)',
       wallpaperUrl: '',
-      glass: { blur: 16, sidebarOpacity: 75, cardOpacity: 85, scrimOpacity: 60, wallpaperOpacity: 95 }
+      glass: { blur: 16, sidebarOpacity: 75, cardOpacity: 85, scrimOpacity: 60, wallpaperOpacity: 95 },
+      petBorderStyle: 'theme-gradient',
+      petGlowColor: '#38EF7D',
+      petGlowRadius: 12,
+      petBorderWidth: 2,
+      petPedestal: true,
+      petPedestalColor: '#7DCFFF',
+      activePetModelId: 'model-pixel-golem',
+      mascotUrl: '../assets/mascot-pixel-pet.png',
+      mascotType: 'model-pixel-golem'
     };
   }
+
+  // Ensure Pet defaults if missing in existing configs
+  if (appState.petBorderStyle === undefined) appState.petBorderStyle = 'theme-gradient';
+  if (appState.petGlowColor === undefined) appState.petGlowColor = '#38EF7D';
+  if (appState.petGlowRadius === undefined) appState.petGlowRadius = 12;
+  if (appState.petBorderWidth === undefined) appState.petBorderWidth = 2;
+  if (appState.petPedestal === undefined) appState.petPedestal = true;
+  if (appState.petPedestalColor === undefined) appState.petPedestalColor = '#7DCFFF';
+  if (!appState.mascotUrl) appState.mascotUrl = '../assets/mascot-pixel-pet.png';
+  if (!appState.mascotType) appState.mascotType = 'model-pixel-golem';
+  if (!appState.activePetModelId) appState.activePetModelId = 'model-pixel-golem';
 
   activeSubtab = appState.mode || 'dark';
   applyLanguage(appState.language || 'vi');
@@ -422,6 +442,144 @@ function setupEvents() {
         updateLivePreview();
         await saveConfig();
       }
+    });
+  }
+
+  // === PET MODELS LIBRARY & CUSTOM MODEL EVENT HANDLERS ===
+  document.querySelectorAll('#petModelsGrid .pet-model-card').forEach(card => {
+    card.addEventListener('click', async () => {
+      const modelId = card.getAttribute('data-model');
+      if (modelId === 'custom') {
+        if (!window.api) return;
+        const res = await window.api.selectWallpaper();
+        if (res && !res.canceled && res.dataUrl) {
+          document.querySelectorAll('#petModelsGrid .pet-model-card').forEach(c => c.classList.remove('active'));
+          card.classList.add('active');
+          appState.activePetModelId = 'custom';
+          appState.mascotType = 'custom';
+          appState.mascotUrl = res.dataUrl;
+          showStatus('Đã nạp Pet riêng tùy chỉnh: ' + res.fileName);
+          updateLivePreview();
+          await saveConfig();
+        }
+        return;
+      }
+
+      document.querySelectorAll('#petModelsGrid .pet-model-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      const found = (typeof window !== 'undefined' && window.PetModels && window.PetModels.getPetModelById)
+        ? window.PetModels.getPetModelById(modelId)
+        : PET_MODELS_LIB.find(m => m.id === modelId);
+      if (found) {
+        applyPetModel(found);
+        showStatus(`Đã áp dụng mẫu Pet: ${found.name}`);
+      }
+    });
+  });
+
+  const btnUploadPetModel = document.getElementById('btnUploadPetModel');
+  if (btnUploadPetModel) {
+    btnUploadPetModel.addEventListener('click', async () => {
+      if (!window.api) return;
+      const res = await window.api.selectWallpaper();
+      if (res && !res.canceled && res.dataUrl) {
+        document.querySelectorAll('#petModelsGrid .pet-model-card').forEach(c => c.classList.remove('active'));
+        btnUploadPetModel.classList.add('active');
+        appState.activePetModelId = 'custom';
+        appState.mascotType = 'custom';
+        appState.mascotUrl = res.dataUrl;
+        showStatus('Đã nạp Pet riêng tùy chỉnh: ' + res.fileName);
+        updateLivePreview();
+        await saveConfig();
+      }
+    });
+  }
+
+  // === PET BORDER STYLE SELECTOR ===
+  document.querySelectorAll('#petBorderStyleRow .pet-border-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      document.querySelectorAll('#petBorderStyleRow .pet-border-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const style = btn.getAttribute('data-style');
+      appState.petBorderStyle = style;
+      showStatus(`Đã chọn kiểu viền Pet: ${btn.textContent.trim()}`);
+      updateLivePreview();
+      await saveConfig();
+    });
+  });
+
+  // === PET GLOW COLOR & PEDESTAL COLOR PICKERS ===
+  const pickerPetGlow = document.getElementById('pickerPetGlow');
+  const hexPetGlow = document.getElementById('hexPetGlow');
+  if (pickerPetGlow && hexPetGlow) {
+    pickerPetGlow.addEventListener('input', async (e) => {
+      hexPetGlow.value = e.target.value.toUpperCase();
+      appState.petGlowColor = e.target.value;
+      updateLivePreview();
+      await saveConfig();
+    });
+    hexPetGlow.addEventListener('input', async (e) => {
+      if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+        pickerPetGlow.value = e.target.value;
+        appState.petGlowColor = e.target.value;
+        updateLivePreview();
+        await saveConfig();
+      }
+    });
+  }
+
+  const pickerPetPedestalColor = document.getElementById('pickerPetPedestalColor');
+  const hexPetPedestalColor = document.getElementById('hexPetPedestalColor');
+  if (pickerPetPedestalColor && hexPetPedestalColor) {
+    pickerPetPedestalColor.addEventListener('input', async (e) => {
+      hexPetPedestalColor.value = e.target.value.toUpperCase();
+      appState.petPedestalColor = e.target.value;
+      updateLivePreview();
+      await saveConfig();
+    });
+    hexPetPedestalColor.addEventListener('input', async (e) => {
+      if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+        pickerPetPedestalColor.value = e.target.value;
+        appState.petPedestalColor = e.target.value;
+        updateLivePreview();
+        await saveConfig();
+      }
+    });
+  }
+
+  // === PET GLOW RADIUS & BORDER WIDTH SLIDERS ===
+  const sliderPetGlowRadius = document.getElementById('sliderPetGlowRadius');
+  const valPetGlowRadius = document.getElementById('valPetGlowRadius');
+  if (sliderPetGlowRadius && valPetGlowRadius) {
+    sliderPetGlowRadius.addEventListener('input', async (e) => {
+      const rad = parseInt(e.target.value);
+      valPetGlowRadius.textContent = rad + 'px';
+      appState.petGlowRadius = rad;
+      updateLivePreview();
+      await saveConfig();
+    });
+  }
+
+  const sliderPetBorderWidth = document.getElementById('sliderPetBorderWidth');
+  const valPetBorderWidth = document.getElementById('valPetBorderWidth');
+  if (sliderPetBorderWidth && valPetBorderWidth) {
+    sliderPetBorderWidth.addEventListener('input', async (e) => {
+      const bw = parseInt(e.target.value);
+      valPetBorderWidth.textContent = bw + 'px';
+      appState.petBorderWidth = bw;
+      updateLivePreview();
+      await saveConfig();
+    });
+  }
+
+  // === HOLOGRAPHIC PEDESTAL TOGGLE ===
+  const chkPetPedestal = document.getElementById('chkPetPedestal');
+  if (chkPetPedestal) {
+    chkPetPedestal.addEventListener('change', async (e) => {
+      appState.petPedestal = e.target.checked;
+      showStatus(e.target.checked ? 'Đã bật bệ đỡ Holographic Pedestal' : 'Đã tắt bệ đỡ');
+      updateLivePreview();
+      await saveConfig();
     });
   }
 
@@ -1112,6 +1270,151 @@ function applyGlassTier(tier) {
   renderSliders();
 }
 
+// === PET MODELS LIBRARY & CONTROLS HELPER ===
+const PET_MODELS_LIB = (typeof window !== 'undefined' && window.PetModels && window.PetModels.DEFAULT_PET_MODELS) ? window.PetModels.DEFAULT_PET_MODELS : [
+  {
+    id: 'model-pixel-golem',
+    name: 'Bé Golem Má Hồng',
+    avatar: '../assets/mascot-pixel-pet.png',
+    avatarUrl: '../assets/mascot-pixel-pet.png',
+    borderStyle: 'theme-gradient',
+    glowColor: '#38EF7D',
+    glowRadius: 12,
+    borderWidth: 2,
+    pedestal: true,
+    pedestalColor: '#7DCFFF',
+    animation: 'bob',
+    anim: 'bob',
+    scale: 58,
+    speech: 'Chủ nhân cố lên nhé! Hôm nay code gì thế ạ? ✨'
+  },
+  {
+    id: 'model-chibi-waifu',
+    name: 'Chibi Waifu',
+    avatar: '../assets/composer-banner.jpg',
+    avatarUrl: '../assets/composer-banner.jpg',
+    borderStyle: 'theme-gradient',
+    glowColor: '#FF79C6',
+    glowRadius: 14,
+    borderWidth: 2,
+    pedestal: true,
+    pedestalColor: '#BD93F9',
+    animation: 'pulse',
+    anim: 'pulse',
+    scale: 60,
+    speech: 'Em luôn ở đây đồng hành cùng anh code nè! 🌸'
+  },
+  {
+    id: 'model-cyber-drone',
+    name: 'Cyber Mecha Drone',
+    avatar: '../assets/icon.png',
+    avatarUrl: '../assets/icon.png',
+    borderStyle: 'neon-glow',
+    glowColor: '#7DCFFF',
+    glowRadius: 16,
+    borderWidth: 2,
+    pedestal: true,
+    pedestalColor: '#00E5FF',
+    animation: 'sway',
+    anim: 'sway',
+    scale: 54,
+    speech: 'Hệ thống bảo vệ mã nguồn trực tuyến! ⚡'
+  },
+  {
+    id: 'model-magic-cat',
+    name: 'Mèo Thần Thoại',
+    avatar: '../assets/deco-floral-bird.png',
+    avatarUrl: '../assets/deco-floral-bird.png',
+    borderStyle: 'glass-bubble',
+    glowColor: '#FFE066',
+    glowRadius: 10,
+    borderWidth: 2,
+    pedestal: true,
+    pedestalColor: '#FFA07A',
+    animation: 'glow',
+    anim: 'glow',
+    scale: 52,
+    speech: 'Meow meow~ Chúc chủ nhân code không gặp bug! 🐾'
+  }
+];
+
+function applyPetModel(model) {
+  if (!model) return;
+  appState.activePetModelId = model.id;
+  appState.petName = model.name;
+  appState.petSpeech = model.speech;
+  appState.mascotUrl = model.avatarUrl || model.avatar;
+  appState.mascotType = model.id;
+  appState.mascotSize = model.scale || model.size || 56;
+  appState.petAnim = model.animation || model.anim || 'bob';
+  appState.petBorderStyle = model.borderStyle || 'theme-gradient';
+  appState.petGlowColor = model.glowColor || '#38EF7D';
+  appState.petGlowRadius = model.glowRadius !== undefined ? model.glowRadius : 12;
+  appState.petBorderWidth = model.borderWidth !== undefined ? model.borderWidth : 2;
+  appState.petPedestal = model.pedestal !== undefined ? model.pedestal : true;
+  appState.petPedestalColor = model.pedestalColor || '#7DCFFF';
+
+  const inputPetName = document.getElementById('inputPetName');
+  if (inputPetName) inputPetName.value = appState.petName;
+  const inputPetSpeech = document.getElementById('inputPetSpeech');
+  if (inputPetSpeech) inputPetSpeech.value = appState.petSpeech;
+
+  renderPetControls();
+  updateLivePreview();
+  saveConfig();
+}
+
+function renderPetControls() {
+  const curModelId = appState.activePetModelId || 'model-pixel-golem';
+  document.querySelectorAll('#petModelsGrid .pet-model-card').forEach(c => {
+    if (c.getAttribute('data-model') === curModelId) c.classList.add('active');
+    else c.classList.remove('active');
+  });
+
+  const curBorderStyle = appState.petBorderStyle || 'theme-gradient';
+  document.querySelectorAll('#petBorderStyleRow .pet-border-btn').forEach(b => {
+    if (b.getAttribute('data-style') === curBorderStyle) b.classList.add('active');
+    else b.classList.remove('active');
+  });
+
+  const pickerPetGlow = document.getElementById('pickerPetGlow');
+  const hexPetGlow = document.getElementById('hexPetGlow');
+  if (pickerPetGlow && hexPetGlow) {
+    const col = appState.petGlowColor || '#38EF7D';
+    pickerPetGlow.value = col;
+    hexPetGlow.value = col.toUpperCase();
+  }
+
+  const pickerPetPedestalColor = document.getElementById('pickerPetPedestalColor');
+  const hexPetPedestalColor = document.getElementById('hexPetPedestalColor');
+  if (pickerPetPedestalColor && hexPetPedestalColor) {
+    const col = appState.petPedestalColor || '#7DCFFF';
+    pickerPetPedestalColor.value = col;
+    hexPetPedestalColor.value = col.toUpperCase();
+  }
+
+  const sliderPetGlowRadius = document.getElementById('sliderPetGlowRadius');
+  const valPetGlowRadius = document.getElementById('valPetGlowRadius');
+  if (sliderPetGlowRadius && valPetGlowRadius) {
+    const rad = appState.petGlowRadius !== undefined ? appState.petGlowRadius : 12;
+    sliderPetGlowRadius.value = rad;
+    valPetGlowRadius.textContent = rad + 'px';
+  }
+
+  const sliderPetBorderWidth = document.getElementById('sliderPetBorderWidth');
+  const valPetBorderWidth = document.getElementById('valPetBorderWidth');
+  if (sliderPetBorderWidth && valPetBorderWidth) {
+    const bw = appState.petBorderWidth !== undefined ? appState.petBorderWidth : 2;
+    sliderPetBorderWidth.value = bw;
+    valPetBorderWidth.textContent = bw + 'px';
+  }
+
+  const chkPetPedestal = document.getElementById('chkPetPedestal');
+  if (chkPetPedestal) {
+    chkPetPedestal.checked = appState.petPedestal !== false;
+  }
+}
+
 function renderSliders() {
   const g = appState.glass || {};
   sliderWpOpacity.value = g.wallpaperOpacity ?? 95;
@@ -1181,6 +1484,9 @@ function renderSliders() {
     if (b.getAttribute('data-pos') === curPos) b.classList.add('active');
     else b.classList.remove('active');
   });
+
+  // Sync pet aura and pedestal customizer controls
+  renderPetControls();
 }
 
 function renderModStatus() {
@@ -1244,8 +1550,8 @@ function updateLivePreview() {
     }
 
     if (appState.mascotUrl) {
-      mascotBadge.style.display = 'block';
-      mascotBadge.style.backgroundImage = `url(${appState.mascotUrl})`;
+      mascotBadge.style.display = 'flex';
+      mascotBadge.style.backgroundImage = 'none';
       const sz = Math.round((appState.mascotSize || 56) * 0.75);
       mascotBadge.style.width = sz + 'px';
       mascotBadge.style.height = sz + 'px';
@@ -1287,6 +1593,81 @@ function updateLivePreview() {
       mascotBadge.style.animation = '';
       mascotBadge.style.transform = appState.petFlip ? 'scaleX(-1)' : 'none';
       mascotBadge.style.cursor = 'pointer';
+
+      // Inner hierarchy: .ag-pet-pedestal + .ag-pet-aura-frame + .ag-pet-sprite
+      let pedestalEl = mascotBadge.querySelector('.ag-pet-pedestal');
+      if (!pedestalEl) {
+        pedestalEl = document.createElement('div');
+        pedestalEl.className = 'ag-pet-pedestal';
+        mascotBadge.appendChild(pedestalEl);
+      }
+
+      let auraFrameEl = mascotBadge.querySelector('.ag-pet-aura-frame');
+      if (!auraFrameEl) {
+        auraFrameEl = document.createElement('div');
+        auraFrameEl.className = 'ag-pet-aura-frame';
+        mascotBadge.appendChild(auraFrameEl);
+      }
+
+      let spriteEl = auraFrameEl.querySelector('.ag-pet-sprite');
+      if (!spriteEl) {
+        spriteEl = document.createElement('div');
+        spriteEl.className = 'ag-pet-sprite';
+        auraFrameEl.appendChild(spriteEl);
+      }
+
+      // Configure Pedestal Platform
+      const pedCol = appState.petPedestalColor || '#7DCFFF';
+      if (appState.petPedestal !== false) {
+        pedestalEl.style.display = 'block';
+        pedestalEl.style.background = `radial-gradient(ellipse at center, ${pedCol} 0%, rgba(125, 207, 255, 0.45) 45%, transparent 75%)`;
+        pedestalEl.style.boxShadow = `0 0 10px ${pedCol}`;
+      } else {
+        pedestalEl.style.display = 'none';
+      }
+
+      // Configure Aura Frame
+      const borderStyle = appState.petBorderStyle || 'theme-gradient';
+      const glowCol = appState.petGlowColor || '#38EF7D';
+      const glowRad = appState.petGlowRadius !== undefined ? appState.petGlowRadius : 12;
+      const bw = (appState.petBorderWidth !== undefined ? appState.petBorderWidth : 2) + 'px';
+
+      auraFrameEl.className = 'ag-pet-aura-frame border-' + borderStyle;
+      auraFrameEl.style.border = 'none';
+      auraFrameEl.style.background = 'transparent';
+      auraFrameEl.style.boxShadow = 'none';
+      auraFrameEl.style.filter = 'none';
+      auraFrameEl.style.backdropFilter = 'none';
+      auraFrameEl.style.webkitBackdropFilter = 'none';
+
+      if (borderStyle === 'theme-gradient') {
+        auraFrameEl.style.borderRadius = '50%';
+        auraFrameEl.style.border = bw + ' solid transparent';
+        auraFrameEl.style.background = `linear-gradient(#081826, #081826) padding-box, ${compGrad} border-box`;
+        auraFrameEl.style.boxShadow = `0 0 ${glowRad}px ${glowCol}`;
+      } else if (borderStyle === 'neon-glow') {
+        auraFrameEl.style.borderRadius = '50%';
+        auraFrameEl.style.border = `${bw} solid ${glowCol}`;
+        auraFrameEl.style.boxShadow = `0 0 ${glowRad}px ${glowCol}, inset 0 0 ${Math.round(glowRad / 2)}px ${glowCol}`;
+      } else if (borderStyle === 'holo-pedestal') {
+        auraFrameEl.style.borderRadius = '50%';
+        auraFrameEl.style.border = `${bw} dashed ${pedCol}`;
+        auraFrameEl.style.boxShadow = `0 0 ${glowRad}px ${pedCol}`;
+      } else if (borderStyle === 'glass-bubble') {
+        auraFrameEl.style.borderRadius = '50%';
+        auraFrameEl.style.border = `${bw} solid rgba(255, 255, 255, 0.45)`;
+        auraFrameEl.style.background = 'rgba(255, 255, 255, 0.12)';
+        auraFrameEl.style.backdropFilter = 'blur(6px)';
+        auraFrameEl.style.webkitBackdropFilter = 'blur(6px)';
+        auraFrameEl.style.boxShadow = `0 4px 14px rgba(0,0,0,0.35), 0 0 ${glowRad}px ${glowCol}`;
+      } else {
+        // none
+        auraFrameEl.style.borderRadius = '0';
+      }
+
+      // Configure Pet Sprite
+      spriteEl.style.backgroundImage = `url(${appState.mascotUrl})`;
+
       mascotBadge.onclick = () => {
         let b = document.getElementById('previewSpeechBubble');
         if (b) b.remove();

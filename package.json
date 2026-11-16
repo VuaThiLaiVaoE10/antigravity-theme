@@ -1,6 +1,6 @@
 {
   "name": "antigravity-theme-studio",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Standalone Desktop Theme Studio App for Google Antigravity",
   "main": "main.js",
   "scripts": {
@@ -39,6 +39,7 @@
       "liveSync.js",
       "patcher.js",
       "palettes.js",
+      "petModels.js",
       "run.bat",
       "renderer/**/*",
       "assets/**/*"

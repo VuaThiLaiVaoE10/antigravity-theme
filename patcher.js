@@ -28,6 +28,26 @@ ${HOOK_START}
     const path = require('path');
     const configPath = path.join(process.env.USERPROFILE || 'C:\\\\Users\\\\Admin', '.gemini', 'antigravity', 'theme-studio', 'config.json');
 
+    function toRgba(hex, alpha) {
+      if (!hex || typeof hex !== 'string') return 'rgba(125, 207, 255, ' + alpha + ')';
+      if (hex.startsWith('rgba')) return hex;
+      if (hex.startsWith('rgb')) return hex.replace('rgb', 'rgba').replace(')', ', ' + alpha + ')');
+      const clean = hex.replace('#', '');
+      if (clean.length === 3) {
+        const r = parseInt(clean[0] + clean[0], 16);
+        const g = parseInt(clean[1] + clean[1], 16);
+        const b = parseInt(clean[2] + clean[2], 16);
+        return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+      }
+      if (clean.length >= 6) {
+        const r = parseInt(clean.substring(0, 2), 16);
+        const g = parseInt(clean.substring(2, 4), 16);
+        const b = parseInt(clean.substring(4, 6), 16);
+        return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+      }
+      return 'rgba(125, 207, 255, ' + alpha + ')';
+    }
+
     function buildCss(cfg) {
       const mode = cfg.mode || 'dark';
       const c = (cfg.palette && cfg.palette[mode]?.colors) || cfg.colors || {};
@@ -35,6 +55,13 @@ ${HOOK_START}
       const blur = glass.blur ?? 16;
       const sidebarOpacity = (glass.sidebarOpacity ?? 75) / 100;
       const cardOpacity = (glass.cardOpacity ?? 85) / 100;
+
+      const petGlow = cfg.petGlowColor || (cfg.palette && cfg.palette[mode]?.colors?.accentPrimary) || '#7DCFFF';
+      const petGlowRad = cfg.petGlowRadius !== undefined ? (parseFloat(cfg.petGlowRadius) || 12) : 12;
+      const petPedCol = cfg.petPedestalColor || petGlow;
+      const petBwRaw = cfg.petBorderWidth !== undefined ? cfg.petBorderWidth : 2;
+      const petBw = typeof petBwRaw === 'number' ? petBwRaw + 'px' : String(petBwRaw);
+      const composerGrad = cfg.composerGradient || 'linear-gradient(90deg, #E6FF80 0%, #38EF7D 35%, #11998E 70%, #FFE066 100%)';
 
       return [
         ':root {',
@@ -119,7 +146,137 @@ ${HOOK_START}
         '  border: none !important;',
         '}',
         '@keyframes agBreathing { 0% { transform: scale(1); } 50% { transform: scale(1.06) translate(-1%, -1%); } 100% { transform: scale(1); } }',
-        '.wallpaper-breathing { animation: agBreathing 14s ease-in-out infinite !important; }'
+        '.wallpaper-breathing { animation: agBreathing 14s ease-in-out infinite !important; }',
+        '/* 14. Interactive Pet Mascot Entity */',
+        '#ag-interactive-pet {',
+        '  position: fixed;',
+        '  z-index: 999999;',
+        '  cursor: pointer;',
+        '  user-select: none;',
+        '  transition: transform 0.2s ease, filter 0.2s ease;',
+        '  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));',
+        '  display: flex;',
+        '  align-items: center;',
+        '  justify-content: center;',
+        '}',
+        '#ag-interactive-pet:hover { transform: scale(1.1) translateY(-2px); }',
+        '#ag-interactive-pet:active { transform: scale(0.95); }',
+        '.ag-pet-pedestal {',
+        '  position: absolute;',
+        '  bottom: -4px;',
+        '  left: 50%;',
+        '  transform: translateX(-50%);',
+        '  width: 90%;',
+        '  height: 14px;',
+        '  border-radius: 50%;',
+        '  pointer-events: none;',
+        '  z-index: 1;',
+        '  background: radial-gradient(ellipse at center, ' + petPedCol + ' 0%, ' + toRgba(petPedCol, 0.45) + ' 45%, transparent 75%);',
+        '  box-shadow: 0 0 10px ' + toRgba(petPedCol, 0.4) + ';',
+        '  animation: agPedestalPulse 2.8s ease-in-out infinite alternate;',
+        '}',
+        '@keyframes agPedestalPulse {',
+        '  0% { transform: translateX(-50%) scale(0.88); opacity: 0.55; }',
+        '  100% { transform: translateX(-50%) scale(1.12); opacity: 0.95; }',
+        '}',
+        '.ag-pet-aura-frame {',
+        '  position: relative;',
+        '  width: 100%;',
+        '  height: 100%;',
+        '  display: flex;',
+        '  align-items: center;',
+        '  justify-content: center;',
+        '  box-sizing: border-box;',
+        '  z-index: 2;',
+        '  transition: all 0.3s ease;',
+        '}',
+        '.ag-pet-aura-frame.border-theme-gradient {',
+        '  border-radius: 50%;',
+        '  border: ' + petBw + ' solid transparent;',
+        '  background: linear-gradient(rgba(12, 24, 38, 0.45), rgba(12, 24, 38, 0.45)) padding-box, ' + composerGrad + ' border-box;',
+        '  box-shadow: 0 0 ' + petGlowRad + 'px ' + petGlow + ';',
+        '  filter: drop-shadow(0 0 6px ' + petGlow + ');',
+        '  overflow: hidden;',
+        '}',
+        '.ag-pet-aura-frame.border-neon-glow {',
+        '  border-radius: 50%;',
+        '  border: ' + petBw + ' solid ' + petGlow + ';',
+        '  box-shadow: 0 0 ' + petGlowRad + 'px ' + petGlow + ', inset 0 0 6px ' + toRgba(petGlow, 0.5) + ';',
+        '  filter: drop-shadow(0 0 ' + petGlowRad + 'px ' + petGlow + ');',
+        '  background: ' + toRgba(petGlow, 0.12) + ';',
+        '  overflow: hidden;',
+        '}',
+        '.ag-pet-aura-frame.border-holo-pedestal {',
+        '  border-radius: 50%;',
+        '  border: ' + petBw + ' solid ' + petGlow + ';',
+        '  box-shadow: 0 0 ' + petGlowRad + 'px ' + petGlow + ', 0 0 16px rgba(0, 229, 255, 0.4);',
+        '  filter: drop-shadow(0 0 ' + petGlowRad + 'px ' + petGlow + ');',
+        '  background: radial-gradient(circle, ' + toRgba(petGlow, 0.22) + ' 0%, rgba(12, 24, 38, 0.35) 100%);',
+        '  overflow: hidden;',
+        '}',
+        '.ag-pet-aura-frame.border-glass-bubble {',
+        '  border-radius: 50%;',
+        '  border: ' + petBw + ' solid rgba(255, 255, 255, 0.45);',
+        '  background: rgba(255, 255, 255, 0.10);',
+        '  backdrop-filter: blur(6px);',
+        '  -webkit-backdrop-filter: blur(6px);',
+        '  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6), 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 ' + petGlowRad + 'px ' + petGlow + ';',
+        '  filter: drop-shadow(0 0 6px ' + petGlow + ');',
+        '  overflow: hidden;',
+        '}',
+        '.ag-pet-aura-frame.border-none {',
+        '  border: none;',
+        '  background: transparent;',
+        '  box-shadow: none;',
+        '  filter: none;',
+        '  overflow: visible;',
+        '}',
+        '.ag-pet-sprite {',
+        '  width: 100%;',
+        '  height: 100%;',
+        '  background-size: contain;',
+        '  background-repeat: no-repeat;',
+        '  background-position: center center;',
+        '  pointer-events: none;',
+        '  transition: transform 0.2s ease;',
+        '}',
+        '.ag-pet-bubble {',
+        '  position: absolute;',
+        '  bottom: 100%;',
+        '  right: 0;',
+        '  margin-bottom: 8px;',
+        '  background: rgba(12, 24, 38, 0.95);',
+        '  border: 1px solid ' + petGlow + ';',
+        '  color: #fff;',
+        '  border-radius: 10px;',
+        '  padding: 6px 12px;',
+        '  font-size: 11px;',
+        '  white-space: nowrap;',
+        '  pointer-events: none;',
+        '  box-shadow: 0 4px 14px rgba(0,0,0,0.5);',
+        '  animation: agPop 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);',
+        '  z-index: 9999999;',
+        '}',
+        '.ag-pet-bubble::after {',
+        '  content: "";',
+        '  position: absolute;',
+        '  top: 100%;',
+        '  right: 18px;',
+        '  border-width: 5px;',
+        '  border-style: solid;',
+        '  border-color: ' + petGlow + ' transparent transparent transparent;',
+        '}',
+        '@keyframes agPop { 0% { opacity: 0; transform: scale(0.6); } 100% { opacity: 1; transform: scale(1); } }',
+        '.anim-bob { animation: agPetBob 2.5s ease-in-out infinite alternate !important; }',
+        '.anim-pulse { animation: agPetPulse 1.8s ease-in-out infinite !important; }',
+        '.anim-sway { animation: agPetSway 2s ease-in-out infinite alternate !important; }',
+        '.anim-glow { animation: agPetGlow 2s ease-in-out infinite alternate !important; }',
+        '.anim-sleep { animation: agPetSleep 3s ease-in-out infinite alternate !important; }',
+        '@keyframes agPetBob { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }',
+        '@keyframes agPetPulse { 0% { transform: scale(1); } 50% { transform: scale(1.14); } 100% { transform: scale(1); } }',
+        '@keyframes agPetSway { 0% { transform: rotate(-8deg); } 100% { transform: rotate(8deg); } }',
+        '@keyframes agPetGlow { 0% { filter: drop-shadow(0 0 5px #7DCFFF); } 100% { filter: drop-shadow(0 0 20px #BB9AF7); } }',
+        '@keyframes agPetSleep { 0% { transform: translateY(0) scale(0.98); opacity: 0.85; } 100% { transform: translateY(-4px) scale(1); opacity: 1; } }'
       ].join('\\n');
     }
 
@@ -169,10 +326,30 @@ ${HOOK_START}
         }
         if (cfg.mascotUrl) {
           pet.style.display = 'block';
-          pet.style.backgroundImage = 'url(' + JSON.stringify(cfg.mascotUrl) + ')';
-          pet.style.backgroundSize = 'contain';
-          pet.style.backgroundRepeat = 'no-repeat';
-          pet.style.backgroundPosition = 'center bottom';
+          pet.style.backgroundImage = 'none';
+
+          // Inner hierarchy: .ag-pet-pedestal, .ag-pet-aura-frame, .ag-pet-sprite
+          let pedestal = pet.querySelector('.ag-pet-pedestal');
+          if (!pedestal) {
+            pedestal = doc.createElement('div');
+            pedestal.className = 'ag-pet-pedestal';
+            pet.appendChild(pedestal);
+          }
+
+          let frame = pet.querySelector('.ag-pet-aura-frame');
+          if (!frame) {
+            frame = doc.createElement('div');
+            frame.className = 'ag-pet-aura-frame';
+            pet.appendChild(frame);
+          }
+
+          let sprite = frame.querySelector('.ag-pet-sprite');
+          if (!sprite) {
+            sprite = doc.createElement('div');
+            sprite.className = 'ag-pet-sprite';
+            frame.appendChild(sprite);
+          }
+
           const sz = cfg.mascotSize || 56;
           pet.style.width = sz + 'px';
           pet.style.height = sz + 'px';
@@ -180,10 +357,90 @@ ${HOOK_START}
           const offX = cfg.petOffsetX || 0;
           const offY = cfg.petOffsetY || 0;
           const flip = cfg.petFlip ? -1 : 1;
+
+          // Sprite setup
+          sprite.style.width = '100%';
+          sprite.style.height = '100%';
+          sprite.style.backgroundImage = 'url(' + JSON.stringify(cfg.mascotUrl) + ')';
+          sprite.style.backgroundSize = 'contain';
+          sprite.style.backgroundRepeat = 'no-repeat';
+          sprite.style.backgroundPosition = 'center center';
+          sprite.style.transform = flip === -1 ? 'scaleX(-1)' : 'none';
+
+          // Pedestal setup
+          const isPed = Boolean(cfg.petPedestal);
+          const glowColor = cfg.petGlowColor || '#7DCFFF';
+          const glowRadNum = cfg.petGlowRadius !== undefined ? (parseFloat(cfg.petGlowRadius) || 12) : 12;
+          const glowRadius = glowRadNum + 'px';
+          const pedCol = cfg.petPedestalColor || glowColor;
+          if (isPed) {
+            pedestal.style.display = 'block';
+            pedestal.style.background = 'radial-gradient(ellipse at center, ' + pedCol + ' 0%, ' + toRgba(pedCol, 0.45) + ' 45%, transparent 75%)';
+            pedestal.style.boxShadow = '0 0 10px ' + toRgba(pedCol, 0.4);
+            pedestal.style.animation = 'agPedestalPulse 2.8s ease-in-out infinite alternate';
+          } else {
+            pedestal.style.display = 'none';
+            pedestal.style.animation = 'none';
+          }
+
+          // Aura frame setup
+          const borderStyle = cfg.petBorderStyle || 'none';
+          const bwRaw = cfg.petBorderWidth !== undefined ? cfg.petBorderWidth : 2;
+          const bw = typeof bwRaw === 'number' ? bwRaw + 'px' : String(bwRaw);
+          const compGrad = cfg.composerGradient || 'linear-gradient(90deg, #E6FF80 0%, #38EF7D 35%, #11998E 70%, #FFE066 100%)';
+
+          frame.className = 'ag-pet-aura-frame border-' + borderStyle;
+          frame.style.border = 'none';
+          frame.style.background = 'transparent';
+          frame.style.boxShadow = 'none';
+          frame.style.filter = 'none';
+          frame.style.backdropFilter = 'none';
+          frame.style.webkitBackdropFilter = 'none';
+
+          if (borderStyle === 'theme-gradient') {
+            frame.style.borderRadius = '50%';
+            frame.style.border = bw + ' solid transparent';
+            frame.style.background = 'linear-gradient(rgba(12, 24, 38, 0.45), rgba(12, 24, 38, 0.45)) padding-box, ' + compGrad + ' border-box';
+            frame.style.boxShadow = '0 0 ' + glowRadius + ' ' + glowColor;
+            frame.style.filter = 'drop-shadow(0 0 6px ' + glowColor + ')';
+            frame.style.overflow = 'hidden';
+          } else if (borderStyle === 'neon-glow') {
+            frame.style.borderRadius = '50%';
+            frame.style.border = bw + ' solid ' + glowColor;
+            frame.style.boxShadow = '0 0 ' + glowRadius + ' ' + glowColor + ', inset 0 0 6px ' + toRgba(glowColor, 0.5);
+            frame.style.filter = 'drop-shadow(0 0 ' + glowRadius + ' ' + glowColor + ')';
+            frame.style.background = toRgba(glowColor, 0.12);
+            frame.style.overflow = 'hidden';
+          } else if (borderStyle === 'holo-pedestal') {
+            frame.style.borderRadius = '50%';
+            frame.style.border = bw + ' solid ' + glowColor;
+            frame.style.boxShadow = '0 0 ' + glowRadius + ' ' + glowColor + ', 0 0 ' + (glowRadNum * 2) + 'px rgba(0, 229, 255, 0.4)';
+            frame.style.filter = 'drop-shadow(0 0 ' + glowRadius + ' ' + glowColor + ')';
+            frame.style.background = 'radial-gradient(circle, ' + toRgba(glowColor, 0.22) + ' 0%, rgba(12, 24, 38, 0.35) 100%)';
+            frame.style.overflow = 'hidden';
+          } else if (borderStyle === 'glass-bubble') {
+            frame.style.borderRadius = '50%';
+            frame.style.border = bw + ' solid rgba(255, 255, 255, 0.45)';
+            frame.style.background = 'rgba(255, 255, 255, 0.10)';
+            frame.style.backdropFilter = 'blur(6px)';
+            frame.style.webkitBackdropFilter = 'blur(6px)';
+            frame.style.boxShadow = 'inset 0 1px 2px rgba(255, 255, 255, 0.6), 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 ' + glowRadius + ' ' + glowColor;
+            frame.style.filter = 'drop-shadow(0 0 6px ' + glowColor + ')';
+            frame.style.overflow = 'hidden';
+          } else {
+            frame.style.borderRadius = '0';
+            frame.style.border = 'none';
+            frame.style.background = 'transparent';
+            frame.style.boxShadow = 'none';
+            frame.style.filter = 'none';
+            frame.style.overflow = 'visible';
+          }
+
           const comp = doc.querySelector('.surface-composer');
           if (pos.startsWith('composer') && comp) {
             const r = comp.getBoundingClientRect();
             pet.style.bottom = (window.innerHeight - r.top - 4 + offY) + 'px';
+            pet.style.top = 'auto';
             if (pos === 'composer-top-left') {
               pet.style.left = (r.left + 24 + offX) + 'px';
               pet.style.right = 'auto';
@@ -194,12 +451,36 @@ ${HOOK_START}
               pet.style.right = (window.innerWidth - r.right + 24 - offX) + 'px';
               pet.style.left = 'auto';
             }
+          } else if (pos === 'screen-bottom-left') {
+            pet.style.bottom = (24 + offY) + 'px';
+            pet.style.left = (28 + offX) + 'px';
+            pet.style.right = 'auto';
+            pet.style.top = 'auto';
+          } else if (pos === 'sidebar-bottom') {
+            pet.style.bottom = (24 + offY) + 'px';
+            pet.style.left = (offX + 16) + 'px';
+            pet.style.right = 'auto';
+            pet.style.top = 'auto';
           } else {
             pet.style.bottom = (24 + offY) + 'px';
             pet.style.right = (28 - offX) + 'px';
+            pet.style.left = 'auto';
+            pet.style.top = 'auto';
           }
+
           pet.className = 'anim-' + (cfg.petAnim || 'bob');
-          pet.style.transform = flip === -1 ? 'scaleX(-1)' : 'none';
+
+          // Click interaction: Speech Bubble
+          pet.onclick = () => {
+            let bubble = pet.querySelector('.ag-pet-bubble') || doc.getElementById('ag-pet-bubble');
+            if (bubble) bubble.remove();
+            bubble = doc.createElement('div');
+            bubble.id = 'ag-pet-bubble';
+            bubble.className = 'ag-pet-bubble';
+            bubble.textContent = cfg.petSpeech || 'Chủ nhân cố lên nhé! Hôm nay code gì thế ạ? ✨';
+            pet.appendChild(bubble);
+            setTimeout(() => { if (bubble && bubble.parentNode) bubble.remove(); }, 4500);
+          };
         } else {
           pet.style.display = 'none';
         }

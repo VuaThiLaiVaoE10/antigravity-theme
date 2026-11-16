@@ -77,6 +77,26 @@ async function findAntigravityTarget() {
   return null;
 }
 
+function toRgba(hex, alpha) {
+  if (!hex || typeof hex !== 'string') return `rgba(125, 207, 255, ${alpha})`;
+  if (hex.startsWith('rgba')) return hex;
+  if (hex.startsWith('rgb')) return hex.replace('rgb', 'rgba').replace(')', `, ${alpha})`);
+  const clean = hex.replace('#', '');
+  if (clean.length === 3) {
+    const r = parseInt(clean[0] + clean[0], 16);
+    const g = parseInt(clean[1] + clean[1], 16);
+    const b = parseInt(clean[2] + clean[2], 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  if (clean.length >= 6) {
+    const r = parseInt(clean.substring(0, 2), 16);
+    const g = parseInt(clean.substring(2, 4), 16);
+    const b = parseInt(clean.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  return `rgba(125, 207, 255, ${alpha})`;
+}
+
 function buildThemeCss(config) {
   const mode = config.mode || 'dark';
   const c = (config.palette && config.palette[mode]?.colors) || config.colors || {};
@@ -86,6 +106,13 @@ function buildThemeCss(config) {
   const sidebarOpacity = (glass.sidebarOpacity ?? 75) / 100;
   const cardOpacity = (glass.cardOpacity ?? 85) / 100;
   const accent = c.accentPrimary || '#7DCFFF';
+
+  const petGlow = config.petGlowColor || accent || '#7DCFFF';
+  const petGlowRad = config.petGlowRadius !== undefined ? (parseFloat(config.petGlowRadius) || 12) : 12;
+  const petPedCol = config.petPedestalColor || petGlow;
+  const petBwRaw = config.petBorderWidth !== undefined ? config.petBorderWidth : 2;
+  const petBw = typeof petBwRaw === 'number' ? petBwRaw + 'px' : String(petBwRaw);
+  const composerGrad = config.composerGradient || 'linear-gradient(90deg, #E6FF80 0%, #38EF7D 35%, #11998E 70%, #FFE066 100%)';
 
   return `
     :root {
@@ -229,6 +256,9 @@ function buildThemeCss(config) {
       user-select: none;
       transition: transform 0.2s ease, filter 0.2s ease;
       filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     #ag-interactive-pet:hover {
       transform: scale(1.1) translateY(-2px);
@@ -236,13 +266,106 @@ function buildThemeCss(config) {
     #ag-interactive-pet:active {
       transform: scale(0.95);
     }
+
+    /* Pedestal Platform */
+    .ag-pet-pedestal {
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      height: 14px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+      background: radial-gradient(ellipse at center, ${petPedCol} 0%, ${toRgba(petPedCol, 0.45)} 45%, transparent 75%);
+      box-shadow: 0 0 10px ${toRgba(petPedCol, 0.4)};
+      animation: agPedestalPulse 2.8s ease-in-out infinite alternate;
+    }
+    @keyframes agPedestalPulse {
+      0% {
+        transform: translateX(-50%) scale(0.88);
+        opacity: 0.55;
+      }
+      100% {
+        transform: translateX(-50%) scale(1.12);
+        opacity: 0.95;
+      }
+    }
+
+    /* Aura Frame */
+    .ag-pet-aura-frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      z-index: 2;
+      transition: all 0.3s ease;
+    }
+    .ag-pet-aura-frame.border-theme-gradient {
+      border-radius: 50%;
+      border: ${petBw} solid transparent;
+      background: linear-gradient(rgba(12, 24, 38, 0.45), rgba(12, 24, 38, 0.45)) padding-box, ${composerGrad} border-box;
+      box-shadow: 0 0 ${petGlowRad}px ${petGlow};
+      filter: drop-shadow(0 0 6px ${petGlow});
+      overflow: hidden;
+    }
+    .ag-pet-aura-frame.border-neon-glow {
+      border-radius: 50%;
+      border: ${petBw} solid ${petGlow};
+      box-shadow: 0 0 ${petGlowRad}px ${petGlow}, inset 0 0 6px ${toRgba(petGlow, 0.5)};
+      filter: drop-shadow(0 0 ${petGlowRad}px ${petGlow});
+      background: ${toRgba(petGlow, 0.12)};
+      overflow: hidden;
+    }
+    .ag-pet-aura-frame.border-holo-pedestal {
+      border-radius: 50%;
+      border: ${petBw} solid ${petGlow};
+      box-shadow: 0 0 ${petGlowRad}px ${petGlow}, 0 0 ${petGlowRad * 2}px rgba(0, 229, 255, 0.4);
+      filter: drop-shadow(0 0 ${petGlowRad}px ${petGlow});
+      background: radial-gradient(circle, ${toRgba(petGlow, 0.22)} 0%, rgba(12, 24, 38, 0.35) 100%);
+      overflow: hidden;
+    }
+    .ag-pet-aura-frame.border-glass-bubble {
+      border-radius: 50%;
+      border: ${petBw} solid rgba(255, 255, 255, 0.45);
+      background: rgba(255, 255, 255, 0.10);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6), 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 ${petGlowRad}px ${petGlow};
+      filter: drop-shadow(0 0 6px ${petGlow});
+      overflow: hidden;
+    }
+    .ag-pet-aura-frame.border-none {
+      border: none;
+      background: transparent;
+      box-shadow: none;
+      filter: none;
+      overflow: visible;
+    }
+
+    /* Pet Sprite */
+    .ag-pet-sprite {
+      width: 100%;
+      height: 100%;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center center;
+      pointer-events: none;
+      transition: transform 0.2s ease;
+    }
+
+    /* Speech Bubble */
     .ag-pet-bubble {
       position: absolute;
       bottom: 100%;
       right: 0;
       margin-bottom: 8px;
       background: rgba(12, 24, 38, 0.95);
-      border: 1px solid #7DCFFF;
+      border: 1px solid ${petGlow};
       color: #fff;
       border-radius: 10px;
       padding: 6px 12px;
@@ -251,6 +374,7 @@ function buildThemeCss(config) {
       pointer-events: none;
       box-shadow: 0 4px 14px rgba(0,0,0,0.5);
       animation: agPop 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      z-index: 9999999;
     }
     .ag-pet-bubble::after {
       content: '';
@@ -259,7 +383,7 @@ function buildThemeCss(config) {
       right: 18px;
       border-width: 5px;
       border-style: solid;
-      border-color: #7DCFFF transparent transparent transparent;
+      border-color: ${petGlow} transparent transparent transparent;
     }
     @keyframes agPop {
       0% { opacity: 0; transform: scale(0.6); }
@@ -360,6 +484,26 @@ async function applyToAntigravity(config) {
           }
           style.textContent = ${JSON.stringify(customCss)};
 
+          function toRgba(hex, alpha) {
+            if (!hex || typeof hex !== 'string') return 'rgba(125, 207, 255, ' + alpha + ')';
+            if (hex.startsWith('rgba')) return hex;
+            if (hex.startsWith('rgb')) return hex.replace('rgb', 'rgba').replace(')', ', ' + alpha + ')');
+            const clean = hex.replace('#', '');
+            if (clean.length === 3) {
+              const r = parseInt(clean[0] + clean[0], 16);
+              const g = parseInt(clean[1] + clean[1], 16);
+              const b = parseInt(clean[2] + clean[2], 16);
+              return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+            }
+            if (clean.length >= 6) {
+              const r = parseInt(clean.substring(0, 2), 16);
+              const g = parseInt(clean.substring(2, 4), 16);
+              const b = parseInt(clean.substring(4, 6), 16);
+              return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+            }
+            return 'rgba(125, 207, 255, ' + alpha + ')';
+          }
+
           // 3. Injected Interactive Pet Mascot
           let pet = document.getElementById('ag-interactive-pet');
           if (!pet) {
@@ -371,10 +515,30 @@ async function applyToAntigravity(config) {
           const mascotUrl = ${JSON.stringify(config.mascotUrl || '')};
           if (mascotUrl) {
             pet.style.display = 'block';
-            pet.style.backgroundImage = 'url(' + mascotUrl + ')';
-            pet.style.backgroundSize = 'contain';
-            pet.style.backgroundRepeat = 'no-repeat';
-            pet.style.backgroundPosition = 'center bottom';
+            pet.style.backgroundImage = 'none';
+
+            // Inner hierarchy: .ag-pet-pedestal, .ag-pet-aura-frame, .ag-pet-sprite
+            let pedestal = pet.querySelector('.ag-pet-pedestal');
+            if (!pedestal) {
+              pedestal = document.createElement('div');
+              pedestal.className = 'ag-pet-pedestal';
+              pet.appendChild(pedestal);
+            }
+
+            let frame = pet.querySelector('.ag-pet-aura-frame');
+            if (!frame) {
+              frame = document.createElement('div');
+              frame.className = 'ag-pet-aura-frame';
+              pet.appendChild(frame);
+            }
+
+            let sprite = frame.querySelector('.ag-pet-sprite');
+            if (!sprite) {
+              sprite = document.createElement('div');
+              sprite.className = 'ag-pet-sprite';
+              frame.appendChild(sprite);
+            }
+
             const sz = ${config.mascotSize || 56};
             pet.style.width = sz + 'px';
             pet.style.height = sz + 'px';
@@ -383,6 +547,83 @@ async function applyToAntigravity(config) {
             const offX = ${config.petOffsetX || 0};
             const offY = ${config.petOffsetY || 0};
             const flip = ${config.petFlip ? -1 : 1};
+
+            // Sprite setup
+            sprite.style.width = '100%';
+            sprite.style.height = '100%';
+            sprite.style.backgroundImage = 'url(' + JSON.stringify(mascotUrl) + ')';
+            sprite.style.backgroundSize = 'contain';
+            sprite.style.backgroundRepeat = 'no-repeat';
+            sprite.style.backgroundPosition = 'center center';
+            sprite.style.transform = flip === -1 ? 'scaleX(-1)' : 'none';
+
+            // Pedestal setup
+            const petPedestal = ${Boolean(config.petPedestal)};
+            const pedCol = ${JSON.stringify(config.petPedestalColor || config.petGlowColor || '#7DCFFF')};
+            if (petPedestal) {
+              pedestal.style.display = 'block';
+              pedestal.style.background = 'radial-gradient(ellipse at center, ' + pedCol + ' 0%, ' + toRgba(pedCol, 0.45) + ' 45%, transparent 75%)';
+              pedestal.style.boxShadow = '0 0 10px ' + toRgba(pedCol, 0.4);
+              pedestal.style.animation = 'agPedestalPulse 2.8s ease-in-out infinite alternate';
+            } else {
+              pedestal.style.display = 'none';
+              pedestal.style.animation = 'none';
+            }
+
+            // Aura Frame setup
+            const borderStyle = ${JSON.stringify(config.petBorderStyle || 'none')};
+            const bw = ${JSON.stringify(config.petBorderWidth !== undefined ? (typeof config.petBorderWidth === 'number' ? config.petBorderWidth + 'px' : config.petBorderWidth) : '2px')};
+            const glowColor = ${JSON.stringify(config.petGlowColor || '#7DCFFF')};
+            const glowRadius = ${JSON.stringify((config.petGlowRadius !== undefined ? (parseFloat(config.petGlowRadius) || 12) : 12) + 'px')};
+            const glowRadNum = ${config.petGlowRadius !== undefined ? (parseFloat(config.petGlowRadius) || 12) : 12};
+            const compGrad = ${JSON.stringify(config.composerGradient || 'linear-gradient(90deg, #E6FF80 0%, #38EF7D 35%, #11998E 70%, #FFE066 100%)')};
+
+            frame.className = 'ag-pet-aura-frame border-' + borderStyle;
+            frame.style.border = 'none';
+            frame.style.background = 'transparent';
+            frame.style.boxShadow = 'none';
+            frame.style.filter = 'none';
+            frame.style.backdropFilter = 'none';
+            frame.style.webkitBackdropFilter = 'none';
+
+            if (borderStyle === 'theme-gradient') {
+              frame.style.borderRadius = '50%';
+              frame.style.border = bw + ' solid transparent';
+              frame.style.background = 'linear-gradient(rgba(12, 24, 38, 0.45), rgba(12, 24, 38, 0.45)) padding-box, ' + compGrad + ' border-box';
+              frame.style.boxShadow = '0 0 ' + glowRadius + ' ' + glowColor;
+              frame.style.filter = 'drop-shadow(0 0 6px ' + glowColor + ')';
+              frame.style.overflow = 'hidden';
+            } else if (borderStyle === 'neon-glow') {
+              frame.style.borderRadius = '50%';
+              frame.style.border = bw + ' solid ' + glowColor;
+              frame.style.boxShadow = '0 0 ' + glowRadius + ' ' + glowColor + ', inset 0 0 6px ' + toRgba(glowColor, 0.5);
+              frame.style.filter = 'drop-shadow(0 0 ' + glowRadius + ' ' + glowColor + ')';
+              frame.style.background = toRgba(glowColor, 0.12);
+              frame.style.overflow = 'hidden';
+            } else if (borderStyle === 'holo-pedestal') {
+              frame.style.borderRadius = '50%';
+              frame.style.border = bw + ' solid ' + glowColor;
+              frame.style.boxShadow = '0 0 ' + glowRadius + ' ' + glowColor + ', 0 0 ' + (glowRadNum * 2) + 'px rgba(0, 229, 255, 0.4)';
+              frame.style.filter = 'drop-shadow(0 0 ' + glowRadius + ' ' + glowColor + ')';
+              frame.style.background = 'radial-gradient(circle, ' + toRgba(glowColor, 0.22) + ' 0%, rgba(12, 24, 38, 0.35) 100%)';
+              frame.style.overflow = 'hidden';
+            } else if (borderStyle === 'glass-bubble') {
+              frame.style.borderRadius = '50%';
+              frame.style.border = bw + ' solid rgba(255, 255, 255, 0.45)';
+              frame.style.background = 'rgba(255, 255, 255, 0.10)';
+              frame.style.backdropFilter = 'blur(6px)';
+              frame.style.webkitBackdropFilter = 'blur(6px)';
+              frame.style.boxShadow = 'inset 0 1px 2px rgba(255, 255, 255, 0.6), 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 ' + glowRadius + ' ' + glowColor;
+              frame.style.filter = 'drop-shadow(0 0 6px ' + glowColor + ')';
+              frame.style.overflow = 'hidden';
+            } else {
+              frame.style.borderRadius = '0';
+              frame.style.border = 'none';
+              frame.style.background = 'transparent';
+              frame.style.boxShadow = 'none';
+              frame.style.filter = 'none';
+              frame.style.overflow = 'visible';
+            }
 
             function updatePetPosition() {
               const comp = document.querySelector('.surface-composer');
@@ -423,18 +664,17 @@ async function applyToAntigravity(config) {
             window.__agPetFollowInterval = setInterval(updatePetPosition, 800);
 
             pet.className = 'anim-${config.petAnim || 'bob'}';
-            pet.style.transform = flip === -1 ? 'scaleX(-1)' : 'none';
 
             // Click Interaction: Popup Speech Bubble
             pet.onclick = () => {
-              let bubble = document.getElementById('ag-pet-bubble');
+              let bubble = pet.querySelector('.ag-pet-bubble') || document.getElementById('ag-pet-bubble');
               if (bubble) bubble.remove();
               bubble = document.createElement('div');
               bubble.id = 'ag-pet-bubble';
               bubble.className = 'ag-pet-bubble';
               bubble.textContent = ${JSON.stringify(config.petSpeech || 'Chủ nhân cố lên nhé! Hôm nay code gì thế ạ? ✨')};
               pet.appendChild(bubble);
-              setTimeout(() => { if (bubble) bubble.remove(); }, 4500);
+              setTimeout(() => { if (bubble && bubble.parentNode) bubble.remove(); }, 4500);
             };
           } else {
             pet.style.display = 'none';

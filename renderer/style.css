@@ -1995,16 +1995,88 @@ input[type="color"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.35);
+  background-color: #0c1622;
+  background-image: 
+    linear-gradient(45deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%), 
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.06) 75%), 
+    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.06) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  overflow: visible;
 }
 
 .pet-model-thumb {
   max-width: 38px;
   max-height: 38px;
   object-fit: contain;
+  image-rendering: pixelated;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+}
+
+.pet-avatar-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  background: rgba(255, 184, 108, 0.08);
+  border-radius: 6px;
+  border: 1px dashed rgba(255, 184, 108, 0.4);
+  padding: 2px;
+}
+
+.pet-avatar-placeholder .warn-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.pet-avatar-placeholder .warn-text {
+  font-size: 7.5px;
+  color: #FFB86C;
+  font-weight: 600;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.pet-model-alert {
+  display: inline-block;
+  font-size: 8.5px;
+  font-weight: 600;
+  color: #FFA07A;
+  background: rgba(255, 160, 122, 0.15);
+  border: 1px solid rgba(255, 160, 122, 0.4);
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin-top: 2px;
+}
+
+.preview-pet-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #FFA07A;
+  font-size: 18px;
+  text-align: center;
+}
+
+.preview-pet-missing-tag {
+  font-size: 8px;
+  font-weight: 600;
+  color: #FFA07A;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 160, 122, 0.5);
+  white-space: nowrap;
+  margin-top: 2px;
 }
 
 .pet-model-badge {
@@ -2020,6 +2092,7 @@ input[type="color"] {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   line-height: 1.1;
+  z-index: 5;
 }
 
 .pet-model-info strong {
@@ -2167,25 +2240,36 @@ input[type="color"] {
 }
 
 .ag-pet-aura-frame.border-theme-gradient {
-  border: 2px solid transparent;
-  background: linear-gradient(#081826, #081826) padding-box, var(--composer-gradient, linear-gradient(90deg, #E6FF80, #38EF7D, #11998E, #FFE066)) border-box;
-  box-shadow: 0 0 12px var(--pet-glow-color, #38EF7D);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  filter: drop-shadow(0 0 2px var(--pet-glow-color, #38EF7D)) drop-shadow(0 0 10px var(--pet-glow-color, #38EF7D));
+  overflow: visible;
 }
 
 .ag-pet-aura-frame.border-neon-glow {
-  border: 2px solid var(--pet-glow-color, #7DCFFF);
-  box-shadow: 0 0 14px var(--pet-glow-color, #7DCFFF), inset 0 0 6px var(--pet-glow-color, #7DCFFF);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  filter: drop-shadow(0 0 2px var(--pet-glow-color, #7DCFFF)) drop-shadow(0 0 12px var(--pet-glow-color, #7DCFFF));
+  overflow: visible;
 }
 
 .ag-pet-aura-frame.border-holo-pedestal {
-  border: 2px dashed var(--pet-pedestal-color, #7DCFFF);
-  box-shadow: 0 0 14px var(--pet-pedestal-color, #7DCFFF);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  filter: drop-shadow(0 0 12px var(--pet-pedestal-color, #7DCFFF));
   animation: agHoloBorderRotate 10s linear infinite;
+  overflow: visible;
 }
 
 @keyframes agHoloBorderRotate {
-  0% { filter: hue-rotate(0deg); }
-  100% { filter: hue-rotate(360deg); }
+  0% { filter: drop-shadow(0 0 12px var(--pet-pedestal-color, #7DCFFF)) hue-rotate(0deg); }
+  100% { filter: drop-shadow(0 0 12px var(--pet-pedestal-color, #7DCFFF)) hue-rotate(360deg); }
 }
 
 .ag-pet-aura-frame.border-glass-bubble {

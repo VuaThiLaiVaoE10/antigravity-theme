@@ -63,6 +63,8 @@ const DEFAULT_PET_MODELS = [
     name: 'Mèo Thần Thoại',
     avatar: '../assets/deco-floral-bird.png',
     avatarUrl: '../assets/deco-floral-bird.png',
+    hasMissingImage: true,
+    warningMsg: 'Chưa có file ảnh - Vui lòng tải file',
     borderStyle: 'glass-bubble',
     glowColor: '#FFE066',
     glowRadius: 10,
@@ -74,7 +76,7 @@ const DEFAULT_PET_MODELS = [
     scale: 52,
     size: 52,
     speech: 'Meow meow~ Chúc chủ nhân code không gặp bug! 🐾',
-    description: 'Mèo thần mang lại may mắn, xua tan mọi bug khó hiểu'
+    description: 'Mèo thần mang lại may mắn, xua tan mọi bug khó hiểu (Chờ người dùng nạp ảnh)'
   }
 ];
 

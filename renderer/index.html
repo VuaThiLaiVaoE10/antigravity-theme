@@ -6,6 +6,30 @@
   <title>Antigravity Theme Studio</title>
   <link rel="stylesheet" href="hallmarkTokens.css">
   <link rel="stylesheet" href="style.css">
+  <script>
+    function handlePetImageError(img) {
+      if (!img) return;
+      img.style.display = 'none';
+      const wrap = img.closest('.pet-model-avatar-wrap') || img.parentElement;
+      if (wrap && !wrap.querySelector('.pet-avatar-placeholder')) {
+        const ph = document.createElement('div');
+        ph.className = 'pet-avatar-placeholder';
+        ph.innerHTML = '<span class="warn-icon">🐾</span><span class="warn-text">⚠️ Chưa có ảnh</span>';
+        ph.title = 'Ảnh bị thiếu hoặc lỗi file. Bấm để tải ảnh Pet của bạn!';
+        wrap.appendChild(ph);
+      }
+      const card = img.closest('.pet-model-card');
+      if (card) {
+        const info = card.querySelector('.pet-model-info');
+        if (info && !info.querySelector('.pet-model-alert')) {
+          const al = document.createElement('span');
+          al.className = 'pet-model-alert';
+          al.textContent = '⚠️ Chưa có ảnh';
+          info.appendChild(al);
+        }
+      }
+    }
+  </script>
 </head>
 <body>
   <div class="app-layout">
@@ -183,7 +207,7 @@
           <div class="mascot-selector-box">
             <div class="mascot-presets-grid" id="mascotPresetsGrid">
               <button class="mascot-card active" data-mascot="pixel-pet">
-                <img src="../assets/mascot-pixel-pet.png" class="mascot-thumb" alt="Pixel Pet">
+                <img src="../assets/mascot-pixel-pet.png" class="mascot-thumb" alt="Pixel Pet" onerror="handlePetImageError(this)">
                 <span>Pixel Golem (Ảnh 2)</span>
               </button>
               <button class="mascot-card" data-mascot="waifu">
@@ -361,7 +385,7 @@
             <div class="pet-models-grid" id="petModelsGrid">
               <button class="pet-model-card active" data-model="model-pixel-golem" title="Bé Golem Má Hồng - Pixel art thân thiện">
                 <div class="pet-model-avatar-wrap">
-                  <img src="../assets/mascot-pixel-pet.png" class="pet-model-thumb" alt="Pixel Golem">
+                  <img src="../assets/mascot-pixel-pet.png" class="pet-model-thumb" alt="Pixel Golem" onerror="handlePetImageError(this)">
                   <span class="pet-model-badge">Default</span>
                 </div>
                 <div class="pet-model-info">
@@ -371,7 +395,7 @@
               </button>
               <button class="pet-model-card" data-model="model-chibi-waifu" title="Chibi Waifu - Anime companion dễ thương">
                 <div class="pet-model-avatar-wrap">
-                  <img src="../assets/composer-banner.jpg" class="pet-model-thumb" alt="Chibi Waifu">
+                  <img src="../assets/composer-banner.jpg" class="pet-model-thumb" alt="Chibi Waifu" onerror="handlePetImageError(this)">
                   <span class="pet-model-badge">Waifu</span>
                 </div>
                 <div class="pet-model-info">
@@ -381,7 +405,7 @@
               </button>
               <button class="pet-model-card" data-model="model-cyber-drone" title="Cyber Mecha Drone - Hệ thống bảo vệ mã nguồn">
                 <div class="pet-model-avatar-wrap">
-                  <img src="../assets/icon.png" class="pet-model-thumb" alt="Cyber Drone">
+                  <img src="../assets/icon.png" class="pet-model-thumb" alt="Cyber Drone" onerror="handlePetImageError(this)">
                   <span class="pet-model-badge">Mecha</span>
                 </div>
                 <div class="pet-model-info">
@@ -389,14 +413,19 @@
                   <span class="pet-model-tag">Cyber • Neon Cyan</span>
                 </div>
               </button>
-              <button class="pet-model-card" data-model="model-magic-cat" title="Mèo Thần Thoại - Mèo thần hộ mệnh xua tan bug">
+              <button class="pet-model-card" data-model="model-magic-cat" title="Mèo Thần Thoại - Mèo thần hộ mệnh xua tan bug (Chờ tải file)">
                 <div class="pet-model-avatar-wrap">
-                  <img src="../assets/deco-floral-bird.png" class="pet-model-thumb" alt="Magic Cat">
+                  <img src="../assets/deco-floral-bird.png" class="pet-model-thumb" alt="Magic Cat" onerror="handlePetImageError(this)" style="display: none;">
+                  <div class="pet-avatar-placeholder" title="Chưa có file ảnh. Bấm để tải ảnh Pet của bạn!">
+                    <span class="warn-icon">🐾</span>
+                    <span class="warn-text">⚠️ Chưa có ảnh</span>
+                  </div>
                   <span class="pet-model-badge">Mythic</span>
                 </div>
                 <div class="pet-model-info">
                   <strong>Mèo Thần Thoại</strong>
                   <span class="pet-model-tag">Fantasy • Glass Bubble</span>
+                  <span class="pet-model-alert">⚠️ Chưa có file ảnh</span>
                 </div>
               </button>
               <button class="pet-model-card custom-model-card" id="btnUploadPetModel" data-model="custom" title="Tạo hoặc tải ảnh Pet riêng của bạn">
@@ -414,7 +443,7 @@
             <span class="sub-label">Chọn nhanh bé Pet hoặc tải ảnh Pet riêng của bạn:</span>
             <div class="mascot-presets-grid" id="mascotPresetsGrid2">
               <button class="mascot-card active" data-mascot="pixel-pet">
-                <img src="../assets/mascot-pixel-pet.png" class="mascot-thumb" alt="Pixel Pet">
+                <img src="../assets/mascot-pixel-pet.png" class="mascot-thumb" alt="Pixel Pet" onerror="handlePetImageError(this)">
                 <span>Pixel Golem (Ảnh 2)</span>
               </button>
               <button class="mascot-card" data-mascot="waifu">

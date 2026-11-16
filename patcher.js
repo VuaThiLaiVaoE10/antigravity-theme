@@ -481,26 +481,26 @@ ${HOOK_START}
           frame.style.webkitBackdropFilter = 'none';
 
           if (borderStyle === 'theme-gradient') {
-            frame.style.borderRadius = '50%';
-            frame.style.border = bw + ' solid transparent';
-            frame.style.background = 'linear-gradient(rgba(12, 24, 38, 0.45), rgba(12, 24, 38, 0.45)) padding-box, ' + compGrad + ' border-box';
-            frame.style.boxShadow = '0 0 ' + glowRadius + ' ' + glowColor;
-            frame.style.filter = 'drop-shadow(0 0 6px ' + glowColor + ')';
-            frame.style.overflow = 'hidden';
+            frame.style.borderRadius = '0';
+            frame.style.border = 'none';
+            frame.style.background = 'transparent';
+            frame.style.boxShadow = 'none';
+            frame.style.filter = 'drop-shadow(0 0 ' + bw + ' ' + glowColor + ') drop-shadow(0 0 ' + glowRadius + ' ' + glowColor + ')';
+            frame.style.overflow = 'visible';
           } else if (borderStyle === 'neon-glow') {
-            frame.style.borderRadius = '50%';
-            frame.style.border = bw + ' solid ' + glowColor;
-            frame.style.boxShadow = '0 0 ' + glowRadius + ' ' + glowColor + ', inset 0 0 6px ' + toRgba(glowColor, 0.5);
-            frame.style.filter = 'drop-shadow(0 0 ' + glowRadius + ' ' + glowColor + ')';
-            frame.style.background = toRgba(glowColor, 0.12);
-            frame.style.overflow = 'hidden';
+            frame.style.borderRadius = '0';
+            frame.style.border = 'none';
+            frame.style.background = 'transparent';
+            frame.style.boxShadow = 'none';
+            frame.style.filter = 'drop-shadow(0 0 ' + bw + ' ' + glowColor + ') drop-shadow(0 0 ' + glowRadius + ' ' + glowColor + ')';
+            frame.style.overflow = 'visible';
           } else if (borderStyle === 'holo-pedestal') {
-            frame.style.borderRadius = '50%';
-            frame.style.border = bw + ' solid ' + glowColor;
-            frame.style.boxShadow = '0 0 ' + glowRadius + ' ' + glowColor + ', 0 0 ' + (glowRadNum * 2) + 'px rgba(0, 229, 255, 0.4)';
+            frame.style.borderRadius = '0';
+            frame.style.border = 'none';
+            frame.style.background = 'transparent';
+            frame.style.boxShadow = 'none';
             frame.style.filter = 'drop-shadow(0 0 ' + glowRadius + ' ' + glowColor + ')';
-            frame.style.background = 'radial-gradient(circle, ' + toRgba(glowColor, 0.22) + ' 0%, rgba(12, 24, 38, 0.35) 100%)';
-            frame.style.overflow = 'hidden';
+            frame.style.overflow = 'visible';
           } else if (borderStyle === 'glass-bubble') {
             frame.style.borderRadius = '50%';
             frame.style.border = bw + ' solid rgba(255, 255, 255, 0.45)';
@@ -709,6 +709,372 @@ ${HOOK_START}
           }
           if (window._agMotionLoop) cancelAnimationFrame(window._agMotionLoop);
           if (bg) bg.style.display = 'block';
+        }
+
+        // 5. Live Wallpaper Ambient FX Engine (#ag-theme-canvas-fx)
+        let cv = doc.getElementById('ag-theme-canvas-fx');
+        const fx = cfg.wallpaperFx || 'none';
+        let fxOpacity = 0.35;
+        if (cfg.wallpaperFxOpacity !== undefined && cfg.wallpaperFxOpacity !== null) {
+          const parsed = parseFloat(cfg.wallpaperFxOpacity);
+          if (!isNaN(parsed)) {
+            fxOpacity = parsed > 1 ? parsed / 100 : parsed;
+          }
+        }
+        fxOpacity = Math.max(0, Math.min(1, fxOpacity));
+
+        let fxSpeed = 1.0;
+        if (cfg.wallpaperFxSpeed !== undefined && cfg.wallpaperFxSpeed !== null) {
+          const parsed = parseFloat(cfg.wallpaperFxSpeed);
+          if (!isNaN(parsed)) {
+            fxSpeed = Math.max(0.1, Math.min(5.0, parsed));
+          }
+        }
+        const themeAccent = (cfg.palette && cfg.palette[cfg.mode || 'dark']?.colors?.accentPrimary) || cfg.colors?.accentPrimary || '#7DCFFF';
+
+        if (fx !== 'none' && fx !== 'breathing') {
+          if (!cv) {
+            cv = doc.createElement('canvas');
+            cv.id = 'ag-theme-canvas-fx';
+            cv.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;transition:opacity 0.3s ease;';
+            (doc.body || doc.documentElement).prepend(cv);
+          }
+          cv.style.position = 'fixed';
+          cv.style.top = '0';
+          cv.style.left = '0';
+          cv.style.width = '100vw';
+          cv.style.height = '100vh';
+          cv.style.zIndex = '0';
+          cv.style.pointerEvents = 'none';
+          cv.style.opacity = String(fxOpacity);
+
+          const fxKey = JSON.stringify({ fx: fx, opacity: fxOpacity, speed: fxSpeed, accent: themeAccent });
+          if (cv.dataset.fxKey !== fxKey) {
+            cv.dataset.fxKey = fxKey;
+            cv.width = window.innerWidth;
+            cv.height = window.innerHeight;
+
+            if (window._agFxLoop) cancelAnimationFrame(window._agFxLoop);
+            if (window._agFxResize) window.removeEventListener('resize', window._agFxResize);
+
+            window._agFxResize = () => {
+              if (cv) {
+                cv.width = window.innerWidth;
+                cv.height = window.innerHeight;
+              }
+            };
+            window.addEventListener('resize', window._agFxResize);
+
+            const ctx = cv.getContext('2d');
+            let t = 0;
+            let particles = [];
+
+            if (fx === 'aurora-mist') {
+              // Wave based, uses t and gradients
+            } else if (fx === 'rain-glass') {
+              for (let i = 0; i < 40; i++) {
+                particles.push({
+                  x: Math.random() * cv.width,
+                  y: Math.random() * cv.height,
+                  r: Math.random() * 2.5 + 1.5,
+                  vy: Math.random() < 0.2 ? Math.random() * 1.5 + 0.8 : Math.random() * 0.08 + 0.02,
+                  sliding: Math.random() < 0.2,
+                  alpha: Math.random() * 0.3 + 0.4
+                });
+              }
+            } else if (fx === 'constellation') {
+              for (let i = 0; i < 45; i++) {
+                particles.push({
+                  x: Math.random() * cv.width,
+                  y: Math.random() * cv.height,
+                  vx: (Math.random() - 0.5) * 0.6,
+                  vy: (Math.random() - 0.5) * 0.6,
+                  r: Math.random() * 1.5 + 1.0
+                });
+              }
+            } else if (fx === 'sunbeam-dust') {
+              for (let i = 0; i < 40; i++) {
+                particles.push({
+                  x: Math.random() * cv.width,
+                  y: Math.random() * cv.height,
+                  r: Math.random() * 10 + 3,
+                  vy: Math.random() * 0.5 + 0.2,
+                  phase: Math.random() * Math.PI * 2,
+                  alpha: Math.random() * 0.25 + 0.15
+                });
+              }
+            } else if (fx === 'sakura-drift') {
+              for (let i = 0; i < 30; i++) {
+                particles.push({
+                  x: Math.random() * cv.width,
+                  y: Math.random() * cv.height,
+                  sz: Math.random() * 6 + 7,
+                  vx: Math.random() * 0.8 + 0.4,
+                  vy: Math.random() * 0.9 + 0.6,
+                  ang: Math.random() * Math.PI * 2,
+                  rotSpd: (Math.random() - 0.5) * 0.03,
+                  flip: Math.random() * Math.PI * 2,
+                  flipSpd: Math.random() * 0.03 + 0.015,
+                  color: Math.random() < 0.5 ? 'rgba(255, 182, 193, 0.65)' : 'rgba(255, 210, 225, 0.6)'
+                });
+              }
+            } else if (fx === 'water-ripple') {
+              const maxR = Math.min(cv.width, cv.height) * 0.75;
+              for (let i = 0; i < 7; i++) {
+                particles.push({
+                  x: cv.width * 0.2,
+                  y: cv.height * 0.8,
+                  r: (i / 7) * maxR,
+                  maxR: maxR,
+                  speed: 0.6
+                });
+              }
+            } else if (fx === 'snow') {
+              for (let i = 0; i < 40; i++) {
+                particles.push({
+                  x: Math.random() * cv.width,
+                  y: Math.random() * cv.height,
+                  r: Math.random() * 2.5 + 1.2,
+                  s: Math.random() * 1.2 + 0.6
+                });
+              }
+            } else if (fx === 'fireflies') {
+              for (let i = 0; i < 30; i++) {
+                particles.push({
+                  x: Math.random() * cv.width,
+                  y: Math.random() * cv.height,
+                  r: Math.random() * 2.2 + 1.5,
+                  s: Math.random() * 1.0 + 0.4
+                });
+              }
+            } else if (fx === 'rain') {
+              for (let i = 0; i < 60; i++) {
+                particles.push({
+                  x: Math.random() * cv.width,
+                  y: Math.random() * cv.height,
+                  s: Math.random() * 2.0 + 2.0
+                });
+              }
+            }
+
+            const draw = () => {
+              ctx.clearRect(0, 0, cv.width, cv.height);
+              t += 0.008 * fxSpeed;
+
+              if (fx === 'aurora-mist') {
+                const g1 = ctx.createLinearGradient(0, 0, 0, cv.height * 0.45);
+                g1.addColorStop(0, toRgba(themeAccent, 0.22));
+                g1.addColorStop(0.5, toRgba(themeAccent, 0.08));
+                g1.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = g1;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                for (let x = 0; x <= cv.width; x += 25) {
+                  const y = cv.height * 0.22 + Math.sin(x * 0.003 + t) * 35 + Math.cos(x * 0.0015 - t * 0.7) * 20;
+                  ctx.lineTo(x, y);
+                }
+                ctx.lineTo(cv.width, 0);
+                ctx.closePath();
+                ctx.fill();
+
+                const g2 = ctx.createLinearGradient(0, cv.height, 0, cv.height * 0.55);
+                g2.addColorStop(0, toRgba(themeAccent, 0.18));
+                g2.addColorStop(0.6, toRgba('#BB9AF7', 0.06));
+                g2.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = g2;
+                ctx.beginPath();
+                ctx.moveTo(0, cv.height);
+                for (let x = 0; x <= cv.width; x += 25) {
+                  const y = cv.height * 0.78 - (Math.sin(x * 0.0025 - t * 0.8) * 30 + Math.sin(x * 0.005 + t * 0.5) * 15);
+                  ctx.lineTo(x, y);
+                }
+                ctx.lineTo(cv.width, cv.height);
+                ctx.closePath();
+                ctx.fill();
+
+                const g3 = ctx.createRadialGradient(
+                  cv.width * (0.5 + Math.sin(t * 0.5) * 0.2),
+                  cv.height * (0.5 + Math.cos(t * 0.4) * 0.1),
+                  10,
+                  cv.width * 0.5,
+                  cv.height * 0.5,
+                  cv.width * 0.6
+                );
+                g3.addColorStop(0, toRgba(themeAccent, 0.08));
+                g3.addColorStop(0.6, toRgba('#73DACA', 0.03));
+                g3.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = g3;
+                ctx.fillRect(0, 0, cv.width, cv.height);
+              } else if (fx === 'rain-glass') {
+                if (Math.random() < 0.02 * fxSpeed) {
+                  const d = particles[Math.floor(Math.random() * particles.length)];
+                  if (d && !d.sliding) {
+                    d.sliding = true;
+                    d.vy = Math.random() * 1.8 + 1.0;
+                    d.r = Math.min(d.r + 0.8, 4.0);
+                  }
+                }
+                particles.forEach(d => {
+                  d.y += d.vy * fxSpeed;
+                  if (d.sliding) {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, ' + (d.alpha * 0.25) + ')';
+                    ctx.lineWidth = d.r * 0.7;
+                    ctx.beginPath();
+                    ctx.moveTo(d.x, d.y - d.vy * 4);
+                    ctx.lineTo(d.x, d.y);
+                    ctx.stroke();
+                  }
+                  ctx.beginPath();
+                  ctx.ellipse(d.x, d.y, d.r, d.sliding ? d.r * 1.3 : d.r, 0, 0, Math.PI * 2);
+                  ctx.fillStyle = 'rgba(220, 240, 255, ' + (d.alpha * 0.45) + ')';
+                  ctx.fill();
+
+                  ctx.beginPath();
+                  ctx.arc(d.x - d.r * 0.3, d.y - d.r * 0.3, d.r * 0.35, 0, Math.PI * 2);
+                  ctx.fillStyle = 'rgba(255, 255, 255, ' + (d.alpha * 0.85) + ')';
+                  ctx.fill();
+
+                  if (d.y > cv.height + 10) {
+                    d.y = -10;
+                    d.x = Math.random() * cv.width;
+                    d.sliding = Math.random() < 0.15;
+                    d.vy = d.sliding ? Math.random() * 1.5 + 0.8 : Math.random() * 0.08 + 0.02;
+                    d.r = Math.random() * 2.5 + 1.5;
+                  }
+                });
+              } else if (fx === 'constellation') {
+                const maxDist = 125;
+                for (let i = 0; i < particles.length; i++) {
+                  for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist < maxDist) {
+                      const alpha = (1 - dist / maxDist) * 0.22;
+                      ctx.strokeStyle = 'rgba(165, 215, 255, ' + alpha + ')';
+                      ctx.lineWidth = 0.8;
+                      ctx.beginPath();
+                      ctx.moveTo(particles[i].x, particles[i].y);
+                      ctx.lineTo(particles[j].x, particles[j].y);
+                      ctx.stroke();
+                    }
+                  }
+                }
+                particles.forEach(s => {
+                  s.x += s.vx * fxSpeed;
+                  s.y += s.vy * fxSpeed;
+                  if (s.x < 0 || s.x > cv.width) s.vx = -s.vx;
+                  if (s.y < 0 || s.y > cv.height) s.vy = -s.vy;
+                  ctx.beginPath();
+                  ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                  ctx.fillStyle = 'rgba(215, 235, 255, 0.75)';
+                  ctx.fill();
+                });
+              } else if (fx === 'sunbeam-dust') {
+                particles.forEach(m => {
+                  m.y -= m.vy * fxSpeed;
+                  m.x += Math.sin(m.y * 0.01 + m.phase) * 0.35 * fxSpeed;
+                  if (m.y < -20) {
+                    m.y = cv.height + 20;
+                    m.x = Math.random() * cv.width;
+                  }
+                  const rg = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.r);
+                  rg.addColorStop(0, 'rgba(255, 230, 160, ' + m.alpha + ')');
+                  rg.addColorStop(0.5, 'rgba(255, 220, 140, ' + (m.alpha * 0.4) + ')');
+                  rg.addColorStop(1, 'rgba(255, 210, 120, 0)');
+                  ctx.beginPath();
+                  ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+                  ctx.fillStyle = rg;
+                  ctx.fill();
+                });
+              } else if (fx === 'sakura-drift') {
+                particles.forEach(p => {
+                  p.y += p.vy * fxSpeed;
+                  p.x += (p.vx + Math.sin(p.y * 0.015) * 0.6) * fxSpeed;
+                  p.ang += p.rotSpd * fxSpeed;
+                  p.flip += p.flipSpd * fxSpeed;
+                  if (p.y > cv.height + 20) {
+                    p.y = -20;
+                    p.x = Math.random() * cv.width;
+                  }
+                  if (p.x > cv.width + 20) {
+                    p.x = -20;
+                  }
+                  ctx.save();
+                  ctx.translate(p.x, p.y);
+                  ctx.rotate(p.ang);
+                  ctx.scale(Math.cos(p.flip), 1);
+                  ctx.beginPath();
+                  ctx.moveTo(0, 0);
+                  ctx.bezierCurveTo(p.sz * 0.5, -p.sz * 0.8, p.sz, -p.sz * 0.4, p.sz * 0.8, p.sz * 0.6);
+                  ctx.bezierCurveTo(p.sz * 0.4, p.sz * 0.9, -p.sz * 0.2, p.sz * 0.6, 0, 0);
+                  ctx.fillStyle = p.color;
+                  ctx.fill();
+                  ctx.restore();
+                });
+              } else if (fx === 'water-ripple') {
+                particles.forEach(rp => {
+                  rp.r += rp.speed * fxSpeed;
+                  if (rp.r > rp.maxR) {
+                    rp.r = 0;
+                  }
+                  const prog = rp.r / rp.maxR;
+                  const alpha = Math.sin(prog * Math.PI) * 0.25;
+                  ctx.beginPath();
+                  ctx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
+                  ctx.strokeStyle = toRgba(themeAccent, alpha);
+                  ctx.lineWidth = 1.2;
+                  ctx.stroke();
+                });
+              } else if (fx === 'snow') {
+                ctx.fillStyle = 'rgba(255, 235, 245, 0.75)';
+                particles.forEach(p => {
+                  ctx.beginPath();
+                  ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                  ctx.fill();
+                  p.y += p.s * fxSpeed;
+                  p.x += Math.sin(p.y * 0.02) * 0.5 * fxSpeed;
+                  if (p.y > cv.height) { p.y = -10; p.x = Math.random() * cv.width; }
+                });
+              } else if (fx === 'fireflies') {
+                particles.forEach(p => {
+                  ctx.beginPath();
+                  ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                  ctx.fillStyle = 'rgba(255, 230, 100, 0.8)';
+                  ctx.fill();
+                  p.y += p.s * 0.5 * fxSpeed;
+                  p.x += Math.sin(p.y * 0.05) * 0.8 * fxSpeed;
+                  if (p.y > cv.height) { p.y = -10; p.x = Math.random() * cv.width; }
+                  if (p.y < -10) { p.y = cv.height; p.x = Math.random() * cv.width; }
+                });
+              } else if (fx === 'rain') {
+                ctx.fillStyle = 'rgba(125, 207, 255, 0.65)';
+                particles.forEach(p => {
+                  ctx.fillRect(p.x, p.y, 1.5, 9);
+                  p.y += p.s * 4 * fxSpeed;
+                  if (p.y > cv.height) { p.y = -10; p.x = Math.random() * cv.width; }
+                });
+              }
+
+              window._agFxLoop = requestAnimationFrame(draw);
+            };
+            draw();
+          }
+        } else {
+          if (cv) {
+            cv.remove();
+            cv.dataset.fxKey = '';
+          }
+          if (window._agFxLoop) cancelAnimationFrame(window._agFxLoop);
+          if (window._agFxResize) {
+            window.removeEventListener('resize', window._agFxResize);
+            window._agFxResize = null;
+          }
+        }
+
+        if (bg) {
+          if (fx === 'breathing') bg.classList.add('wallpaper-breathing');
+          else bg.classList.remove('wallpaper-breathing');
         }
       } catch (e) {}
     }

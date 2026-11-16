@@ -536,7 +536,11 @@ function setupEvents() {
         : PET_MODELS_LIB.find(m => m.id === modelId);
       if (found) {
         applyPetModel(found);
-        showStatus(`Đã áp dụng mẫu Pet: ${found.name}`);
+        if (found.hasMissingImage || card.querySelector('.pet-avatar-placeholder')) {
+          showStatus(`⚠️ Bé "${found.name}" chưa có file ảnh. Hãy nạp ảnh của bạn bằng nút "+ Tự tạo Pet riêng"!`);
+        } else {
+          showStatus(`Đã áp dụng mẫu Pet: ${found.name}`);
+        }
       }
     });
   });
@@ -1441,6 +1445,8 @@ const PET_MODELS_LIB = (typeof window !== 'undefined' && window.PetModels && win
     name: 'Mèo Thần Thoại',
     avatar: '../assets/deco-floral-bird.png',
     avatarUrl: '../assets/deco-floral-bird.png',
+    hasMissingImage: true,
+    warningMsg: 'Chưa có file ảnh',
     borderStyle: 'glass-bubble',
     glowColor: '#FFE066',
     glowRadius: 10,
@@ -1757,18 +1763,23 @@ function updateLivePreview() {
       auraFrameEl.style.webkitBackdropFilter = 'none';
 
       if (borderStyle === 'theme-gradient') {
-        auraFrameEl.style.borderRadius = '50%';
-        auraFrameEl.style.border = bw + ' solid transparent';
-        auraFrameEl.style.background = `linear-gradient(#081826, #081826) padding-box, ${compGrad} border-box`;
-        auraFrameEl.style.boxShadow = `0 0 ${glowRad}px ${glowCol}`;
+        auraFrameEl.style.borderRadius = '0';
+        auraFrameEl.style.border = 'none';
+        auraFrameEl.style.background = 'transparent';
+        auraFrameEl.style.boxShadow = 'none';
+        auraFrameEl.style.filter = `drop-shadow(0 0 ${bw} ${glowCol}) drop-shadow(0 0 ${glowRad}px ${glowCol})`;
       } else if (borderStyle === 'neon-glow') {
-        auraFrameEl.style.borderRadius = '50%';
-        auraFrameEl.style.border = `${bw} solid ${glowCol}`;
-        auraFrameEl.style.boxShadow = `0 0 ${glowRad}px ${glowCol}, inset 0 0 ${Math.round(glowRad / 2)}px ${glowCol}`;
+        auraFrameEl.style.borderRadius = '0';
+        auraFrameEl.style.border = 'none';
+        auraFrameEl.style.background = 'transparent';
+        auraFrameEl.style.boxShadow = 'none';
+        auraFrameEl.style.filter = `drop-shadow(0 0 ${bw} ${glowCol}) drop-shadow(0 0 ${glowRad}px ${glowCol})`;
       } else if (borderStyle === 'holo-pedestal') {
-        auraFrameEl.style.borderRadius = '50%';
-        auraFrameEl.style.border = `${bw} dashed ${pedCol}`;
-        auraFrameEl.style.boxShadow = `0 0 ${glowRad}px ${pedCol}`;
+        auraFrameEl.style.borderRadius = '0';
+        auraFrameEl.style.border = 'none';
+        auraFrameEl.style.background = 'transparent';
+        auraFrameEl.style.boxShadow = 'none';
+        auraFrameEl.style.filter = `drop-shadow(0 0 ${glowRad}px ${pedCol})`;
       } else if (borderStyle === 'glass-bubble') {
         auraFrameEl.style.borderRadius = '50%';
         auraFrameEl.style.border = `${bw} solid rgba(255, 255, 255, 0.45)`;
@@ -1776,13 +1787,25 @@ function updateLivePreview() {
         auraFrameEl.style.backdropFilter = 'blur(6px)';
         auraFrameEl.style.webkitBackdropFilter = 'blur(6px)';
         auraFrameEl.style.boxShadow = `0 4px 14px rgba(0,0,0,0.35), 0 0 ${glowRad}px ${glowCol}`;
+        auraFrameEl.style.filter = 'none';
       } else {
         // none
         auraFrameEl.style.borderRadius = '0';
+        auraFrameEl.style.border = 'none';
+        auraFrameEl.style.background = 'transparent';
+        auraFrameEl.style.boxShadow = 'none';
+        auraFrameEl.style.filter = 'none';
       }
 
       // Configure Pet Sprite
-      spriteEl.style.backgroundImage = `url(${appState.mascotUrl})`;
+      const isMissingMascot = (appState.activePetModelId === 'model-magic-cat' && !appState.mascotUrl.startsWith('data:')) || !appState.mascotUrl;
+      if (isMissingMascot) {
+        spriteEl.style.backgroundImage = 'none';
+        spriteEl.innerHTML = '<div class="preview-pet-placeholder" title="Chưa có ảnh Pet">🐾<span class="preview-pet-missing-tag">⚠️ Chưa có ảnh</span></div>';
+      } else {
+        spriteEl.innerHTML = '';
+        spriteEl.style.backgroundImage = `url(${appState.mascotUrl})`;
+      }
 
       mascotBadge.onclick = () => {
         let b = document.getElementById('previewSpeechBubble');

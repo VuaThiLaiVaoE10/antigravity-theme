@@ -107,6 +107,16 @@ function buildThemeCss(config) {
   const cardOpacity = (glass.cardOpacity ?? 85) / 100;
   const accent = c.accentPrimary || '#7DCFFF';
 
+  // Hallmark Anti-Slop Parameters
+  const compRadius = typeof config.composerRadius === 'number' ? config.composerRadius : 18;
+  const compInnerRadius = Math.max(compRadius - 2, 4);
+
+  // Hallmark Chat Bubble Tokens (>= 4.5:1 contrast guaranteed)
+  const userBubble1 = g.userBubble1 || (mode === 'light' ? '#CFEDEB' : '#15524D');
+  const userBubble2 = g.userBubble2 || (mode === 'light' ? '#B8E0DE' : '#082430');
+  const userBubbleBorder = g.userBubbleBorder || (mode === 'light' ? 'rgba(30, 124, 112, 0.4)' : 'rgba(115, 218, 202, 0.4)');
+  const userBubbleTextColor = mode === 'light' ? '#0F172A' : '#F8FAFC';
+
   const petGlow = config.petGlowColor || accent || '#7DCFFF';
   const petGlowRad = config.petGlowRadius !== undefined ? (parseFloat(config.petGlowRadius) || 12) : 12;
   const petPedCol = config.petPedestalColor || petGlow;
@@ -126,6 +136,11 @@ function buildThemeCss(config) {
       --card: rgba(15, 25, 38, ${cardOpacity}) !important;
       --scrim: ${c.scrim || '#061019'} !important;
       --bg-selection: ${c.selection || '#15415E'} !important;
+      --color-rule: rgba(255, 255, 255, 0.08) !important;
+      --color-rule-2: rgba(255, 255, 255, 0.05) !important;
+      --ag-user-bubble-1: ${userBubble1} !important;
+      --ag-user-bubble-2: ${userBubble2} !important;
+      --ag-user-bubble-border: ${userBubbleBorder} !important;
     }
 
     body, html, .agy-shell, .agy-inset-shell {
@@ -137,17 +152,23 @@ function buildThemeCss(config) {
       background-color: transparent !important;
     }
 
-    /* 1. Header / Topbar Area */
+    /* 1. Header / Topbar Area (Hairline 1px bottom border) */
     .shrink-0:has(.bg-sidebar),
-    .flex.items-center.gap-1.px-2.h-full.bg-sidebar.w-full {
+    .flex.items-center.gap-1.px-2.h-full.bg-sidebar.w-full,
+    .agy-topbar,
+    .preview-titlebar {
       background-color: rgba(8, 24, 38, ${Math.min(sidebarOpacity + 0.1, 0.9)}) !important;
       backdrop-filter: blur(${blur}px) !important;
       -webkit-backdrop-filter: blur(${blur}px) !important;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
 
-    /* 2. Main Sidebar Glass Container */
-    .h-full.w-full.flex.flex-col.pb-2.bg-sidebar {
+    /* 2. Main Sidebar Glass Container & Panels (Hairline 1px right border) */
+    .h-full.w-full.flex.flex-col.pb-2.bg-sidebar,
+    [data-testid="sidebar-pane"],
+    .agy-sidebar,
+    .preview-sidebar,
+    .sidebar-panel {
       background-color: rgba(8, 24, 38, ${sidebarOpacity}) !important;
       backdrop-filter: blur(${blur}px) !important;
       -webkit-backdrop-filter: blur(${blur}px) !important;
@@ -181,11 +202,11 @@ function buildThemeCss(config) {
       background-color: rgba(255, 255, 255, 0.06) !important;
     }
 
-    /* 6. Active Item Highlight */
+    /* 6. Active Item Highlight with Hairline Accent */
     .bg-sidebar-secondary {
-      background-color: rgba(125, 207, 255, 0.14) !important;
+      background-color: rgba(125, 207, 255, 0.12) !important;
       border-radius: 8px !important;
-      border: 1px solid rgba(125, 207, 255, 0.22) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
 
     /* 7. Hover Rows */
@@ -194,47 +215,145 @@ function buildThemeCss(config) {
       border-radius: 6px !important;
     }
 
-    /* 8. New Conversation Button */
+    /* 8. New Conversation / Action Buttons (Hairline Border) */
     .h-full.w-full.flex.flex-col.pb-2.bg-sidebar .border-border.bg-sidebar-muted {
-      background-color: rgba(125, 207, 255, 0.10) !important;
-      border: 1px solid rgba(125, 207, 255, 0.25) !important;
+      background-color: rgba(125, 207, 255, 0.08) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
     }
     .h-full.w-full.flex.flex-col.pb-2.bg-sidebar .border-border.bg-sidebar-muted:hover {
-      background-color: rgba(125, 207, 255, 0.18) !important;
+      background-color: rgba(125, 207, 255, 0.16) !important;
     }
 
-    /* 9. Sash / Splitter / Border Line */
+    /* 9. Hallmark Hairline Split Sashes / Divider Rules */
     [data-split-sash="true"] {
       background-color: transparent !important;
     }
-    [data-testid="sidebar-sash"] .bg-border {
-      background-color: rgba(125, 207, 255, 0.25) !important;
+    [data-testid="sidebar-sash"] .bg-border,
+    .split-sash,
+    .split-view-container .sash,
+    .monaco-sash {
+      background-color: rgba(255, 255, 255, 0.08) !important;
+      border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
 
-    /* 10. Main Content Area & Cards */
+    /* 10. Hallmark Anti-Slop Hairline Cards & Panels */
     .agy-sheet, .agy-shell > div, .agy-inset-shell > div {
       background-color: transparent !important;
     }
 
-    /* 11. Composer Outer Border Gradient (Like Image 1) */
+    .agy-card,
+    .bg-card,
+    [data-testid="card"],
+    .rounded-lg.border.bg-card,
+    .rounded-xl.border.bg-card,
+    .border.bg-card,
+    .card,
+    .status-card,
+    .pet-model-card,
+    .pet-border-box,
+    .pet-adjust-box,
+    .motion-card,
+    .agy-panel-card {
+      background-color: rgba(15, 25, 38, ${cardOpacity}) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      backdrop-filter: blur(${blur}px) !important;
+      -webkit-backdrop-filter: blur(${blur}px) !important;
+      border-radius: 10px !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    /* 11. Hallmark Refined Surface Composer Outer Gradient Ring */
     .surface-composer {
-      background: ${config.composerGradient || 'linear-gradient(90deg, #E6FF80 0%, #38EF7D 35%, #11998E 70%, #FFE066 100%)'} !important;
-      padding: 2px !important;
-      border-radius: ${config.composerRadius || 18}px !important;
-      box-shadow: 0 0 ${config.composerGlow ?? 16}px rgba(125, 207, 255, 0.32) !important;
+      background: ${composerGrad} !important;
+      padding: 1.5px !important;
+      border-radius: ${compRadius}px !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 ${Math.min(config.composerGlow ?? 14, 16)}px rgba(125, 207, 255, 0.25) !important;
       position: relative !important;
-      transition: all 0.3s ease !important;
+      overflow: visible !important;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
 
-    /* 12. Composer Inner Card */
+    /* 12. Hallmark Concentric Inner Card with 1px Hairline Inner Boundary */
     .surface-composer-card {
-      background: rgba(12, 22, 34, 0.88) !important;
-      backdrop-filter: blur(20px) !important;
-      border-radius: ${(config.composerRadius || 18) - 2}px !important;
+      background: rgba(12, 22, 34, ${Math.max(cardOpacity, 0.88)}) !important;
+      backdrop-filter: blur(${blur}px) !important;
+      -webkit-backdrop-filter: blur(${blur}px) !important;
+      border-radius: ${compInnerRadius}px !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
     }
 
-    /* 13. Corner Floral Ornament */
+    /* 13. Hallmark Anti-Slop Chat Bubbles */
+    /* User Bubble: clean hairline border and readable contrast (>= 4.5:1) */
+    .sample-bubble.user,
+    #previewUserBubble,
+    [data-message-author="user"],
+    [data-role="user"],
+    .chat-user-message,
+    .agy-user-message,
+    .user-message,
+    .chat-bubble-user {
+      background: linear-gradient(135deg, ${userBubble1}, ${userBubble2}) !important;
+      border: 1px solid ${userBubbleBorder} !important;
+      color: ${userBubbleTextColor} !important;
+      border-radius: 12px !important;
+      padding: 8px 14px !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .sample-bubble.user *,
+    #previewUserBubble *,
+    [data-message-author="user"] *,
+    [data-role="user"] *,
+    .chat-user-message *,
+    .agy-user-message * {
+      color: ${userBubbleTextColor} !important;
+    }
+
+    /* Assistant Message: clean transparent background */
+    .sample-bubble.agent,
+    #previewAgentBubble,
+    [data-message-author="assistant"],
+    [data-role="assistant"],
+    [data-message-author="model"],
+    [data-role="model"],
+    .chat-assistant-message,
+    .agy-assistant-message,
+    .agent-message,
+    .assistant-message,
+    .antigravity-chat-assistant {
+      background: transparent !important;
+      background-color: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: ${mode === 'light' ? '#1E293B' : 'rgba(240, 246, 252, 0.94)'} !important;
+    }
+
+    /* Code blocks inside assistant messages */
+    .sample-bubble.agent pre,
+    [data-message-author="assistant"] pre,
+    [data-role="assistant"] pre,
+    .agy-assistant-message pre,
+    .agy-code-block {
+      background: rgba(10, 20, 30, 0.65) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 8px !important;
+      backdrop-filter: blur(8px) !important;
+      -webkit-backdrop-filter: blur(8px) !important;
+    }
+
+    /* Thought Accordion Disclosure Pill */
+    .thought-disclosure,
+    .thinking-accordion,
+    details[data-testid="thinking-accordion"] {
+      background: rgba(255, 255, 255, 0.04) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 16px !important;
+      color: rgba(255, 255, 255, 0.7) !important;
+    }
+
+    /* 14. Corner Floral Ornament */
     ${config.ornament === 'floral-bird' ? `
     .surface-composer::before {
       content: '🕊️🌸';
@@ -248,7 +367,7 @@ function buildThemeCss(config) {
     }
     ` : ''}
 
-    /* 14. Interactive Pet Mascot Entity */
+    /* 15. Interactive Pet Mascot Entity */
     #ag-interactive-pet {
       position: fixed;
       z-index: 999999;

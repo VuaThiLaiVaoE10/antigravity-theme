@@ -1,0 +1,445 @@
+/**
+ * Hallmark Design System Tokens (Nutlope/hallmark inspired)
+ * Anti-Slop, High-Discipline Design System for Antigravity Theme Studio
+ * 
+ * Core Principles:
+ * - 1px hairline rules with deliberate contrast (no fuzzy drop shadows as borders).
+ * - Lightness stepping on dark ground (Paper -> Paper-2 -> Paper-3) instead of glow halos.
+ * - Concentric radii (inner radius = outer radius - padding).
+ * - Calibrated OKLCH color spaces preserving chromatic anchor.
+ * - Strict typographic hierarchy with tabular figures for mono telemetry.
+ */
+
+:root {
+  /* =========================================================================
+     1. PAPER / SURFACE SCALE (Ground, Card Wells, Elevated Panes)
+     ========================================================================= */
+  --color-paper: oklch(15% 0.012 250);           /* Base canvas / ground */
+  --color-paper-2: oklch(18.5% 0.014 250);       /* Elevated card / well surface (+3.5% L) */
+  --color-paper-3: oklch(22.5% 0.016 250);       /* Highest surface / popups / modals */
+  --color-paper-contrast: oklch(11% 0.010 250);  /* Inset sunken wells / code backgrounds */
+  --color-paper-subtle: oklch(26% 0.018 250);    /* High-elevation hover well */
+
+  /* =========================================================================
+     2. INK SCALE (Typographic Hierarchy, WCAG AAA/AA calibrated)
+     ========================================================================= */
+  --color-ink: oklch(95% 0.008 250);             /* Primary text / titles (>= 11:1 on paper) */
+  --color-ink-2: oklch(84% 0.012 250);           /* Secondary text / body (>= 7:1) */
+  --color-muted: oklch(68% 0.015 250);           /* Captions, labels, timestamps (>= 4.5:1) */
+  --color-faint: oklch(48% 0.015 250);           /* Disabled, placeholders, subtle marks */
+
+  /* =========================================================================
+     3. RULES / HAIRLINES (1px precision dividers, no blurry borders)
+     ========================================================================= */
+  --color-rule: oklch(28% 0.014 250);            /* Standard 1px hairline border */
+  --color-rule-2: oklch(38% 0.018 250);          /* Emphasized structural border / active rule */
+  --color-rule-subtle: oklch(22% 0.012 250);     /* Sunken divider between subtle list items */
+  --rule-hair: 1px;                              /* Exact 1px hairline standard */
+  --border-hairline: 1px solid var(--color-rule);
+  --border-hairline-2: 1px solid var(--color-rule-2);
+
+  /* =========================================================================
+     4. ACCENT SIGNALS (Signal, not fill; <= 5% viewport footprint)
+     ========================================================================= */
+  --color-accent: oklch(78% 0.14 220);           /* Primary signal / active indicator */
+  --color-accent-soft: oklch(78% 0.14 220 / 0.14);/* Translucent selection / hover tint */
+  --color-accent-ink: oklch(16% 0.04 220);       /* Readable text on solid accent fill */
+  --color-accent-hi: oklch(84% 0.12 220);        /* Highlight / active pill hover */
+  --color-accent-deep: oklch(45% 0.14 220);      /* Deep accent for badges/accents */
+  --color-focus: oklch(80% 0.15 220);            /* High-visibility focus ring */
+  --focus-ring: 0 0 0 2px var(--color-focus);
+
+  /* Semantic status signals */
+  --color-success: oklch(76% 0.15 150);
+  --color-warning: oklch(80% 0.16 80);
+  --color-error: oklch(68% 0.19 25);
+  --color-info: oklch(78% 0.14 220);
+
+  /* =========================================================================
+     5. HALLMARK RADIUS SCALE (Clean, geometric, concentric)
+     ========================================================================= */
+  --radius-none: 0px;
+  --radius-xs: 4px;                              /* Tags, indicators, tiny chips */
+  --radius-sm: 6px;                              /* Buttons, inputs, disclosure pills */
+  --radius-md: 10px;                             /* Cards, panels, dialog headers */
+  --radius-lg: 16px;                             /* Floating composers, modals, windows */
+  --radius-xl: 20px;                             /* Large hero containers, pill cards */
+  --radius-pill: 9999px;                         /* Rounded pills, avatars */
+  --radius-full: 9999px;
+
+  /* Concentric nesting tokens: inner = outer - padding */
+  --radius-card: var(--radius-md);               /* Default card outer */
+  --radius-input: var(--radius-sm);              /* Input fields */
+  --radius-inner: calc(var(--radius-card) - 2px);/* Concentric inner element */
+
+  /* =========================================================================
+     6. HALLMARK SPACING SCALE (Tight, rhythm-aligned 4px grid)
+     ========================================================================= */
+  --space-3xs: 2px;
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* =========================================================================
+     7. HALLMARK TYPOGRAPHY & MONOSPACE TOKENS
+     ========================================================================= */
+  --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "Geist Mono", "Cascadia Code", "Fira Code", "Atkinson Hyperlegible Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+  --font-code: var(--font-mono);
+
+  /* Letter tracking */
+  --tracking-tighter: -0.04em;
+  --tracking-tight: -0.025em;
+  --tracking-display: -0.025em;
+  --tracking-normal: 0em;
+  --tracking-wide: 0.02em;
+  --tracking-wider: 0.04em;
+  --tracking-mono: -0.01em;
+
+  /* Line heights */
+  --line-height-none: 1;
+  --line-height-display: 1.05;
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.35;
+  --line-height-body: 1.55;
+  --line-height-relaxed: 1.65;
+
+  /* Numerical tabular figures */
+  --font-variant-numeric: tabular-nums;
+  --display-weight: 600;
+  --body-weight: 400;
+  --mono-weight: 450;
+
+  /* =========================================================================
+     8. SHADOW & ELEVATION DISCIPLINE (Anti-slop: lightness + 1px hairline)
+     ========================================================================= */
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.15);
+  --shadow-card: 0 1px 0 oklch(100% 0 0 / 0.04) inset, 0 12px 28px -12px oklch(0% 0 0 / 0.35);
+  --shadow-lift: 0 1px 0 oklch(100% 0 0 / 0.06) inset, 0 20px 40px -16px oklch(0% 0 0 / 0.45);
+  --shadow-inset-rule: inset 0 0 0 1px var(--color-rule);
+}
+
+/* ===========================================================================
+   THEME COLORWAY OVERRIDES
+   Graphite, Midnight, Cyber Lime, Sakura, Dusk
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   1. GRAPHITE (Console / DevTools / Observability Register)
+   Neutral slate-graphite paper, calm precision, amber operator & cool instrument
+   --------------------------------------------------------------------------- */
+:root[data-theme="graphite"],
+[data-theme="graphite"],
+[data-colorway="graphite"],
+.theme-graphite {
+  /* Paper / Surface */
+  --color-paper: oklch(17% 0.008 250);
+  --color-paper-2: oklch(21% 0.009 250);
+  --color-paper-3: oklch(26% 0.011 250);
+  --color-paper-contrast: oklch(13.5% 0.007 250);
+  --color-paper-subtle: oklch(30% 0.012 250);
+
+  /* Ink */
+  --color-ink: oklch(95% 0.005 250);
+  --color-ink-2: oklch(83% 0.008 250);
+  --color-muted: oklch(71% 0.010 250);
+  --color-faint: oklch(48% 0.010 250);
+
+  /* Rules */
+  --color-rule: oklch(31% 0.010 250);
+  --color-rule-2: oklch(42% 0.012 250);
+  --color-rule-subtle: oklch(24% 0.008 250);
+
+  /* Accent: Warm Amber Person / Telemetry */
+  --color-accent: oklch(82% 0.15 80);
+  --color-accent-soft: oklch(82% 0.15 80 / 0.14);
+  --color-accent-ink: oklch(18% 0.04 75);
+  --color-accent-hi: oklch(88% 0.14 80);
+  --color-accent-deep: oklch(42% 0.12 80);
+  --color-accent-2: oklch(77% 0.12 245);          /* Cool instrument signal */
+  --color-focus: oklch(82% 0.15 80);
+
+  --shadow-card: 0 1px 0 oklch(100% 0 0 / 0.04) inset, 0 10px 24px -10px oklch(0% 0 0 / 0.4);
+}
+
+/* ---------------------------------------------------------------------------
+   2. MIDNIGHT (Cinematic Deep Azure / Night Sky Register)
+   Cold deep blue ground, cool white ink, vivid azure signal
+   --------------------------------------------------------------------------- */
+:root[data-theme="midnight"],
+[data-theme="midnight"],
+[data-theme="midnight-aqua"],
+[data-colorway="midnight"],
+.theme-midnight {
+  /* Paper / Surface */
+  --color-paper: oklch(14% 0.048 264);
+  --color-paper-2: oklch(18.5% 0.052 264);
+  --color-paper-3: oklch(23% 0.055 264);
+  --color-paper-contrast: oklch(10% 0.042 264);
+  --color-paper-subtle: oklch(28% 0.058 264);
+
+  /* Ink */
+  --color-ink: oklch(95% 0.016 250);
+  --color-ink-2: oklch(88% 0.050 245);
+  --color-muted: oklch(73% 0.040 256);
+  --color-faint: oklch(50% 0.038 256);
+
+  /* Rules */
+  --color-rule: oklch(29% 0.058 264);
+  --color-rule-2: oklch(40% 0.060 262);
+  --color-rule-subtle: oklch(21% 0.045 264);
+
+  /* Accent: Cold Crisp Azure */
+  --color-accent: oklch(80% 0.11 230);
+  --color-accent-soft: oklch(80% 0.11 230 / 0.15);
+  --color-accent-ink: oklch(16% 0.05 264);
+  --color-accent-hi: oklch(86% 0.10 230);
+  --color-accent-deep: oklch(48% 0.12 232);
+  --color-accent-2: oklch(58% 0.10 236);
+  --color-focus: oklch(84% 0.12 228);
+
+  --shadow-card: 0 1px 0 oklch(100% 0 0 / 0.05) inset, 0 16px 36px -16px oklch(8% 0.05 264 / 0.6);
+}
+
+/* ---------------------------------------------------------------------------
+   3. CYBER LIME (Vantage / Reality Capture / Spatial Telemetry)
+   Steely blue-black ground, pale steel ink, electric chromatic lime signal
+   --------------------------------------------------------------------------- */
+:root[data-theme="cyber-lime"],
+:root[data-theme="cyberlime"],
+[data-theme="cyber-lime"],
+[data-theme="cyberlime"],
+[data-colorway="cyber-lime"],
+[data-colorway="cyberlime"],
+.theme-cyber-lime,
+.theme-cyberlime {
+  /* Paper / Surface */
+  --color-paper: oklch(13.5% 0.012 235);
+  --color-paper-2: oklch(17% 0.014 235);
+  --color-paper-3: oklch(21% 0.016 235);
+  --color-paper-contrast: oklch(10.5% 0.010 235);
+  --color-paper-subtle: oklch(26% 0.018 235);
+
+  /* Ink */
+  --color-ink: oklch(95% 0.006 230);
+  --color-ink-2: oklch(82% 0.012 230);
+  --color-muted: oklch(66% 0.016 230);
+  --color-faint: oklch(46% 0.014 230);
+
+  /* Rules */
+  --color-rule: oklch(27% 0.014 235);
+  --color-rule-2: oklch(34% 0.016 235);
+  --color-rule-subtle: oklch(20% 0.012 235);
+
+  /* Accent: Chromatic Cyber Lime 126 */
+  --color-accent: oklch(89% 0.19 126);
+  --color-accent-soft: oklch(89% 0.19 126 / 0.15);
+  --color-accent-hi: oklch(93% 0.17 126);
+  --color-accent-ink: oklch(19% 0.04 126);
+  --color-accent-deep: oklch(52% 0.16 126);
+  --color-accent-2: oklch(70% 0.04 232);
+  --color-focus: oklch(89% 0.19 126);
+
+  --shadow-card: 0 1px 0 oklch(100% 0 0 / 0.05) inset, 0 12px 28px -12px oklch(0% 0 0 / 0.45);
+}
+
+/* ---------------------------------------------------------------------------
+   4. SAKURA (Blossom Night / Japanese Woodblock & Botanical Register)
+   Plum-tinted dark ground, pale petal mist ink, vibrant radiant blossom pink
+   --------------------------------------------------------------------------- */
+:root[data-theme="sakura"],
+[data-theme="sakura"],
+[data-colorway="sakura"],
+.theme-sakura {
+  /* Paper / Surface */
+  --color-paper: oklch(15.5% 0.022 345);
+  --color-paper-2: oklch(19.5% 0.026 348);
+  --color-paper-3: oklch(23.5% 0.028 348);
+  --color-paper-contrast: oklch(12% 0.018 345);
+  --color-paper-subtle: oklch(28% 0.032 348);
+
+  /* Ink */
+  --color-ink: oklch(96% 0.015 350);
+  --color-ink-2: oklch(86% 0.025 350);
+  --color-muted: oklch(71% 0.032 345);
+  --color-faint: oklch(50% 0.028 345);
+
+  /* Rules */
+  --color-rule: oklch(29% 0.030 350);
+  --color-rule-2: oklch(39% 0.038 350);
+  --color-rule-subtle: oklch(22% 0.025 350);
+
+  /* Accent: Radiant Sakura Blossom Pink */
+  --color-accent: oklch(78% 0.16 350);
+  --color-accent-soft: oklch(78% 0.16 350 / 0.15);
+  --color-accent-hi: oklch(85% 0.14 350);
+  --color-accent-ink: oklch(18% 0.04 350);
+  --color-accent-deep: oklch(48% 0.15 350);
+  --color-accent-2: oklch(62% 0.13 350);
+  --color-focus: oklch(82% 0.17 350);
+
+  --shadow-card: 0 1px 0 oklch(100% 0 0 / 0.06) inset, 0 14px 32px -12px oklch(10% 0.03 350 / 0.5);
+}
+
+/* ---------------------------------------------------------------------------
+   5. DUSK (Calm Evening / Smoked Slate & Bone Wells Register)
+   Slate violet-grey ground, bone wells, calm periwinkle & warm apricot signal
+   --------------------------------------------------------------------------- */
+:root[data-theme="dusk"],
+[data-theme="dusk"],
+[data-colorway="dusk"],
+.theme-dusk {
+  /* Paper / Surface */
+  --color-paper: oklch(17.5% 0.014 268);
+  --color-paper-2: oklch(21% 0.016 268);
+  --color-paper-3: oklch(25% 0.017 268);
+  --color-paper-contrast: oklch(13% 0.012 268);
+  --color-paper-subtle: oklch(30% 0.020 268);
+
+  /* Ink */
+  --color-ink: oklch(96% 0.006 75);
+  --color-ink-2: oklch(85% 0.010 262);
+  --color-muted: oklch(70% 0.016 262);
+  --color-faint: oklch(48% 0.014 262);
+
+  /* Rules */
+  --color-rule: oklch(30% 0.016 266);
+  --color-rule-2: oklch(40% 0.018 266);
+  --color-rule-subtle: oklch(23% 0.014 266);
+
+  /* Accent: Periwinkle & Apricot */
+  --color-accent: oklch(77% 0.10 274);
+  --color-accent-soft: oklch(77% 0.10 274 / 0.15);
+  --color-accent-ink: oklch(19% 0.035 274);
+  --color-accent-hi: oklch(84% 0.085 274);
+  --color-accent-deep: oklch(44% 0.13 274);
+  --color-accent-2: oklch(83% 0.095 62);          /* Warm Apricot secondary signal */
+  --color-focus: oklch(80% 0.10 274);
+
+  --shadow-card: 0 1px 0 oklch(100% 0 0 / 0.06) inset, 0 16px 36px -14px oklch(8% 0.02 268 / 0.55);
+}
+
+/* ===========================================================================
+   HALLMARK UTILITY & COMPONENT HELPER CLASSES
+   Clean hairline components adhering to the anti-slop guidelines
+   =========================================================================== */
+
+/* Hairline border rule */
+.hallmark-hairline,
+.hairline-border {
+  border: var(--rule-hair) solid var(--color-rule) !important;
+}
+
+.hallmark-hairline-bottom {
+  border-bottom: var(--rule-hair) solid var(--color-rule) !important;
+}
+
+.hallmark-hairline-top {
+  border-top: var(--rule-hair) solid var(--color-rule) !important;
+}
+
+.hallmark-hairline-right {
+  border-right: var(--rule-hair) solid var(--color-rule) !important;
+}
+
+.hallmark-hairline-left {
+  border-left: var(--rule-hair) solid var(--color-rule) !important;
+}
+
+/* Hallmark Surface Card */
+.hallmark-card,
+.surface-card {
+  background-color: var(--color-paper-2);
+  color: var(--color-ink);
+  border: var(--rule-hair) solid var(--color-rule);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: border-color 160ms cubic-bezier(0.16, 1, 0.3, 1), background-color 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hallmark-card:hover {
+  border-color: var(--color-rule-2);
+}
+
+/* Hallmark Inner concentric child element */
+.hallmark-inner {
+  border-radius: var(--radius-inner);
+}
+
+/* Hallmark Monospace Telemetry / Code block */
+.hallmark-mono,
+.code-telemetry {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: var(--tracking-mono);
+  font-variant-numeric: var(--font-variant-numeric);
+}
+
+/* Hallmark Pill / Badge */
+.hallmark-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-3xs) var(--space-xs);
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-paper-3);
+  color: var(--color-ink-2);
+  border: var(--rule-hair) solid var(--color-rule);
+  line-height: var(--line-height-tight);
+}
+
+.hallmark-pill.active {
+  background-color: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* Hallmark Button */
+.hallmark-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-md);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: var(--rule-hair) solid var(--color-rule);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: all 140ms cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.hallmark-btn:hover {
+  background: var(--color-paper-3);
+  border-color: var(--color-rule-2);
+  color: var(--color-ink);
+}
+
+.hallmark-btn.primary {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  border-color: var(--color-accent);
+  font-weight: 600;
+}
+
+.hallmark-btn.primary:hover {
+  background: var(--color-accent-hi);
+  border-color: var(--color-accent-hi);
+}
+
+.hallmark-btn:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}

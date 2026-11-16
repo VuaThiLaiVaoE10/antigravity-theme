@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Antigravity Theme Studio</title>
+  <link rel="stylesheet" href="hallmarkTokens.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -640,46 +641,219 @@
         <div class="preview-body">
           <!-- Sidebar -->
           <div class="preview-sidebar" id="previewSidebar">
-            <button class="side-btn primary">+ New Conversation</button>
-            <button class="side-btn active">🕒 Automations</button>
-            <button class="side-btn">🧩 Customizations</button>
-            <div class="side-section">Projects</div>
-            <div class="side-section">Conversations</div>
-            <div class="side-footer">⚙️ Settings</div>
+            <!-- Top icons header -->
+            <div class="sidebar-top-bar">
+              <div class="sidebar-brand">
+                <svg class="brand-logo" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                <span class="brand-name">Antigravity</span>
+              </div>
+              <div class="sidebar-actions-strip">
+                <button class="sidebar-icon-btn" title="Toggle Split View" type="button">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/>
+                  </svg>
+                </button>
+                <button class="sidebar-icon-btn" title="Back" type="button">&lt;</button>
+                <button class="sidebar-icon-btn" title="Forward" type="button">&gt;</button>
+                <button class="sidebar-icon-btn" title="Search" type="button">🔍</button>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="sidebar-nav-actions">
+              <button class="side-btn side-btn-new" type="button">
+                <span class="side-btn-symbol">+</span> New Conversation
+              </button>
+              <button class="side-btn active" type="button">
+                <span class="side-btn-icon">🕒</span> Automations
+              </button>
+              <button class="side-btn" type="button">
+                <span class="side-btn-icon">🧩</span> Customizations
+              </button>
+            </div>
+
+            <!-- Tree view sections -->
+            <div class="sidebar-tree">
+              <!-- Projects Group -->
+              <div class="side-tree-group">
+                <div class="side-tree-header">
+                  <span class="tree-caret">▾</span>
+                  <span class="tree-title">Projects</span>
+                </div>
+                <div class="side-tree-items">
+                  <div class="tree-item active">
+                    <span class="folder-icon">📁</span>
+                    <span class="tree-label">newproject</span>
+                  </div>
+                  <div class="tree-item">
+                    <span class="folder-icon">📁</span>
+                    <span class="tree-label">CLI Project</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Conversations Group -->
+              <div class="side-tree-group">
+                <div class="side-tree-header">
+                  <span class="tree-caret">▾</span>
+                  <span class="tree-title">Conversations</span>
+                </div>
+                <div class="side-tree-items">
+                  <div class="tree-item conv-item active">
+                    <span class="conv-title">Theme Customizer</span>
+                    <span class="conv-meta">4h</span>
+                  </div>
+                  <div class="tree-item conv-item">
+                    <span class="conv-title">WebGL Motion Flow</span>
+                    <span class="conv-meta">2d</span>
+                  </div>
+                  <div class="tree-item conv-item">
+                    <span class="conv-title">Hallmark Design System</span>
+                    <span class="conv-meta">3d</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom footer -->
+            <div class="side-footer">
+              <span class="settings-icon">⚙️</span>
+              <span class="settings-label">Settings</span>
+            </div>
           </div>
 
           <!-- Main Content Area -->
           <div class="preview-main">
-            <div class="main-header">
-              <h2>Automations</h2>
+            <!-- Header with Model Tag and Branch -->
+            <div class="preview-main-header">
+              <div class="conv-identity">
+                <h2 class="conv-title-text">Theme Customizer</h2>
+                <div class="conv-header-meta">
+                  <span class="model-tag-badge">
+                    <span class="model-tag-dot"></span>
+                    <span class="model-tag-name">Gemini 3.8 Flash High</span>
+                  </span>
+                  <span class="branch-indicator-tag" title="Branch: main">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>
+                    </svg>
+                    <span>main</span>
+                  </span>
+                </div>
+              </div>
               <div class="header-btns">
-                <button class="mini-btn">✨ Create with Prompt</button>
-                <button class="mini-btn">+ New</button>
+                <button class="mini-btn">Share</button>
+                <button class="mini-btn primary">+ New</button>
               </div>
             </div>
 
-            <!-- Chat / Content Sample -->
+            <!-- Chat / Content Sample Stream -->
             <div class="chat-sample-area">
-              <div class="empty-state">
-                <p><strong>No automations yet</strong></p>
-                <span>Run a prompt on a schedule, like a morning summary of yesterday's changes. Runs show up here.</span>
-              </div>
-
-              <!-- User Bubble Sample -->
+              <!-- User Bubble Sample: Crisp hairline card with subtle timestamp and avatar dot -->
               <div class="sample-bubble user" id="previewUserBubble">
-                <span>Đổi theme Antigravity sang giao diện Midnight Aqua với hình nền cô gái kéo đàn!</span>
+                <div class="bubble-meta-row">
+                  <div class="bubble-author">
+                    <span class="author-dot user-dot"></span>
+                    <span class="author-name">You</span>
+                  </div>
+                  <span class="bubble-timestamp">19:42</span>
+                </div>
+                <div class="bubble-body-text">
+                  Đổi theme Antigravity sang giao diện Midnight Aqua với phong cách Hallmark anti-slop, viền hairline 1px và typography cân bằng!
+                </div>
               </div>
 
-              <!-- Agent Bubble Sample -->
+              <!-- Thought disclosure pill: '< Thinking (4s) >' expandable accordion -->
+              <div class="thought-disclosure">
+                <details class="thought-accordion" open>
+                  <summary class="thought-summary">
+                    <span class="thought-bracket">&lt;</span>
+                    <span class="thought-text">Thinking (4s)</span>
+                    <span class="thought-bracket">&gt;</span>
+                  </summary>
+                  <div class="thought-drawer">
+                    <div class="thought-step">✓ Loaded Hallmark design tokens (hairlines, OKLCH neutrals, concentric radii)</div>
+                    <div class="thought-step">✓ Calibrated contrast ratios (&ge; 4.5:1) for dark-mode readability</div>
+                    <div class="thought-step">✓ Configured floating command composer with multi-line prompt</div>
+                  </div>
+                </details>
+              </div>
+
+              <!-- Agent Bubble Sample: Rich response card with clean syntax code snippet and bottom action buttons -->
               <div class="sample-bubble agent" id="previewAgentBubble">
-                <span>Đã áp dụng theme Midnight Aqua và hình nền tùy chỉnh thành công.</span>
+                <div class="bubble-meta-row">
+                  <div class="bubble-author">
+                    <span class="author-avatar-chip">AG</span>
+                    <span class="author-name">Antigravity</span>
+                    <span class="author-model-badge">Gemini 3.8 Flash High</span>
+                  </div>
+                  <span class="bubble-timestamp">19:43</span>
+                </div>
+                <div class="bubble-body-text">
+                  <p>Đã áp dụng theme Midnight Aqua theo chuẩn Hallmark anti-slop: toàn bộ viền chuyển sang hairline 1px siêu mỏng, radius đồng tâm chính xác và bề mặt phân tầng tối ưu.</p>
+                  
+                  <div class="code-snippet-card">
+                    <div class="code-snippet-header">
+                      <span class="code-lang-label">css</span>
+                      <button class="snippet-action-btn" type="button" title="Copy Code">📋 Copy</button>
+                    </div>
+                    <pre class="code-snippet-body"><code><span class="token-selector">.surface-composer-card</span> {
+  <span class="token-property">border</span>: <span class="token-value">1px solid var(--color-rule, rgba(255, 255, 255, 0.08))</span>;
+  <span class="token-property">border-radius</span>: <span class="token-value">calc(var(--radius-lg, 16px) - 2px)</span>;
+  <span class="token-property">backdrop-filter</span>: <span class="token-value">blur(16px)</span>;
+}</code></pre>
+                  </div>
+                </div>
+                <div class="bubble-action-footer">
+                  <button class="bubble-action-pill" type="button" title="Copy response">
+                    <span class="pill-icon">📋</span> Copy
+                  </button>
+                  <button class="bubble-action-pill" type="button" title="Retry generation">
+                    <span class="pill-icon">🔄</span> Retry
+                  </button>
+                </div>
               </div>
             </div>
 
-            <!-- Composer Input Sample -->
-            <div class="preview-composer" id="previewComposer">
-              <input type="text" placeholder="Type a message or press '/' for commands..." readonly>
-              <button class="send-sample-btn">➤</button>
+            <!-- Composer (.preview-composer): Floating command composer (.surface-composer & .surface-composer-card) -->
+            <div class="preview-composer surface-composer" id="previewComposer">
+              <!-- Mascot badge placeholder preserved for companion pet -->
+              <div class="preview-mascot-badge" id="previewMascotBadge" style="display: none;"></div>
+
+              <div class="surface-composer-card">
+                <div class="composer-prompt-row">
+                  <textarea class="composer-multiline-input" rows="2" placeholder="Ask anything, @ to mention, / for actions" readonly></textarea>
+                </div>
+                <div class="composer-action-bar">
+                  <div class="composer-pills-group">
+                    <button class="composer-pill model-selector-pill" type="button" title="Select Model">
+                      <span class="pill-plus">+</span>
+                      <span class="pill-text">Gemini 3.8 Flash High</span>
+                    </button>
+                    <button class="composer-pill turbo-mode-pill" type="button" title="Turbo Mode">
+                      <span class="turbo-glyph">⚡</span>
+                      <span class="pill-text">Turbo</span>
+                    </button>
+                  </div>
+                  <div class="composer-controls-group">
+                    <button class="composer-icon-btn mic-btn" type="button" title="Microphone Input">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                        <line x1="12" y1="19" x2="12" y2="23"/>
+                        <line x1="8" y1="23" x2="16" y2="23"/>
+                      </svg>
+                    </button>
+                    <button class="composer-submit-btn send-sample-btn" type="button" title="Send message">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

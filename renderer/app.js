@@ -286,10 +286,80 @@ function setupEvents() {
       appState.wallpaperName = res.fileName;
       currentWpName.textContent = res.fileName;
       showStatus('Đã chọn hình nền: ' + res.fileName);
+
+      // Inspect image dimensions and detect aspect ratio
+      detectImageResolution(res.dataUrl);
+
       updateLivePreview();
       // Auto save & apply!
       await saveConfig();
     }
+  });
+
+  // Optimize to 1920x1080 Canvas Tool
+  const btnOptimize1080 = document.getElementById('btnOptimize1080');
+  if (btnOptimize1080) {
+    btnOptimize1080.addEventListener('click', async () => {
+      if (!appState.wallpaperUrl) return;
+      showStatus('Đang tối ưu ảnh về độ phân giải chuẩn 1920x1080...');
+      try {
+        const optimized = await cropAndResizeTo1080p(appState.wallpaperUrl);
+        appState.wallpaperUrl = optimized;
+        const badgeWpRes = document.getElementById('badgeWpRes');
+        if (badgeWpRes) badgeWpRes.textContent = '🖥️ Đã chuẩn hóa 1920x1080 (16:9 Full HD)';
+        showStatus('✓ Đã chuẩn hóa hình nền về 1920x1080 chuẩn nét!');
+        updateLivePreview();
+        await saveConfig();
+      } catch (e) {
+        showStatus('Lỗi khi tối ưu: ' + e.message);
+      }
+    });
+  }
+
+  // Resolution Segments Selection
+  document.querySelectorAll('.segment-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const targetRes = btn.getAttribute('data-res');
+      appState.targetResolution = targetRes;
+      showStatus(`Đã chọn phân khúc độ phân giải: ${btn.textContent.trim()}`);
+    });
+  });
+
+  // Fit Modes Selection (Cover, Contain, Stretch, Center)
+  document.querySelectorAll('.fit-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      document.querySelectorAll('.fit-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const fit = btn.getAttribute('data-fit');
+      appState.wallpaperFit = fit;
+      updateLivePreview();
+      showStatus(`Chế độ căn chỉnh hình nền: ${fit.toUpperCase()}`);
+      await saveConfig();
+    });
+  });
+
+  // Category Filter Tabs
+  document.querySelectorAll('.cat-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const cat = tab.getAttribute('data-cat');
+      renderWallpaperPresets(cat);
+    });
+  });
+
+  // Glassmorphism Tiers (Subtle, Deep, Ultra, Cyber)
+  document.querySelectorAll('.tier-card').forEach(card => {
+    card.addEventListener('click', async () => {
+      document.querySelectorAll('.tier-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      const tier = card.getAttribute('data-tier');
+      applyGlassTier(tier);
+      updateLivePreview();
+      await saveConfig();
+    });
   });
 
   sliderWpOpacity.addEventListener('input', (e) => {
@@ -489,30 +559,136 @@ function renderGradientTokens() {
   });
 }
 
-// === WALLPAPER PRESETS ===
-function renderWallpaperPresets() {
-  wpPresetsGrid.innerHTML = '';
-  const presets = [
-    { id: 'violinist', name: 'Cô gái kéo đàn (Mặc định)', bg: 'linear-gradient(135deg, #091c2b, #15334c)' },
-    { id: 'nebula', name: 'Cosmic Nebula', bg: 'linear-gradient(135deg, #1b092b, #33154c)' },
-    { id: 'cyberpunk', name: 'Cyberpunk Tokyo', bg: 'linear-gradient(135deg, #081a26, #2a1130)' },
-    { id: 'sakura', name: 'Sakura Dusk', bg: 'linear-gradient(135deg, #2b0e1d, #4c1833)' }
-  ];
+// === WALLPAPER PRESETS DATABASE (CATEGORIES & RESOLUTIONS) ===
+const WALLPAPER_PRESETS = [
+  { id: 'violinist', cat: 'anime', name: 'Cô gái kéo đàn ngắm Trái Đất', res: '1920x1080', bg: 'linear-gradient(135deg, #091c2b, #15334c)' },
+  { id: 'kindred', cat: 'anime', name: 'Kindred Spirit Hunters', res: '1920x1080', bg: 'linear-gradient(135deg, #180926, #321045)' },
+  { id: 'cyberpunk-girl', cat: 'anime', name: 'Cyberpunk Girl Horizon', res: '1920x1080', bg: 'linear-gradient(135deg, #081a26, #2a1130)' },
+  { id: 'tokyo-rain', cat: 'city', name: 'Tokyo Midnight Rain', res: '1920x1080', bg: 'linear-gradient(135deg, #0d1b2a, #1b263b)' },
+  { id: 'neo-seoul', cat: 'city', name: 'Neo Seoul Sunset Horizon', res: '2560x1440', bg: 'linear-gradient(135deg, #2b0e1d, #4c1833)' },
+  { id: 'neon-alley', cat: 'city', name: 'Cyber Neon Alley 1080p', res: '1920x1080', bg: 'linear-gradient(135deg, #0f0c29, #302b63)' },
+  { id: 'frosted-blue', cat: 'minimal', name: 'Deep Frosted Glass Aura', res: '1920x1080', bg: 'linear-gradient(135deg, #081826, #15415E)' },
+  { id: 'nebula', cat: 'minimal', name: 'Cosmic 4K Nebula', res: '3840x2160', bg: 'linear-gradient(135deg, #160a29, #281140)' },
+  { id: 'sakura-glass', cat: 'minimal', name: 'Sakura Dusk Glassmorphism', res: '1920x1080', bg: 'linear-gradient(135deg, #2b1220, #421c32)' },
+  { id: 'synthwave', cat: 'pixel', name: 'Synthwave Neon Sun Grid', res: '1920x1080', bg: 'linear-gradient(135deg, #1a0826, #3f0d40)' },
+  { id: 'pixel-room', cat: 'pixel', name: '8-Bit Cozy Lofi Room', res: '1920x1080', bg: 'linear-gradient(135deg, #1a1c29, #292e42)' },
+  { id: 'ultrawide-cyber', cat: 'minimal', name: 'Ultrawide Cyber Deep Blue', res: '2560x1080', bg: 'linear-gradient(135deg, #040d14, #0d283e)' }
+];
 
-  presets.forEach(p => {
+function renderWallpaperPresets(filterCat = 'all') {
+  wpPresetsGrid.innerHTML = '';
+  const list = filterCat === 'all' ? WALLPAPER_PRESETS : WALLPAPER_PRESETS.filter(p => p.cat === filterCat);
+
+  list.forEach(p => {
     const card = document.createElement('div');
     card.className = `wp-preset-card ${appState.wallpaperName?.includes(p.name) ? 'active' : ''}`;
     card.style.background = p.bg;
-    card.innerHTML = `<span class="wp-preset-title">${p.name}</span>`;
-    card.addEventListener('click', () => {
+    card.innerHTML = `
+      <span class="wp-preset-title">${p.name}</span>
+      <span style="font-size:9px;color:rgba(125,207,255,0.85);margin-top:2px;">${p.res}</span>
+    `;
+    card.addEventListener('click', async () => {
       document.querySelectorAll('.wp-preset-card').forEach(c => c.classList.remove('active'));
       card.classList.add('active');
-      currentWpName.textContent = p.name;
+      currentWpName.textContent = `${p.name} (${p.res})`;
       appState.wallpaperName = p.name;
+      const badgeWpRes = document.getElementById('badgeWpRes');
+      if (badgeWpRes) badgeWpRes.textContent = `🖥️ Chuẩn ${p.res}`;
       updateLivePreview();
+      await saveConfig();
     });
     wpPresetsGrid.appendChild(card);
   });
+}
+
+function detectImageResolution(dataUrl) {
+  const img = new Image();
+  img.onload = () => {
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    const ratio = (w / h).toFixed(2);
+    let ratioLabel = '16:9';
+    if (Math.abs(ratio - 1.78) < 0.05) ratioLabel = '16:9 Full HD';
+    else if (Math.abs(ratio - 2.33) < 0.1) ratioLabel = '21:9 Ultrawide';
+    else if (Math.abs(ratio - 0.56) < 0.05) ratioLabel = '9:16 Dọc';
+    else if (Math.abs(ratio - 1.33) < 0.05) ratioLabel = '4:3 Standard';
+
+    const badgeWpRes = document.getElementById('badgeWpRes');
+    if (badgeWpRes) {
+      badgeWpRes.textContent = `🖥️ ${w}x${h} (${ratioLabel})`;
+    }
+  };
+  img.src = dataUrl;
+}
+
+function cropAndResizeTo1080p(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const targetW = 1920;
+      const targetH = 1080;
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+
+      // Cover scaling math
+      const srcW = img.naturalWidth;
+      const srcH = img.naturalHeight;
+      const srcRatio = srcW / srcH;
+      const targetRatio = targetW / targetH;
+
+      let renderW, renderH, offsetX, offsetY;
+      if (srcRatio > targetRatio) {
+        renderH = targetH;
+        renderW = srcW * (targetH / srcH);
+        offsetX = (targetW - renderW) / 2;
+        offsetY = 0;
+      } else {
+        renderW = targetW;
+        renderH = srcH * (targetW / srcW);
+        offsetX = 0;
+        offsetY = (targetH - renderH) / 2;
+      }
+
+      ctx.drawImage(img, offsetX, offsetY, renderW, renderH);
+      resolve(canvas.toDataURL('image/jpeg', 0.94));
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
+function applyGlassTier(tier) {
+  const g = appState.glass || {};
+  switch (tier) {
+    case 'subtle':
+      g.blur = 10;
+      g.sidebarOpacity = 85;
+      g.cardOpacity = 90;
+      g.scrimOpacity = 50;
+      break;
+    case 'deep':
+      g.blur = 20;
+      g.sidebarOpacity = 65;
+      g.cardOpacity = 80;
+      g.scrimOpacity = 60;
+      break;
+    case 'ultra':
+      g.blur = 24;
+      g.sidebarOpacity = 45;
+      g.cardOpacity = 60;
+      g.scrimOpacity = 40;
+      break;
+    case 'cyber':
+      g.blur = 16;
+      g.sidebarOpacity = 70;
+      g.cardOpacity = 85;
+      g.scrimOpacity = 40;
+      break;
+  }
+  appState.glass = g;
+  renderSliders();
 }
 
 function renderSliders() {
@@ -561,6 +737,10 @@ function updateLivePreview() {
   } else {
     previewWallpaper.style.background = 'linear-gradient(135deg, #091c2b, #15334c)';
   }
+  const fit = appState.wallpaperFit || 'cover';
+  previewWallpaper.style.backgroundSize = fit === 'contain' ? 'contain' : fit === 'stretch' ? '100% 100%' : fit === 'center' ? 'auto' : 'cover';
+  previewWallpaper.style.backgroundPosition = 'center';
+  previewWallpaper.style.backgroundRepeat = 'no-repeat';
   previewWallpaper.style.opacity = (glass.wallpaperOpacity ?? 95) / 100;
 
   // Glassmorphic CSS variables

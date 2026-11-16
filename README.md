@@ -19,8 +19,25 @@
 
 ## 🌟 Tính Năng Nổi Bật
 
-- 🌌 **Tùy biến hình nền (Custom Wallpaper)**: Tải ảnh bất kỳ từ máy tính (`.png`, `.jpg`, `.webp`, `.gif`) hoặc chọn nhanh từ các preset có sẵn (Cô gái kéo đàn, Cosmic Nebula, Cyberpunk Tokyo, Sakura Dusk).
-- 🪟 **Hiệu ứng kính mờ (Frosted Glassmorphism)**: Tự do điều chỉnh độ mờ hậu cảnh (Backdrop Blur), độ trong suốt thanh Sidebar, thẻ Card và hộp thoại theo thời gian thực.
+- 🌌 **Tùy biến hình nền & Phân khúc độ phân giải**:
+  - Hỗ trợ tải ảnh kích thước chuẩn **1920x1080 (16:9 Full HD)**, **2560x1440 (2K QHD)**, **3840x2160 (4K UHD)**, **Ultrawide 21:9** và **Màn hình dọc 9:16**.
+  - Tự động nhận diện độ phân giải và tỷ lệ khung hình thực tế của ảnh upload.
+  - Công cụ **✨ Tối ưu chuẩn 1080p**: Tự động crop và cân bằng tỷ lệ ảnh về chuẩn 1920x1080 sắc nét bằng Canvas.
+- 🔲 **4 Chế độ hiển thị & Căn chỉnh (Fit Modes)**:
+  - `Cover`: Phủ kín màn hình, tự động crop cân bằng không méo hình.
+  - `Contain`: Giữ trọn vẹn 100% chi tiết ảnh gốc trong khung nhìn.
+  - `Stretch`: Kéo giãn theo kích cỡ cửa sổ.
+  - `Center`: Căn giữa nguyên kích thước điểm ảnh.
+- 🖼️ **Kho hình nền mẫu phân loại theo thể loại (Preset Categories)**:
+  - 🌌 *Anime & Fantasy* (Cô gái kéo đàn, Kindred Spirit Hunters, Cyberpunk Girl Horizon)
+  - 🏙️ *Cyberpunk & Cityscape* (Tokyo Midnight Rain, Neo Seoul Sunset, Cyber Neon Alley)
+  - 🎨 *Kính mờ & Minimal* (Deep Frosted Glass, Cosmic 4K Nebula, Sakura Glass)
+  - 👾 *Pixel & Retro Gaming* (Synthwave Neon Sun Grid, 8-Bit Cozy Lofi Room)
+- 🪟 **4 Phân khúc hiệu ứng kính mờ (Glassmorphism Tiers)**:
+  - 🍃 *Subtle Aero*: Kính nhẹ nhàng, thanh thoát (Blur 10px, Sidebar 85%).
+  - ❄️ *Deep Frosted*: Kính mờ sâu đặc trưng Antigravity (Blur 20px, Sidebar 65%).
+  - 🔮 *Ultra Glass*: Trong suốt siêu thực phá cách (Blur 24px, Sidebar 45%).
+  - ⚡ *Cyber Glow*: Kính viền dạ quang Neon tương phản cao.
 - 🎨 **Bảng màu & Gradient thời gian thực**: Cung cấp sẵn 6 bảng màu phong cách (Midnight Aqua, Kanagawa Wave, Kanagawa Dragon, Sakura Dusk, Tokyo Night, Nordic Frost) cùng khả năng chỉnh từng mã màu chữ, viền và gradient bong bóng chat.
 - ⚡ **Zero-Restart Live Sync**: Tự động nhận diện cổng kết nối nội bộ của Antigravity và đồng bộ giao diện trong **0.01 giây** khi nhấn **Lưu & Chạy** mà không cần khởi động lại ứng dụng.
 - 🛡️ **100% An Toàn & Độc Lập**: Hoàn toàn độc lập, không cần qua VS Code hay extension bên thứ ba. Tự động sao lưu an toàn và có nút khôi phục 1-click về nguyên bản gốc của Google.

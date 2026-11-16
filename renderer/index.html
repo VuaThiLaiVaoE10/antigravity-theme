@@ -56,13 +56,46 @@
             <button class="big-action-btn" id="btnBrowseWallpaper">
               <span class="big-icon">📂</span>
               <div class="big-text">
-                <strong data-i18n="pickImageBtn">Chọn ảnh từ máy tính...</strong>
-                <span class="sub-text" id="currentWpName">Cô gái kéo đàn ngắm Trái Đất (Mặc định)</span>
+                <strong data-i18n="pickImageBtn">Chọn ảnh từ máy tính (Hỗ trợ 1920x1080 / 2K / 4K)...</strong>
+                <span class="sub-text" id="currentWpName">Cô gái kéo đàn ngắm Trái Đất (1920x1080 Full HD)</span>
               </div>
             </button>
+            <div class="wp-meta-bar" id="wpMetaBar">
+              <span class="meta-tag badge-res" id="badgeWpRes">🖥️ Chuẩn 1920x1080 (16:9 FHD)</span>
+              <button class="mini-tool-btn" id="btnOptimize1080">✨ Tối ưu chuẩn 1080p</button>
+            </div>
           </div>
 
-          <div class="section-title" data-i18n="presetWallpapers">HÌNH NỀN MẪU CÓ SẴN (PRESETS)</div>
+          <!-- Phân khúc tỷ lệ & Độ phân giải (Resolution Segments) -->
+          <div class="section-title">PHÂN KHÚC ĐỘ PHÂN GIẢI MÀN HÌNH</div>
+          <div class="segments-row" id="resSegmentsRow">
+            <button class="segment-btn active" data-res="1080p">🖥️ 1080p (1920x1080)</button>
+            <button class="segment-btn" data-res="1440p">🌟 2K (2560x1440)</button>
+            <button class="segment-btn" data-res="4k">💎 4K (3840x2160)</button>
+            <button class="segment-btn" data-res="ultrawide">🚀 21:9 Ultrawide</button>
+            <button class="segment-btn" data-res="portrait">📱 Dọc (9:16)</button>
+          </div>
+
+          <!-- Chế độ Căn chỉnh hiển thị (Fit Mode) -->
+          <div class="section-title">CHẾ ĐỘ HIỂN THỊ HÌNH NỀN (FIT MODE)</div>
+          <div class="fit-modes-row" id="fitModesRow">
+            <button class="fit-btn active" data-fit="cover" title="Phủ đầy toàn màn hình, tự động crop cân đối">🔲 Cover (Phủ đầy)</button>
+            <button class="fit-btn" data-fit="contain" title="Vừa vặn trong khung, giữ trọn vẹn 100% chi tiết ảnh">🔳 Contain (Vừa khung)</button>
+            <button class="fit-btn" data-fit="stretch" title="Kéo giãn tỷ lệ theo cửa sổ">↔️ Stretch (Kéo giãn)</button>
+            <button class="fit-btn" data-fit="center" title="Căn giữa nguyên kích thước gốc">🎯 Center (Căn giữa)</button>
+          </div>
+
+          <!-- Bộ lọc danh mục (Category Filter) -->
+          <div class="section-title-row">
+            <span class="section-title" data-i18n="presetWallpapers">HÌNH NỀN MẪU CÓ SẴN (PRESETS)</span>
+            <div class="category-tabs" id="wpCategoryTabs">
+              <button class="cat-tab active" data-cat="all">Tất cả</button>
+              <button class="cat-tab" data-cat="anime">🌌 Anime & Fantasy</button>
+              <button class="cat-tab" data-cat="city">🏙️ Cyberpunk & City</button>
+              <button class="cat-tab" data-cat="minimal">🎨 Kính mờ & Minimal</button>
+              <button class="cat-tab" data-cat="pixel">👾 Pixel & Gaming</button>
+            </div>
+          </div>
           <div class="wallpaper-presets-grid" id="wpPresetsGrid">
             <!-- Dynamically populated -->
           </div>
@@ -99,7 +132,31 @@
 
         <!-- 3. TAB: KÍNH & MỜ (GLASS & BLUR) -->
         <div class="tab-pane" id="tab-glass">
-          <div class="section-title" data-i18n="glassTitle">HIỆU ỨNG KÍNH MỜ (GLASSMORPHISM)</div>
+          <div class="section-title">PHÂN KHÚC HIỆU ỨNG KÍNH (GLASSMORPHISM TIERS)</div>
+          <div class="glass-tiers-grid" id="glassTiersGrid">
+            <button class="tier-card" data-tier="subtle">
+              <span class="tier-icon">🍃</span>
+              <strong>Subtle Aero</strong>
+              <p>Kính nhẹ thanh thoát (Blur 10px, 85%)</p>
+            </button>
+            <button class="tier-card active" data-tier="deep">
+              <span class="tier-icon">❄️</span>
+              <strong>Deep Frosted</strong>
+              <p>Kính mờ sâu chuẩn (Blur 20px, 65%)</p>
+            </button>
+            <button class="tier-card" data-tier="ultra">
+              <span class="tier-icon">🔮</span>
+              <strong>Ultra Glass</strong>
+              <p>Trong suốt siêu thực (Blur 24px, 45%)</p>
+            </button>
+            <button class="tier-card" data-tier="cyber">
+              <span class="tier-icon">⚡</span>
+              <strong>Cyber Glow</strong>
+              <p>Kính tương phản cao viền Neon</p>
+            </button>
+          </div>
+
+          <div class="section-title" data-i18n="glassTitle">TÙY CHỈNH THÔNG SỐ CHI TIẾT</div>
           
           <div class="slider-row">
             <span class="slider-label" data-i18n="blurLabel">Độ mờ hậu cảnh (Backdrop Blur)</span>

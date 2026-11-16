@@ -216,6 +216,8 @@ async function applyToAntigravity(config) {
       const wallpaperOpacity = ((config.glass?.wallpaperOpacity ?? 95) / 100);
       const wallpaperUrl = config.wallpaperUrl || '';
       const customCss = buildThemeCss(config);
+      const fit = config.wallpaperFit || 'cover';
+      const bgSize = fit === 'contain' ? 'contain' : fit === 'stretch' ? '100% 100%' : fit === 'center' ? 'auto' : 'cover';
 
       const evalScript = `(() => {
         try {
@@ -224,9 +226,12 @@ async function applyToAntigravity(config) {
           if (!bg) {
             bg = document.createElement('div');
             bg.id = 'ag-theme-bg';
-            bg.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;background-size:cover;background-position:center;transition:background-image 0.4s ease, opacity 0.3s ease;';
+            bg.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;background-size:${bgSize};background-position:center;background-repeat:no-repeat;transition:background-image 0.4s ease, opacity 0.3s ease;';
             document.body.prepend(bg);
           }
+          bg.style.backgroundSize = '${bgSize}';
+          bg.style.backgroundRepeat = 'no-repeat';
+          bg.style.backgroundPosition = 'center';
           if (${JSON.stringify(wallpaperUrl)}) {
             bg.style.backgroundImage = 'url(' + ${JSON.stringify(wallpaperUrl)} + ')';
             bg.style.opacity = '${wallpaperOpacity}';

@@ -25,7 +25,7 @@ class MotionStudio {
     this.flowCanvas = null; // 256x256 offscreen flow map
     this.flowCtx = null;
 
-    this.currentImg = new Image();
+    this.currentImg = typeof Image !== 'undefined' ? new Image() : { naturalWidth: 0, naturalHeight: 0, complete: false };
     this.isDragging = false;
     this.dragStart = null;
     this.dragCurrent = null;
@@ -173,7 +173,7 @@ class MotionStudio {
 
   loadImage(url) {
     this.imgUrl = url;
-    this.currentImg = new Image();
+    this.currentImg = typeof Image !== 'undefined' ? new Image() : { naturalWidth: 0, naturalHeight: 0, complete: false };
     this.currentImg.crossOrigin = 'anonymous';
     this.currentImg.onload = () => {
       this.resizeCanvas();
@@ -675,7 +675,107 @@ class MotionStudio {
     this.updateFlowTexture();
     this.redrawEditor();
   }
+
+  applyPresetTemplate(templateId) {
+    const templates = MotionStudio.PRESET_TEMPLATES || {};
+    const preset = templates[templateId];
+    if (!preset) {
+      console.warn(`[MotionStudio] Preset template not found: ${templateId}`);
+      return false;
+    }
+
+    // Deep clone arrays so presets are never mutated
+    this.arrows = preset.arrows.map(a => ({ ...a }));
+    this.pins = preset.pins.map(p => ({ ...p }));
+    this.flowSpeed = typeof preset.flowSpeed === 'number' ? preset.flowSpeed : 1.0;
+
+    const slider = this.container ? this.container.querySelector('#sliderMotionSpeed') : null;
+    const valText = this.container ? this.container.querySelector('#valMotionSpeed') : null;
+    if (slider) slider.value = this.flowSpeed;
+    if (valText) valText.textContent = this.flowSpeed.toFixed(1) + 'x';
+
+    this.updateFlowTexture();
+    this.redrawEditor();
+    this.onStateChange(this.exportConfig());
+    return true;
+  }
 }
+
+MotionStudio.PRESET_TEMPLATES = {
+  'hair-wind': {
+    name: 'Tóc bay',
+    icon: '💇',
+    description: 'Gió thổi tóc bồng bềnh sang phải, cố định gương mặt',
+    flowSpeed: 1.2,
+    arrows: [
+      { x1: 0.45, y1: 0.20, x2: 0.78, y2: 0.18, speed: 1.3 },
+      { x1: 0.55, y1: 0.28, x2: 0.88, y2: 0.26, speed: 1.5 },
+      { x1: 0.58, y1: 0.40, x2: 0.92, y2: 0.42, speed: 1.6 },
+      { x1: 0.52, y1: 0.55, x2: 0.85, y2: 0.60, speed: 1.4 },
+      { x1: 0.30, y1: 0.32, x2: 0.42, y2: 0.28, speed: 1.1 }
+    ],
+    pins: [
+      { x: 0.48, y: 0.38, radius: 0.12 },
+      { x: 0.48, y: 0.62, radius: 0.14 },
+      { x: 0.46, y: 0.25, radius: 0.08 }
+    ]
+  },
+  'waterfall': {
+    name: 'Suối nước',
+    icon: '🌊',
+    description: 'Dòng nước chảy xiết từ trên xuống dưới, cố định hai bên bờ',
+    flowSpeed: 1.5,
+    arrows: [
+      { x1: 0.50, y1: 0.12, x2: 0.50, y2: 0.42, speed: 1.8 },
+      { x1: 0.50, y1: 0.42, x2: 0.50, y2: 0.78, speed: 2.0 },
+      { x1: 0.44, y1: 0.22, x2: 0.44, y2: 0.62, speed: 1.6 },
+      { x1: 0.56, y1: 0.22, x2: 0.56, y2: 0.62, speed: 1.6 },
+      { x1: 0.50, y1: 0.78, x2: 0.50, y2: 0.95, speed: 1.4 }
+    ],
+    pins: [
+      { x: 0.20, y: 0.25, radius: 0.16 },
+      { x: 0.20, y: 0.65, radius: 0.18 },
+      { x: 0.80, y: 0.25, radius: 0.16 },
+      { x: 0.80, y: 0.65, radius: 0.18 }
+    ]
+  },
+  'clouds': {
+    name: 'Mây trôi',
+    icon: '☁️',
+    description: 'Mây trôi nhẹ nhàng theo chiều ngang bầu trời, cố định mặt đất',
+    flowSpeed: 0.7,
+    arrows: [
+      { x1: 0.15, y1: 0.15, x2: 0.45, y2: 0.15, speed: 0.7 },
+      { x1: 0.50, y1: 0.18, x2: 0.80, y2: 0.18, speed: 0.8 },
+      { x1: 0.22, y1: 0.32, x2: 0.52, y2: 0.33, speed: 0.6 },
+      { x1: 0.55, y1: 0.30, x2: 0.85, y2: 0.31, speed: 0.7 }
+    ],
+    pins: [
+      { x: 0.18, y: 0.75, radius: 0.18 },
+      { x: 0.50, y: 0.78, radius: 0.18 },
+      { x: 0.82, y: 0.75, radius: 0.18 },
+      { x: 0.50, y: 0.55, radius: 0.12 }
+    ]
+  },
+  'sway-fabric': {
+    name: 'Váy lay động',
+    icon: '👗',
+    description: 'Tà áo váy đung đưa mềm mại phía dưới, cố định phần thân trên',
+    flowSpeed: 0.8,
+    arrows: [
+      { x1: 0.38, y1: 0.65, x2: 0.45, y2: 0.85, speed: 0.9 },
+      { x1: 0.50, y1: 0.68, x2: 0.53, y2: 0.90, speed: 1.0 },
+      { x1: 0.60, y1: 0.65, x2: 0.70, y2: 0.82, speed: 1.1 },
+      { x1: 0.65, y1: 0.80, x2: 0.78, y2: 0.88, speed: 0.9 }
+    ],
+    pins: [
+      { x: 0.50, y: 0.25, radius: 0.15 },
+      { x: 0.50, y: 0.45, radius: 0.14 },
+      { x: 0.18, y: 0.40, radius: 0.16 },
+      { x: 0.82, y: 0.40, radius: 0.16 }
+    ]
+  }
+};
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = MotionStudio;

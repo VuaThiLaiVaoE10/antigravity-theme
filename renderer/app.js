@@ -781,6 +781,7 @@ function setupEvents() {
         }
       });
       motionStudioInstance.init();
+      window.motionStudioInstance = motionStudioInstance;
       if (appState.motionFlow) {
         motionStudioInstance.importConfig(appState.motionFlow);
       }
@@ -832,6 +833,27 @@ function setupEvents() {
           showStatus('Đã nạp ảnh mới từ máy tính: ' + res.fileName);
         }
       }
+    });
+  }
+
+  // Quick Preset Row for Motion Studio
+  const motionPresetsRow = document.getElementById('motionPresetsRow');
+  if (motionPresetsRow) {
+    motionPresetsRow.querySelectorAll('.motion-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const presetId = btn.getAttribute('data-preset');
+        if (!presetId) return;
+
+        window.initMotionStudio();
+        if (motionStudioInstance) {
+          const applied = motionStudioInstance.applyPresetTemplate(presetId);
+          if (applied) {
+            motionPresetsRow.querySelectorAll('.motion-preset-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            showStatus(`✓ Đã áp dụng mẫu chuyển động: ${btn.textContent.trim()}`);
+          }
+        }
+      });
     });
   }
 }

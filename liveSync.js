@@ -265,9 +265,41 @@ function buildThemeCss(config) {
       0% { opacity: 0; transform: scale(0.6); }
       100% { opacity: 1; transform: scale(1); }
     }
-    @keyframes agMascotBounce {
+    /* 15. Dynamic Pet Animations */
+    .anim-bob { animation: agPetBob 2.5s ease-in-out infinite alternate !important; }
+    .anim-pulse { animation: agPetPulse 1.8s ease-in-out infinite !important; }
+    .anim-sway { animation: agPetSway 2s ease-in-out infinite alternate !important; }
+    .anim-glow { animation: agPetGlow 2s ease-in-out infinite alternate !important; }
+    .anim-sleep { animation: agPetSleep 3s ease-in-out infinite alternate !important; }
+
+    @keyframes agPetBob {
       0% { transform: translateY(0); }
-      100% { transform: translateY(-5px); }
+      100% { transform: translateY(-8px); }
+    }
+    @keyframes agPetPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.14); }
+      100% { transform: scale(1); }
+    }
+    @keyframes agPetSway {
+      0% { transform: rotate(-8deg); }
+      100% { transform: rotate(8deg); }
+    }
+    @keyframes agPetGlow {
+      0% { filter: drop-shadow(0 0 5px #7DCFFF); }
+      100% { filter: drop-shadow(0 0 20px #BB9AF7); }
+    }
+    @keyframes agPetSleep {
+      0% { transform: translateY(0) scale(0.98); opacity: 0.85; }
+      100% { transform: translateY(-4px) scale(1); opacity: 1; }
+    }
+
+    .wallpaper-breathing {
+      animation: agBreathing 12s ease-in-out infinite alternate !important;
+    }
+    @keyframes agBreathing {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.06); }
     }
   `;
 }
@@ -364,6 +396,8 @@ async function applyToAntigravity(config) {
               pet.style.left = 'auto';
             }
 
+            pet.className = 'anim-${config.petAnim || 'bob'}';
+
             // Click Interaction: Popup Speech Bubble
             pet.onclick = () => {
               let bubble = document.getElementById('ag-pet-bubble');
@@ -377,6 +411,59 @@ async function applyToAntigravity(config) {
             };
           } else {
             pet.style.display = 'none';
+          }
+
+          // 4. Live Wallpaper Effects (Canvas particles)
+          let cv = document.getElementById('ag-theme-canvas-fx');
+          const fx = '${config.wallpaperFx || 'none'}';
+          if (fx !== 'none' && fx !== 'breathing') {
+            if (!cv) {
+              cv = document.createElement('canvas');
+              cv.id = 'ag-theme-canvas-fx';
+              cv.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;';
+              document.body.prepend(cv);
+            }
+            cv.width = window.innerWidth;
+            cv.height = window.innerHeight;
+            const ctx = cv.getContext('2d');
+            const pts = [];
+            const count = fx === 'rain' ? 60 : 35;
+            for (let i = 0; i < count; i++) {
+              pts.push({
+                x: Math.random() * cv.width,
+                y: Math.random() * cv.height,
+                r: fx === 'fireflies' ? (Math.random() * 2.5 + 1.5) : (Math.random() * 3 + 1),
+                d: Math.random() * 2 + 1,
+                s: Math.random() * 1.5 + 0.5
+              });
+            }
+            if (window._agFxLoop) cancelAnimationFrame(window._agFxLoop);
+            const draw = () => {
+              ctx.clearRect(0, 0, cv.width, cv.height);
+              ctx.fillStyle = fx === 'snow' ? 'rgba(255, 230, 240, 0.75)' : fx === 'fireflies' ? 'rgba(255, 230, 100, 0.8)' : 'rgba(125, 207, 255, 0.6)';
+              pts.forEach(p => {
+                ctx.beginPath();
+                if (fx === 'rain') {
+                  ctx.rect(p.x, p.y, 1.5, 8);
+                } else {
+                  ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                }
+                ctx.fill();
+                p.y += p.s * (fx === 'rain' ? 4 : 1);
+                if (fx === 'fireflies') p.x += Math.sin(p.y * 0.05) * 0.8;
+                if (p.y > cv.height) { p.y = -10; p.x = Math.random() * cv.width; }
+              });
+              window._agFxLoop = requestAnimationFrame(draw);
+            };
+            draw();
+          } else {
+            if (cv) cv.remove();
+            if (window._agFxLoop) cancelAnimationFrame(window._agFxLoop);
+          }
+
+          if (bg) {
+            if (fx === 'breathing') bg.classList.add('wallpaper-breathing');
+            else bg.classList.remove('wallpaper-breathing');
           }
 
           return true;

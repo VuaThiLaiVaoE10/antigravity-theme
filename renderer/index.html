@@ -109,6 +109,21 @@
             <input type="range" id="sliderWpOpacity" min="10" max="100" value="95">
             <span class="slider-val" id="valWpOpacity">95%</span>
           </div>
+
+          <!-- HIỆU ỨNG ĐỘNG HÌNH NỀN (LIVE WALLPAPER EFFECTS) -->
+          <div class="section-title">HIỆU ỨNG ĐỘNG HÌNH NỀN (LIVE WALLPAPER EFFECTS)</div>
+          <div class="fx-presets-row" id="wpFxPresetsRow">
+            <button class="fx-btn active" data-fx="none">🚫 Tĩnh</button>
+            <button class="fx-btn" data-fx="snow">❄️ Tuyết / Cánh hoa rơi</button>
+            <button class="fx-btn" data-fx="fireflies">✨ Đom đóm phát sáng</button>
+            <button class="fx-btn" data-fx="rain">🌧️ Mưa Cyberpunk</button>
+            <button class="fx-btn" data-fx="breathing">🌌 Nhịp thở Parallax</button>
+          </div>
+          <div class="slider-row" style="margin-top:6px;">
+            <span class="slider-label">Tốc độ & Mật độ hiệu ứng</span>
+            <input type="range" id="sliderWpFxSpeed" min="1" max="5" value="3">
+            <span class="slider-val" id="valWpFxSpeed">Mức 3</span>
+          </div>
         </div>
 
         <!-- 2. TAB: MÀU & AVATAR -->
@@ -336,25 +351,14 @@
               </button>
             </div>
 
-            <!-- Pet Interactive Settings -->
-            <div class="mascot-controls-row">
-              <div class="ctrl-group">
-                <label>Vị trí:</label>
-                <select id="selectPetPos" class="mini-select">
-                  <option value="top-right" selected>↗️ Góc trên phải khung chat</option>
-                  <option value="top-left">↖️ Góc trên trái khung chat</option>
-                  <option value="bottom-right">↘️ Góc dưới màn hình</option>
-                </select>
-              </div>
-              <div class="ctrl-group">
-                <label>Kích cỡ:</label>
-                <input type="range" id="sliderPetSize" min="32" max="84" value="52">
-                <span id="valPetSize">52px</span>
-              </div>
-              <div class="ctrl-group">
-                <label>Nhấp chuột phản hồi:</label>
-                <input type="checkbox" id="chkPetSpeech" checked>
-              </div>
+            <!-- Pet Dynamic Animation Effects -->
+            <span class="sub-label" style="margin-top:10px;">Hiệu ứng chuyển động của Pet (Animation Effect):</span>
+            <div class="pet-fx-row" id="petFxRow">
+              <button class="pet-fx-btn active" data-anim="bob">🎈 Bồng bềnh</button>
+              <button class="pet-fx-btn" data-anim="pulse">💖 Nhịp tim đập</button>
+              <button class="pet-fx-btn" data-anim="sway">🌸 Lắc lư</button>
+              <button class="pet-fx-btn" data-anim="glow">⚡ Hào quang</button>
+              <button class="pet-fx-btn" data-anim="sleep">💤 Ngủ Zzz</button>
             </div>
           </div>
 

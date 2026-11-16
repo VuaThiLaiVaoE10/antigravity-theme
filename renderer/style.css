@@ -1245,3 +1245,90 @@ input[type="color"] {
   100% { transform: scale(1); opacity: 1; }
 }
 
+/* === LIVE WALLPAPER FX & PET EFFECTS === */
+.fx-presets-row, .pet-fx-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.fx-btn, .pet-fx-btn {
+  background: rgba(15, 25, 38, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1 1 auto;
+}
+
+.fx-btn:hover, .pet-fx-btn:hover {
+  background: rgba(125, 207, 255, 0.1);
+  color: #fff;
+  border-color: rgba(125, 207, 255, 0.3);
+}
+
+.fx-btn.active, .pet-fx-btn.active {
+  background: rgba(125, 207, 255, 0.18);
+  border-color: var(--accent-aqua);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(125, 207, 255, 0.25);
+}
+
+/* Dynamic Pet Animations */
+.anim-bob {
+  animation: agPetBob 2.5s ease-in-out infinite alternate !important;
+}
+.anim-pulse {
+  animation: agPetPulse 1.8s ease-in-out infinite !important;
+}
+.anim-sway {
+  animation: agPetSway 2s ease-in-out infinite alternate !important;
+}
+.anim-glow {
+  animation: agPetGlow 2s ease-in-out infinite alternate !important;
+}
+.anim-sleep {
+  animation: agPetSleep 3s ease-in-out infinite alternate !important;
+}
+
+@keyframes agPetBob {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-7px); }
+}
+
+@keyframes agPetPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+
+@keyframes agPetSway {
+  0% { transform: rotate(-8deg); }
+  100% { transform: rotate(8deg); }
+}
+
+@keyframes agPetGlow {
+  0% { filter: drop-shadow(0 0 4px #7DCFFF); }
+  100% { filter: drop-shadow(0 0 18px #BB9AF7); }
+}
+
+@keyframes agPetSleep {
+  0% { transform: translateY(0) scale(0.98); opacity: 0.85; }
+  100% { transform: translateY(-3px) scale(1); opacity: 1; }
+}
+
+/* Live Wallpaper Breathing Keyframes */
+.wallpaper-breathing {
+  animation: agBreathing 12s ease-in-out infinite alternate !important;
+}
+
+@keyframes agBreathing {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.06); }
+}
+

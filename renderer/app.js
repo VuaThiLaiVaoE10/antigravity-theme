@@ -512,6 +512,43 @@ function setupEvents() {
     });
   }
 
+  // Live Wallpaper Effects (Particle Overlay & Breathing)
+  document.querySelectorAll('#wpFxPresetsRow .fx-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      document.querySelectorAll('#wpFxPresetsRow .fx-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const fx = btn.getAttribute('data-fx');
+      appState.wallpaperFx = fx;
+      showStatus(`Hiệu ứng hình nền động: ${btn.textContent.trim()}`);
+      updateLivePreview();
+      await saveConfig();
+    });
+  });
+
+  const sliderWpFxSpeed = document.getElementById('sliderWpFxSpeed');
+  const valWpFxSpeed = document.getElementById('valWpFxSpeed');
+  if (sliderWpFxSpeed && valWpFxSpeed) {
+    sliderWpFxSpeed.addEventListener('input', async (e) => {
+      const spd = parseInt(e.target.value);
+      valWpFxSpeed.textContent = 'Mức ' + spd;
+      appState.wallpaperFxSpeed = spd;
+      await saveConfig();
+    });
+  }
+
+  // Pet Dynamic Animation Effects (Bob, Pulse, Sway, Glow, Sleep)
+  document.querySelectorAll('#petFxRow .pet-fx-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      document.querySelectorAll('#petFxRow .pet-fx-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const anim = btn.getAttribute('data-anim');
+      appState.petAnim = anim;
+      showStatus(`Hoạt ảnh Pet: ${btn.textContent.trim()}`);
+      updateLivePreview();
+      await saveConfig();
+    });
+  });
+
   // Resolution Segments Selection
   document.querySelectorAll('.segment-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -937,6 +974,28 @@ function renderSliders() {
 
   sliderScrimOpacity.value = g.scrimOpacity ?? 60;
   valScrimOpacity.textContent = (g.scrimOpacity ?? 60) + '%';
+
+  const sliderWpFxSpeed = document.getElementById('sliderWpFxSpeed');
+  const valWpFxSpeed = document.getElementById('valWpFxSpeed');
+  if (sliderWpFxSpeed && valWpFxSpeed) {
+    const spd = appState.wallpaperFxSpeed ?? 3;
+    sliderWpFxSpeed.value = spd;
+    valWpFxSpeed.textContent = 'Mức ' + spd;
+  }
+
+  // Active state for Wallpaper Effects buttons
+  const curFx = appState.wallpaperFx || 'none';
+  document.querySelectorAll('#wpFxPresetsRow .fx-btn').forEach(b => {
+    if (b.getAttribute('data-fx') === curFx) b.classList.add('active');
+    else b.classList.remove('active');
+  });
+
+  // Active state for Pet Anim buttons
+  const curAnim = appState.petAnim || 'bob';
+  document.querySelectorAll('#petFxRow .pet-fx-btn').forEach(b => {
+    if (b.getAttribute('data-anim') === curAnim) b.classList.add('active');
+    else b.classList.remove('active');
+  });
 }
 
 function renderModStatus() {
@@ -973,6 +1032,12 @@ function updateLivePreview() {
   previewWallpaper.style.backgroundRepeat = 'no-repeat';
   previewWallpaper.style.opacity = (glass.wallpaperOpacity ?? 95) / 100;
 
+  if (appState.wallpaperFx === 'breathing') {
+    previewWallpaper.classList.add('wallpaper-breathing');
+  } else {
+    previewWallpaper.classList.remove('wallpaper-breathing');
+  }
+
   // Glassmorphic CSS variables
   const root = document.getElementById('previewWindow');
   root.style.setProperty('--ag-blur', (glass.blur ?? 16) + 'px');
@@ -1007,7 +1072,9 @@ function updateLivePreview() {
         mascotBadge.style.right = '16px';
         mascotBadge.style.left = 'auto';
       }
-      mascotBadge.style.animation = (appState.mascotBounce !== false) ? 'agMascotBounce 3s ease-in-out infinite alternate' : 'none';
+      const petAnim = appState.petAnim || 'bob';
+      mascotBadge.className = 'preview-mascot-badge ' + ((appState.mascotBounce !== false) ? ('anim-' + petAnim) : '');
+      mascotBadge.style.animation = '';
       mascotBadge.style.cursor = 'pointer';
       mascotBadge.onclick = () => {
         let b = document.getElementById('previewSpeechBubble');

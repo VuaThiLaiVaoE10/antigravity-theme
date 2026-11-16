@@ -102,7 +102,24 @@ ${HOOK_START}
         '}',
         '[data-split-sash="true"] { background-color: transparent !important; }',
         '[data-testid="sidebar-sash"] .bg-border { background-color: rgba(125, 207, 255, 0.25) !important; }',
-        '.agy-sheet, .agy-shell > div, .agy-inset-shell > div { background-color: transparent !important; }'
+        '.agy-sheet, .agy-shell > div, .agy-inset-shell > div { background-color: transparent !important; }',
+        '.surface-composer {',
+        '  position: relative !important;',
+        '  overflow: visible !important;',
+        '  background: ' + (cfg.composerGradient || 'linear-gradient(90deg, #E6FF80 0%, #38EF7D 35%, #11998E 70%, #FFE066 100%)') + ' !important;',
+        '  padding: 2px !important;',
+        '  border-radius: ' + (cfg.composerRadius ?? 18) + 'px !important;',
+        '  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 ' + (cfg.composerGlow ?? 18) + 'px rgba(212, 252, 121, 0.35) !important;',
+        '}',
+        '.surface-composer-card {',
+        '  background: rgba(12, 24, 34, ' + Math.max(cardOpacity, 0.84) + ') !important;',
+        '  backdrop-filter: blur(' + blur + 'px) !important;',
+        '  -webkit-backdrop-filter: blur(' + blur + 'px) !important;',
+        '  border-radius: ' + Math.max((cfg.composerRadius ?? 18) - 2, 4) + 'px !important;',
+        '  border: none !important;',
+        '}',
+        '@keyframes agBreathing { 0% { transform: scale(1); } 50% { transform: scale(1.06) translate(-1%, -1%); } 100% { transform: scale(1); } }',
+        '.wallpaper-breathing { animation: agBreathing 14s ease-in-out infinite !important; }'
       ].join('\\n');
     }
 

@@ -932,3 +932,147 @@ input[type="color"] {
   line-height: 1.3;
 }
 
+/* === COMPOSER PRESETS & MASCOT PET STYLES === */
+.composer-presets-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.comp-preset-btn {
+  background: rgba(15, 25, 38, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1 1 auto;
+}
+
+.comp-preset-btn:hover {
+  background: rgba(125, 207, 255, 0.1);
+  color: #fff;
+  border-color: rgba(125, 207, 255, 0.3);
+}
+
+.comp-preset-btn.active {
+  background: rgba(125, 207, 255, 0.18);
+  border-color: var(--accent-aqua);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(125, 207, 255, 0.2);
+}
+
+.mascot-selector-box {
+  background: rgba(8, 24, 38, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.mascot-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mascot-card {
+  background: rgba(15, 25, 38, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+}
+
+.mascot-card span {
+  font-size: 10px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.mascot-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.mascot-emoji {
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.mascot-card:hover {
+  background: rgba(125, 207, 255, 0.1);
+  border-color: rgba(125, 207, 255, 0.3);
+  color: #fff;
+}
+
+.mascot-card.active {
+  background: rgba(125, 207, 255, 0.18);
+  border-color: var(--accent-aqua);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(125, 207, 255, 0.25);
+}
+
+.mascot-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ctrl-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.mini-select {
+  background: #081826;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 11px;
+  outline: none;
+}
+
+/* Simulated Mascot on Live Preview Composer */
+.preview-composer {
+  position: relative;
+}
+
+.preview-mascot-badge {
+  position: absolute;
+  top: -36px;
+  right: 14px;
+  width: 40px;
+  height: 40px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45));
+  animation: agMascotBounce 3s ease-in-out infinite alternate;
+}
+
+@keyframes agMascotBounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-4px); }
+}
+

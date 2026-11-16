@@ -189,6 +189,47 @@ function buildThemeCss(config) {
     .agy-sheet, .agy-shell > div, .agy-inset-shell > div {
       background-color: transparent !important;
     }
+
+    /* 11. Composer Outer Border Gradient (Like Image 1) */
+    .surface-composer {
+      background: ${config.composerGradient || 'linear-gradient(90deg, #E6FF80 0%, #38EF7D 35%, #11998E 70%, #FFE066 100%)'} !important;
+      padding: 2px !important;
+      border-radius: 18px !important;
+      box-shadow: 0 0 16px rgba(125, 207, 255, 0.28) !important;
+      position: relative !important;
+      transition: all 0.3s ease !important;
+    }
+
+    /* 12. Composer Inner Card */
+    .surface-composer-card {
+      background: rgba(12, 22, 34, 0.88) !important;
+      backdrop-filter: blur(20px) !important;
+      border-radius: 16px !important;
+    }
+
+    /* 13. Pet Mascot & Sticker Decorator (Like Image 1 & 2) */
+    ${config.mascotUrl ? `
+    .surface-composer::after {
+      content: '';
+      position: absolute;
+      top: -${(config.mascotSize || 52) - 4}px;
+      ${config.mascotPos === 'top-left' ? 'left: 20px;' : 'right: 20px;'};
+      width: ${config.mascotSize || 52}px;
+      height: ${config.mascotSize || 52}px;
+      background-image: url(${JSON.stringify(config.mascotUrl)});
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center bottom;
+      z-index: 50;
+      pointer-events: none;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+      ${config.mascotBounce !== false ? 'animation: agMascotBounce 3s ease-in-out infinite alternate;' : ''}
+    }
+    @keyframes agMascotBounce {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-5px); }
+    }
+    ` : ''}
   `;
 }
 

@@ -31,6 +31,12 @@ function getInitialConfig() {
     defaultWp = `data:image/${ext};base64,${fs.readFileSync(violinPreset).toString('base64')}`;
   }
 
+  const petFile = path.join(__dirname, 'assets', 'mascot-pixel-pet.png');
+  let defaultPet = '';
+  if (fs.existsSync(petFile)) {
+    defaultPet = `data:image/png;base64,${fs.readFileSync(petFile).toString('base64')}`;
+  }
+
   return {
     enabled: true,
     activeProfileId: 'default',
@@ -42,6 +48,11 @@ function getInitialConfig() {
     language: 'vi',
     wallpaperUrl: defaultWp,
     wallpaperName: 'Cô gái kéo đàn ngắm Trái Đất (Mặc định)',
+    composerGradient: 'linear-gradient(90deg, #E6FF80 0%, #38EF7D 35%, #11998E 70%, #FFE066 100%)',
+    mascotUrl: defaultPet,
+    mascotSize: 52,
+    mascotPos: 'top-right',
+    mascotBounce: true,
     glass: {
       blur: 16,
       sidebarOpacity: 75,

@@ -316,6 +316,104 @@ function setupEvents() {
     });
   }
 
+  // === COMPOSER PRESETS & MASCOT PET HANDLERS ===
+  const COMPOSER_PRESETS = {
+    lime: 'linear-gradient(90deg, #E6FF80 0%, #38EF7D 35%, #11998E 70%, #FFE066 100%)',
+    aqua: 'linear-gradient(90deg, #7DCFFF 0%, #73DACA 50%, #2AC3DE 100%)',
+    sakura: 'linear-gradient(90deg, #F7768E 0%, #BB9AF7 50%, #FF9E64 100%)',
+    sunset: 'linear-gradient(90deg, #FF9E64 0%, #F7768E 50%, #FFE066 100%)'
+  };
+
+  document.querySelectorAll('.comp-preset-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      document.querySelectorAll('.comp-preset-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const p = btn.getAttribute('data-preset');
+      appState.composerGradient = COMPOSER_PRESETS[p] || COMPOSER_PRESETS.lime;
+      showStatus(`Đã áp dụng viền Composer: ${btn.textContent.trim()}`);
+      updateLivePreview();
+      await saveConfig();
+    });
+  });
+
+  // Mascot Selection
+  document.querySelectorAll('.mascot-card').forEach(card => {
+    card.addEventListener('click', async () => {
+      const type = card.getAttribute('data-mascot');
+      if (type === 'custom') {
+        // Handled by upload button
+        return;
+      }
+      document.querySelectorAll('.mascot-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+
+      if (type === 'pixel-pet') {
+        // Load built-in pixel pet
+        appState.mascotType = 'pixel-pet';
+        appState.mascotUrl = '../assets/mascot-pixel-pet.png';
+        showStatus('Đã chọn Mascot: Pixel Golem Pet (Ảnh 2)');
+      } else if (type === 'waifu') {
+        appState.mascotType = 'waifu';
+        appState.mascotUrl = '../assets/composer-banner.jpg';
+        showStatus('Đã chọn Mascot: Anime Waifu (Ảnh 1)');
+      } else {
+        appState.mascotType = 'none';
+        appState.mascotUrl = '';
+        showStatus('Đã tắt Mascot');
+      }
+
+      updateLivePreview();
+      await saveConfig();
+    });
+  });
+
+  const btnUploadMascot = document.getElementById('btnUploadMascot');
+  if (btnUploadMascot) {
+    btnUploadMascot.addEventListener('click', async () => {
+      if (!window.api) return;
+      const res = await window.api.selectWallpaper();
+      if (res && !res.canceled && res.dataUrl) {
+        document.querySelectorAll('.mascot-card').forEach(c => c.classList.remove('active'));
+        btnUploadMascot.classList.add('active');
+        appState.mascotType = 'custom';
+        appState.mascotUrl = res.dataUrl;
+        showStatus('Đã tải ảnh Mascot tùy chỉnh: ' + res.fileName);
+        updateLivePreview();
+        await saveConfig();
+      }
+    });
+  }
+
+  const selectMascotPos = document.getElementById('selectMascotPos');
+  if (selectMascotPos) {
+    selectMascotPos.addEventListener('change', async (e) => {
+      appState.mascotPos = e.target.value;
+      updateLivePreview();
+      await saveConfig();
+    });
+  }
+
+  const sliderMascotSize = document.getElementById('sliderMascotSize');
+  const valMascotSize = document.getElementById('valMascotSize');
+  if (sliderMascotSize) {
+    sliderMascotSize.addEventListener('input', async (e) => {
+      const sz = parseInt(e.target.value);
+      valMascotSize.textContent = sz + 'px';
+      appState.mascotSize = sz;
+      updateLivePreview();
+      await saveConfig();
+    });
+  }
+
+  const chkMascotBounce = document.getElementById('chkMascotBounce');
+  if (chkMascotBounce) {
+    chkMascotBounce.addEventListener('change', async (e) => {
+      appState.mascotBounce = e.target.checked;
+      updateLivePreview();
+      await saveConfig();
+    });
+  }
+
   // Resolution Segments Selection
   document.querySelectorAll('.segment-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -784,6 +882,39 @@ function updateLivePreview() {
   root.style.setProperty('--ag-card-opacity', (glass.cardOpacity ?? 85) / 100);
 
   // Gradient bindings
+  const compGrad = appState.composerGradient || 'linear-gradient(90deg, #E6FF80 0%, #38EF7D 35%, #11998E 70%, #FFE066 100%)';
+  if (previewComposer) {
+    previewComposer.style.background = compGrad;
+    previewComposer.style.boxShadow = '0 0 14px rgba(212, 252, 121, 0.35)';
+
+    let mascotBadge = document.getElementById('previewMascotBadge');
+    if (!mascotBadge) {
+      mascotBadge = document.createElement('div');
+      mascotBadge.id = 'previewMascotBadge';
+      mascotBadge.className = 'preview-mascot-badge';
+      previewComposer.appendChild(mascotBadge);
+    }
+
+    if (appState.mascotUrl) {
+      mascotBadge.style.display = 'block';
+      mascotBadge.style.backgroundImage = `url(${appState.mascotUrl})`;
+      const sz = Math.round((appState.mascotSize || 52) * 0.75);
+      mascotBadge.style.width = sz + 'px';
+      mascotBadge.style.height = sz + 'px';
+      mascotBadge.style.top = '-' + (sz - 6) + 'px';
+      if (appState.mascotPos === 'top-left') {
+        mascotBadge.style.left = '16px';
+        mascotBadge.style.right = 'auto';
+      } else {
+        mascotBadge.style.right = '16px';
+        mascotBadge.style.left = 'auto';
+      }
+      mascotBadge.style.animation = (appState.mascotBounce !== false) ? 'agMascotBounce 3s ease-in-out infinite alternate' : 'none';
+    } else {
+      mascotBadge.style.display = 'none';
+    }
+  }
+
   root.style.setProperty('--ag-composer-border-1', g.composerBorder1 || '#7DCFFF');
   root.style.setProperty('--ag-composer-bg-1', g.composerBg1 || '#132332');
   root.style.setProperty('--ag-composer-bg-2', g.composerBg2 || '#0F1926');

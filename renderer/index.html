@@ -124,6 +124,59 @@
             <!-- 17 color inputs populated via JS -->
           </div>
 
+          <div class="section-title">KHUNG NHẬP LIỆU GRADIENT & THÚ CƯNG MASCOT TRANG TRÍ</div>
+          
+          <!-- Composer Gradient Presets -->
+          <div class="composer-presets-row" id="composerPresetsRow">
+            <button class="comp-preset-btn active" data-preset="lime">🌟 Cyber Lime (Ảnh 1)</button>
+            <button class="comp-preset-btn" data-preset="aqua">🌊 Midnight Aqua</button>
+            <button class="comp-preset-btn" data-preset="sakura">🌸 Sakura Neon</button>
+            <button class="comp-preset-btn" data-preset="sunset">🔥 Sunset Gold</button>
+          </div>
+
+          <!-- Mascot Selection -->
+          <div class="section-title">PET MASCOT / STICKER TRANG TRÍ KHUNG CHAT</div>
+          <div class="mascot-selector-box">
+            <div class="mascot-presets-grid" id="mascotPresetsGrid">
+              <button class="mascot-card active" data-mascot="pixel-pet">
+                <img src="../assets/mascot-pixel-pet.png" class="mascot-thumb" alt="Pixel Pet">
+                <span>Pixel Golem (Ảnh 2)</span>
+              </button>
+              <button class="mascot-card" data-mascot="waifu">
+                <span class="mascot-emoji">🌸</span>
+                <span>Anime Waifu (Ảnh 1)</span>
+              </button>
+              <button class="mascot-card" data-mascot="custom" id="btnUploadMascot">
+                <span class="mascot-emoji">📂</span>
+                <span>Tải ảnh PNG/GIF...</span>
+              </button>
+              <button class="mascot-card" data-mascot="none">
+                <span class="mascot-emoji">🚫</span>
+                <span>Tắt Mascot</span>
+              </button>
+            </div>
+
+            <div class="mascot-controls-row">
+              <div class="ctrl-group">
+                <label>Vị trí:</label>
+                <select id="selectMascotPos" class="mini-select">
+                  <option value="top-right" selected>Góc trên phải (Chuẩn)</option>
+                  <option value="top-left">Góc trên trái</option>
+                  <option value="bottom-right">Góc dưới màn hình</option>
+                </select>
+              </div>
+              <div class="ctrl-group">
+                <label>Kích cỡ:</label>
+                <input type="range" id="sliderMascotSize" min="32" max="84" value="52">
+                <span id="valMascotSize">52px</span>
+              </div>
+              <div class="ctrl-group">
+                <label>Nhún nhảy:</label>
+                <input type="checkbox" id="chkMascotBounce" checked>
+              </div>
+            </div>
+          </div>
+
           <div class="section-title" data-i18n="gradientTitle">GRADIENT KHUNG NHẬP & BONG BÓNG USER</div>
           <div class="tokens-grid" id="gradientTokensGrid">
             <!-- 9 gradient inputs populated via JS -->

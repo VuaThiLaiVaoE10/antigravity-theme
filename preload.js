@@ -6,5 +6,7 @@ contextBridge.exposeInMainWorld('api', {
   selectWallpaper: () => ipcRenderer.invoke('select-wallpaper'),
   installMod: () => ipcRenderer.invoke('install-mod'),
   restoreOriginal: () => ipcRenderer.invoke('restore-original'),
-  restartAntigravity: () => ipcRenderer.invoke('restart-antigravity')
+  restartAntigravity: () => ipcRenderer.invoke('restart-antigravity'),
+  getAutoLaunch: () => ipcRenderer.invoke('get-auto-launch'),
+  setAutoLaunch: (enable) => ipcRenderer.invoke('set-auto-launch', enable)
 });

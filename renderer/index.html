@@ -197,15 +197,15 @@
 
         <!-- 5. TAB: NÂNG CAO (ADVANCED & MOD STATUS) -->
         <div class="tab-pane" id="tab-advanced">
-          <div class="section-title" data-i18n="modStatusTitle">TRẠNG THÁI THEME MOD ANTIGRAVITY</div>
+          <div class="section-title">CHẾ ĐỘ GIỮ THEME KHI THOÁT ANTIGRAVITY</div>
           
-          <div class="status-card" id="modStatusCard" style="border: 1px solid rgba(125, 207, 255, 0.25); background: rgba(125, 207, 255, 0.05); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+          <div class="status-card" id="modStatusCard" style="border: 1px solid rgba(125, 207, 255, 0.35); background: rgba(125, 207, 255, 0.08); border-radius: 10px; padding: 14px; margin-bottom: 14px;">
             <div class="status-indicator-row" style="display: flex; align-items: center; gap: 8px;">
               <span class="status-dot green" id="modStatusDot" style="width: 10px; height: 10px; border-radius: 50%; background: #4ADE80; box-shadow: 0 0 8px #4ADE80;"></span>
-              <strong id="modStatusText" style="color: #7DCFFF; font-size: 13px;">LIVE SYNC TỨC THÌ (ĐANG KÍCH HOẠT)</strong>
+              <strong id="modStatusText" style="color: #7DCFFF; font-size: 13px;">ĐÃ CÀI ĐẶT LƯU GIỮ THEME VĨNH VIỄN (ACTIVE)</strong>
             </div>
-            <p class="status-desc" id="modStatusDesc" style="color: rgba(255, 255, 255, 0.7); font-size: 12px; margin-top: 6px; line-height: 1.5;">
-              ✨ Bạn chỉ cần chọn ảnh nền hoặc bảng màu và nhấn nút <strong>Lưu & Chạy</strong> ở góc trên bên phải, Antigravity sẽ đổi giao diện ngay lập tức trong 0.01s mà không cần khởi động lại!
+            <p class="status-desc" id="modStatusDesc" style="color: rgba(255, 255, 255, 0.8); font-size: 12px; margin-top: 6px; line-height: 1.5;">
+              🔒 <strong>Đã bảo lưu:</strong> Khi bạn tắt Antigravity hoặc khởi động lại máy tính, giao diện kính mờ và hình nền sẽ <strong>tự động giữ nguyên 100%</strong> khi mở lại Antigravity!
             </p>
           </div>
 
@@ -213,24 +213,32 @@
             <button class="action-card-btn primary" id="btnInstallMod">
               <span class="btn-big-icon">⚡</span>
               <div>
-                <strong data-i18n="installModBtn">Cài đặt Theme Mod vào Antigravity</strong>
-                <p data-i18n="installModDesc">Tự động sao lưu an toàn và kích hoạt khả năng đổi hình nền & kính mờ.</p>
+                <strong>Cập nhật lưu giữ vĩnh viễn vào Antigravity</strong>
+                <p>Nạp cấu hình theme hiện tại vào bộ nạp của Antigravity (luôn giữ khi tắt app).</p>
               </div>
             </button>
 
-            <button class="action-card-btn secondary" id="btnRestoreOriginal">
-              <span class="btn-big-icon">🔄</span>
+            <button class="action-card-btn secondary" id="btnToggleAutoLaunch">
+              <span class="btn-big-icon">🚀</span>
               <div>
-                <strong data-i18n="restoreModBtn">Khôi phục Antigravity nguyên bản</strong>
-                <p data-i18n="restoreModDesc">Gỡ bỏ mod và hoàn trả Antigravity 100% về trạng thái gốc của Google.</p>
+                <strong id="labelAutoLaunch">Khởi động cùng Windows: TẮT</strong>
+                <p>Theme Studio tự động chạy ngầm để giữ theme cho Antigravity mượt mà nhất.</p>
               </div>
             </button>
 
             <button class="action-card-btn tertiary" id="btnRestartAntigravity">
-              <span class="btn-big-icon">🚀</span>
+              <span class="btn-big-icon">🔄</span>
               <div>
                 <strong data-i18n="restartAgBtn">Khởi động lại Antigravity</strong>
                 <p data-i18n="restartAgDesc">Khởi động lại app Antigravity để nạp lại giao diện.</p>
+              </div>
+            </button>
+
+            <button class="action-card-btn" id="btnRestoreOriginal" style="background: rgba(247, 118, 142, 0.08); border-color: rgba(247, 118, 142, 0.25);">
+              <span class="btn-big-icon">🛡️</span>
+              <div>
+                <strong data-i18n="restoreModBtn" style="color:#F7768E;">Khôi phục Antigravity nguyên bản</strong>
+                <p data-i18n="restoreModDesc">Gỡ bỏ mod và hoàn trả Antigravity 100% về trạng thái gốc của Google.</p>
               </div>
             </button>
           </div>

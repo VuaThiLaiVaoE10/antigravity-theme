@@ -23,6 +23,38 @@ function safeSlice(r, staticCanvas, w, h) {
   Safe.cache[r.name] = { key, canvas: c }; return c;
 }
 
+function renderWithSafe(ctx, u) {
+  if (typeof renderFrame === 'function') {
+    renderFrame(ctx, u);
+  }
+  const rects = Safe.rects || Safe.zones;
+  if (!rects || !rects.length) return;
+  const w = (typeof Project !== 'undefined' && Project.width) || (ctx.canvas && ctx.canvas.width) || 1600;
+  const h = (typeof Project !== 'undefined' && Project.height) || (ctx.canvas && ctx.canvas.height) || 900;
+
+  const staticC = makeCanvas(w, h), g = staticC.getContext('2d');
+  if (typeof Project !== 'undefined' && Project.layers) {
+    Project.layers.forEach(L => {
+      if (L.visible && L.canvas) {
+        g.save();
+        g.globalAlpha = L.opacity !== undefined ? L.opacity : 1;
+        g.drawImage(L.canvas, 0, 0);
+        g.restore();
+      }
+    });
+  }
+
+  for (const r of rects) {
+    const slice = safeSlice(r, staticC, w, h);
+    const alpha = (r.factor !== undefined) ? (1 - r.factor) : 1;
+    if (alpha <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(slice, 0, 0);
+    ctx.restore();
+  }
+}
+
 function testSafe() {
   if (typeof initProject === 'function' && typeof makeCanvas === 'function') initProject(makeCanvas(100, 100));
   Safe.feather = 40;
@@ -38,15 +70,17 @@ function testSafe() {
 if (typeof window !== 'undefined') {
   window.Safe = Safe;
   window.safeSlice = safeSlice;
+  window.renderWithSafe = renderWithSafe;
   window.testSafe = testSafe;
 }
 
 if (typeof global !== 'undefined') {
   global.Safe = Safe;
   global.safeSlice = safeSlice;
+  global.renderWithSafe = renderWithSafe;
   global.testSafe = testSafe;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { Safe, safeSlice, testSafe };
+  module.exports = { Safe, safeSlice, renderWithSafe, testSafe };
 }

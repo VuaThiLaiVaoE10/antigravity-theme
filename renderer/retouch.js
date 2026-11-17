@@ -761,3 +761,17 @@ if (typeof window !== 'undefined') {
   window.testFill = testFill;
   window.testReveal = testReveal;
 }
+
+if (typeof global !== 'undefined') {
+  global.cloneDab = cloneDab;
+  global.cloneStroke = cloneStroke;
+  global.fillHole = fillHole;
+  global.fillSelectionHole = fillSelectionHole;
+  global.revealMap = revealMap;
+  global.tryShiftReveal = tryShiftReveal;
+  global.selectRevealedRegions = selectRevealedRegions;
+  global.RetouchSettings = RetouchSettings;
+  global.testClone = testClone;
+  global.testFill = testFill;
+  global.testReveal = testReveal;
+}

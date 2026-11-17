@@ -80,7 +80,7 @@ const COMPLETED_CARD_TESTS = [
   'testBrush', 'testLasso', 'testMorph', 'testCut', 'testClone',
   'testFill', 'testReveal', 'testZip', 'testSaveLoad', 'testMigrate',
   'testMotion', 'testUnits', 'testSetMotion', 'testLoad', 'testSafe',
-  'testParallax', 'testPresets', 'testGolden'
+  'testParallax', 'testPresets', 'testGolden', 'testAcceptanceAuto'
 ];
 COMPLETED_CARD_TESTS.forEach(n => {
   if (!REQUIRED_TESTS.includes(n)) REQUIRED_TESTS.push(n);

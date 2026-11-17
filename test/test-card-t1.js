@@ -65,6 +65,13 @@ function createMockCanvas(w = 4, h = 4) {
               addColorStop(offset, color) { this.stops.push({ offset, color }); }
             };
           },
+          createRadialGradient(x0, y0, r0, x1, y1, r1) {
+            return {
+              isRadial: true,
+              stops: [],
+              addColorStop(offset, color) { this.stops.push({ offset, color }); }
+            };
+          },
           save() {
             stateStack.push({ tx: currentTx, ty: currentTy, alpha: this.globalAlpha });
           },
@@ -80,21 +87,54 @@ function createMockCanvas(w = 4, h = 4) {
           },
           rotate() {},
           scale() {},
+          fillText(str, x, y) {},
           beginPath() { currentPath = []; },
           moveTo(x, y) { currentPath.push({ x, y }); },
           lineTo(x, y) { currentPath.push({ x, y }); },
+          arc(cx, cy, r, sa, ea) {
+            this._circle = { cx, cy, r };
+            currentPath.push({ x: cx - r, y: cy - r });
+            currentPath.push({ x: cx + r, y: cy - r });
+            currentPath.push({ x: cx + r, y: cy + r });
+            currentPath.push({ x: cx - r, y: cy + r });
+          },
+          quadraticCurveTo(cx, cy, x, y) { currentPath.push({ x, y }); },
           closePath() {},
           stroke() {},
           fill() {
+            let r = 255, g = 255, b = 255, a = 255;
+            if (this.fillStyle && this.fillStyle.isRadial) {
+              r = 200; g = 210; b = 255; a = 140;
+            }
+            if (this._circle) {
+              const { cx, cy, r: rad } = this._circle;
+              this._circle = null;
+              const x0 = Math.max(0, Math.floor(cx - rad));
+              const x1 = Math.min(width, Math.ceil(cx + rad));
+              const y0 = Math.max(0, Math.floor(cy - rad));
+              const y1 = Math.min(height, Math.ceil(cy + rad));
+              const r2 = rad * rad;
+              for (let py = y0; py < y1; py++) {
+                const dy = py - cy;
+                for (let px = x0; px < x1; px++) {
+                  const dx = px - cx;
+                  if (dx * dx + dy * dy <= r2) {
+                    const idx = (py * width + px) * 4;
+                    buffer[idx] = r; buffer[idx + 1] = g; buffer[idx + 2] = b; buffer[idx + 3] = a;
+                  }
+                }
+              }
+              return;
+            }
             if (currentPath.length < 3) return;
             for (let py = 0; py < height; py++) {
               for (let px = 0; px < width; px++) {
                 if (pointInPolygon(px + 0.5, py + 0.5, currentPath)) {
                   const idx = (py * width + px) * 4;
-                  buffer[idx] = 255;
-                  buffer[idx + 1] = 255;
-                  buffer[idx + 2] = 255;
-                  buffer[idx + 3] = 255;
+                  buffer[idx] = r;
+                  buffer[idx + 1] = g;
+                  buffer[idx + 2] = b;
+                  buffer[idx + 3] = a;
                 }
               }
             }
@@ -171,6 +211,7 @@ function createMockCanvas(w = 4, h = 4) {
 
             const finalDx = Math.round(dx + currentTx);
             const finalDy = Math.round(dy + currentTy);
+            const isSourceIn = this.globalCompositeOperation === 'source-in';
 
             if (sw === dw && sh === dh) {
               const yStart = Math.max(0, -finalDy);
@@ -184,12 +225,23 @@ function createMockCanvas(w = 4, h = 4) {
                 const sRow = (sy + iy) * srcWidth * 4 + (sx + xStart) * 4;
                 const dRow = (finalDy + iy) * width * 4 + (finalDx + xStart) * 4;
                 for (let i = 0; i < copyLen * 4; i += 4) {
-                  const sa = srcData[sRow + i + 3];
-                  if (sa > 0) {
-                    buffer[dRow + i] = srcData[sRow + i];
-                    buffer[dRow + i + 1] = srcData[sRow + i + 1];
-                    buffer[dRow + i + 2] = srcData[sRow + i + 2];
-                    buffer[dRow + i + 3] = sa;
+                  if (isSourceIn) {
+                    if (buffer[dRow + i + 3] > 0) {
+                      buffer[dRow + i] = srcData[sRow + i];
+                      buffer[dRow + i + 1] = srcData[sRow + i + 1];
+                      buffer[dRow + i + 2] = srcData[sRow + i + 2];
+                      buffer[dRow + i + 3] = srcData[sRow + i + 3];
+                    } else {
+                      buffer[dRow + i + 3] = 0;
+                    }
+                  } else {
+                    const sa = srcData[sRow + i + 3];
+                    if (sa > 0) {
+                      buffer[dRow + i] = srcData[sRow + i];
+                      buffer[dRow + i + 1] = srcData[sRow + i + 1];
+                      buffer[dRow + i + 2] = srcData[sRow + i + 2];
+                      buffer[dRow + i + 3] = sa;
+                    }
                   }
                 }
               }
@@ -341,6 +393,7 @@ const Safe = require('../renderer/safe.js');
 const Parallax = require('../renderer/parallax.js');
 const CalmPresets = require('../renderer/calm-presets.js');
 const Golden = require('../renderer/golden.js');
+const Acceptance = require('../renderer/acceptance.js');
 
 // Gán toàn cục cho các hàm kiểm thử
 global.window.makeCanvas = Layers.makeCanvas;
@@ -400,6 +453,9 @@ global.window.recordGolden = Golden.recordGolden;
 global.window.buildGoldenScene = Golden.buildGoldenScene;
 global.window.frameSignature = Golden.frameSignature;
 global.window.sigMaxDiff = Golden.sigMaxDiff;
+global.window.testAcceptanceAuto = Acceptance.testAcceptanceAuto;
+global.window.buildSampleScene = Acceptance.buildSampleScene;
+global.window.runAcceptance = Acceptance.runAcceptance;
 
 // 3. Nạp tests.js
 const TestsModule = require('../renderer/tests.js');

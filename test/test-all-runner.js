@@ -13,6 +13,7 @@ const TEST_FILES = [
   'test-card-c1.js',
   'test-card-t1.js',
   'test-card-g1.js',
+  'test-card-a1.js',
   'test-layer-motion.js',
   'test-safezone-calm.js',
   'test-modular-architecture.js',

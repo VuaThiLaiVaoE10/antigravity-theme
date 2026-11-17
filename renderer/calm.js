@@ -28,6 +28,55 @@ function eyeLoadFrom(items, loopSec) {
   return s;
 }
 
+function layerCoverage(L, totalW, totalH) {
+  if (L.coverage !== undefined) return L.coverage;
+  if (!L.canvas) return 0.2;
+  const w = L.canvas.width, h = L.canvas.height;
+  const total = (totalW && totalH) ? (totalW * totalH) : (w * h);
+  if (!total) return 0.2;
+  try {
+    const ctx = L.canvas.getContext('2d');
+    if (!ctx || typeof ctx.getImageData !== 'function') return 0.2;
+    const data = ctx.getImageData(0, 0, w, h).data;
+    let nonZero = 0;
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] > 10) nonZero++;
+    }
+    return Math.min(1, Math.max(0.01, nonZero / total));
+  } catch (e) {
+    return 0.2;
+  }
+}
+
+function eyeLoad(layers = (typeof Project !== 'undefined' ? Project.layers : []), loopSec = (typeof LOOP !== 'undefined' && LOOP.seconds) ? LOOP.seconds : CFG.loop.seconds) {
+  if (!layers || !layers.length) return 0;
+  const totalW = (typeof Project !== 'undefined' && Project.width) ? Project.width : 1600;
+  const totalH = (typeof Project !== 'undefined' && Project.height) ? Project.height : 900;
+  const items = [];
+  for (const L of layers) {
+    if (L.visible === false) continue;
+    const m = (typeof activeMotion === 'function') ? activeMotion(L) : (L.motion && L.motion.enabled !== false ? L.motion : null);
+    if (!m) continue;
+    const cov = layerCoverage(L, totalW, totalH);
+    items.push({
+      type: m.type,
+      amp: m.amp !== undefined ? m.amp : CFG.motion.defaultAmp,
+      cycles: m.cycles !== undefined ? m.cycles : 1,
+      cov
+    });
+  }
+  return eyeLoadFrom(items, loopSec);
+}
+
+function animatedCount(layers = (typeof Project !== 'undefined' ? Project.layers : [])) {
+  if (!layers || !layers.length) return 0;
+  return layers.filter(L => {
+    if (L.visible === false) return false;
+    const m = (typeof activeMotion === 'function') ? activeMotion(L) : (L.motion && L.motion.enabled !== false ? L.motion : null);
+    return !!m;
+  }).length;
+}
+
 function loadLevel(load) {
   if (load <= LOAD_THRESH.green) return 'green';
   if (load <= LOAD_THRESH.yellow) return 'yellow';
@@ -47,6 +96,8 @@ if (typeof window !== 'undefined') {
   window.LOAD_THRESH = LOAD_THRESH;
   window.MAX_ACTIVE = MAX_ACTIVE;
   window.eyeLoadFrom = eyeLoadFrom;
+  window.eyeLoad = eyeLoad;
+  window.animatedCount = animatedCount;
   window.loadLevel = loadLevel;
   window.testLoad = testLoad;
 }
@@ -56,10 +107,12 @@ if (typeof global !== 'undefined') {
   global.LOAD_THRESH = LOAD_THRESH;
   global.MAX_ACTIVE = MAX_ACTIVE;
   global.eyeLoadFrom = eyeLoadFrom;
+  global.eyeLoad = eyeLoad;
+  global.animatedCount = animatedCount;
   global.loadLevel = loadLevel;
   global.testLoad = testLoad;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { Calm, LOAD_THRESH, MAX_ACTIVE, eyeLoadFrom, loadLevel, testLoad };
+  module.exports = { Calm, LOAD_THRESH, MAX_ACTIVE, eyeLoadFrom, eyeLoad, animatedCount, loadLevel, testLoad };
 }

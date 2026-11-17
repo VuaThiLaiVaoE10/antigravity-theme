@@ -152,6 +152,21 @@
     if (Clock.u < 0) Clock.u += 1;
   }
 
+  function checkLoop(layers = (typeof Project !== 'undefined' ? Project.layers : [])) {
+    const arr = [];
+    if (!layers || !layers.length) return arr;
+    for (const L of layers) {
+      const m = activeMotion(L);
+      if (!m) continue;
+      const a = motionVector(L, 0), b = motionVector(L, 1);
+      const diff = Math.max(...a.map((v, i) => Math.abs(v - b[i])));
+      const amp = Math.max(1e-6, ampPx(m.type, m.amp));
+      const ratio = diff / amp;
+      arr.push({ name: L.name, ratio, ok: ratio < 0.05 });
+    }
+    return arr;
+  }
+
   function renderLayerMotion(ctx, u, opts = {}) {
     if (!ctx || typeof ctx.clearRect !== 'function') return;
     const w = (typeof Project !== 'undefined' && Project.width) || (ctx.canvas && ctx.canvas.width) || 1000;
@@ -2295,6 +2310,7 @@
   instance.testMotion = testMotion;
   instance.testUnits = testUnits;
   instance.testSetMotion = testSetMotion;
+  instance.checkLoop = checkLoop;
 
   if (typeof window !== 'undefined') {
     window.MOTION_LIMITS = MOTION_LIMITS;
@@ -2309,6 +2325,7 @@
     window.Clock = Clock;
     window.tickClock = tickClock;
     window.renderFrame = renderFrame;
+    window.checkLoop = checkLoop;
     window.testMotion = testMotion;
     window.testUnits = testUnits;
     window.testSetMotion = testSetMotion;
@@ -2327,6 +2344,7 @@
     global.Clock = Clock;
     global.tickClock = tickClock;
     global.renderFrame = renderFrame;
+    global.checkLoop = checkLoop;
     global.testMotion = testMotion;
     global.testUnits = testUnits;
     global.testSetMotion = testSetMotion;

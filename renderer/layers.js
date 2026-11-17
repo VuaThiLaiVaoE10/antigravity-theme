@@ -32,18 +32,7 @@ function addLayer(name, canvas, index) {
   const L = { id: Project.nextId++, name, visible: true, locked: false, opacity: 1,
     canvas: canvas || makeCanvas(Project.width, Project.height),
     pivot: { x: Project.width / 2, y: Project.height / 2 },
-    motion: {
-      type: 'sway',
-      amplitude: 1.0,
-      chaos: 0.15,
-      loopSec: 12,
-      anchor: { x: 0.5, y: 0.5 }
-    },
-    motionType: 'sway',
-    amplitude: 1.0,
-    chaos: 0.15,
-    loopSec: 12,
-    anchor: { x: 0.5, y: 0.5 },
+    motion: null,
     depth: 0 };
   Project.layers.splice(index === undefined ? Project.layers.length : index, 0, L);
   return L;

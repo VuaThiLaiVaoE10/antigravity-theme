@@ -97,12 +97,13 @@
               <span class="big-icon">📂</span>
               <div class="big-text">
                 <strong data-i18n="pickImageBtn">Chọn ảnh từ máy tính (Hỗ trợ 1920x1080 / 2K / 4K)...</strong>
-                <span class="sub-text" id="currentWpName">Cô gái kéo đàn ngắm Trái Đất (1920x1080 Full HD)</span>
+                <span class="sub-text" id="currentWpName">Chưa chọn ảnh nền (Nhấn để chọn file PNG, JPG, WebP...)</span>
               </div>
             </button>
             <div class="wp-meta-bar" id="wpMetaBar">
-              <span class="meta-tag badge-res" id="badgeWpRes">🖥️ Chuẩn 1920x1080 (16:9 FHD)</span>
-              <button class="mini-tool-btn" id="btnOptimize1080">✨ Tối ưu chuẩn 1080p</button>
+              <span class="meta-tag badge-res" id="badgeWpRes">Chưa có ảnh</span>
+              <button class="mini-tool-btn" id="btnOptimize1080" style="display:none;">✨ Tối ưu chuẩn 1080p</button>
+              <button class="mini-tool-btn" id="btnClearWallpaper" style="display:none; background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); color: #FCA5A5;">🗑️ Bỏ ảnh nền</button>
             </div>
           </div>
 
@@ -147,19 +148,12 @@
             <button class="fit-btn" data-fit="center" title="Căn giữa nguyên kích thước gốc">🎯 Center (Căn giữa)</button>
           </div>
 
-          <!-- Bộ lọc danh mục (Category Filter) -->
-          <div class="section-title-row">
-            <span class="section-title" data-i18n="presetWallpapers">HÌNH NỀN MẪU CÓ SẴN (PRESETS)</span>
-            <div class="category-tabs" id="wpCategoryTabs">
-              <button class="cat-tab active" data-cat="all">Tất cả</button>
-              <button class="cat-tab" data-cat="anime">🌌 Anime & Fantasy</button>
-              <button class="cat-tab" data-cat="city">🏙️ Cyberpunk & City</button>
-              <button class="cat-tab" data-cat="minimal">🎨 Kính mờ & Minimal</button>
-              <button class="cat-tab" data-cat="pixel">👾 Pixel & Gaming</button>
+          <!-- Hướng dẫn nạp ảnh nền tùy chỉnh -->
+          <div class="custom-wp-banner" style="background: rgba(14, 165, 233, 0.08); border: 1px dashed rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px 14px; margin: 12px 0 16px 0; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px;">🖼️</span>
+            <div style="font-size: 11px; color: #94A3B8; line-height: 1.5;">
+              <strong style="color: #38BDF8;">Ảnh nền cá nhân:</strong> Chọn file ảnh từ máy tính hoặc dán link video/ảnh từ TikTok / YouTube để nhập vào Antigravity. Nếu không chọn ảnh, giao diện áp dụng nền gradient mặc định.
             </div>
-          </div>
-          <div class="wallpaper-presets-grid" id="wpPresetsGrid">
-            <!-- Dynamically populated -->
           </div>
 
           <div class="section-title" data-i18n="wallpaperSliders">TÙY CHỈNH HÌNH NỀN</div>

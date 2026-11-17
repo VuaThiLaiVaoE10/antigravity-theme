@@ -203,7 +203,7 @@ async function init() {
       activePaletteId: 'midnight-aqua',
       mode: 'dark',
       language: 'vi',
-      wallpaperName: 'Cô gái kéo đàn ngắm Trái Đất (Mặc định)',
+      wallpaperName: '',
       wallpaperUrl: '',
       glass: { blur: 16, sidebarOpacity: 75, cardOpacity: 85, scrimOpacity: 60, wallpaperOpacity: 95 },
       petBorderStyle: 'theme-gradient',
@@ -228,6 +228,22 @@ async function init() {
   if (!appState.mascotUrl) appState.mascotUrl = '../assets/mascot-pixel-pet.png';
   if (!appState.mascotType) appState.mascotType = 'model-pixel-golem';
   if (!appState.activePetModelId) appState.activePetModelId = 'model-pixel-golem';
+
+  // Sync initial wallpaper UI controls
+  const btnClearWallpaper = document.getElementById('btnClearWallpaper');
+  const btnOptimize1080 = document.getElementById('btnOptimize1080');
+  const badgeWpRes = document.getElementById('badgeWpRes');
+  if (appState.wallpaperUrl) {
+    if (currentWpName) currentWpName.textContent = appState.wallpaperName || 'Ảnh nền tùy chỉnh';
+    if (btnOptimize1080) btnOptimize1080.style.display = 'inline-flex';
+    if (btnClearWallpaper) btnClearWallpaper.style.display = 'inline-flex';
+    detectImageResolution(appState.wallpaperUrl);
+  } else {
+    if (currentWpName) currentWpName.textContent = 'Chưa chọn ảnh nền (Nhấn để chọn file PNG, JPG, WebP...)';
+    if (badgeWpRes) badgeWpRes.textContent = 'Chưa có ảnh';
+    if (btnOptimize1080) btnOptimize1080.style.display = 'none';
+    if (btnClearWallpaper) btnClearWallpaper.style.display = 'none';
+  }
 
   activeSubtab = appState.mode || 'dark';
   applyLanguage(appState.language || 'vi');
@@ -333,6 +349,11 @@ function setupEvents() {
       currentWpName.textContent = res.fileName;
       showStatus('Đã chọn hình nền: ' + res.fileName);
 
+      const btnClearWallpaper = document.getElementById('btnClearWallpaper');
+      const btnOptimize1080 = document.getElementById('btnOptimize1080');
+      if (btnClearWallpaper) btnClearWallpaper.style.display = 'inline-flex';
+      if (btnOptimize1080) btnOptimize1080.style.display = 'inline-flex';
+
       // Inspect image dimensions and detect aspect ratio
       detectImageResolution(res.dataUrl);
 
@@ -341,6 +362,24 @@ function setupEvents() {
       await saveConfig();
     }
   });
+
+  // Clear Wallpaper Button
+  const btnClearWallpaper = document.getElementById('btnClearWallpaper');
+  if (btnClearWallpaper) {
+    btnClearWallpaper.addEventListener('click', async () => {
+      appState.wallpaperUrl = '';
+      appState.wallpaperName = '';
+      if (currentWpName) currentWpName.textContent = 'Chưa chọn ảnh nền (Nhấn để chọn file PNG, JPG, WebP...)';
+      const badgeWpRes = document.getElementById('badgeWpRes');
+      if (badgeWpRes) badgeWpRes.textContent = 'Chưa có ảnh';
+      const btnOptimize1080 = document.getElementById('btnOptimize1080');
+      if (btnOptimize1080) btnOptimize1080.style.display = 'none';
+      btnClearWallpaper.style.display = 'none';
+      updateLivePreview();
+      showStatus('✓ Đã gỡ bỏ ảnh nền. Antigravity sử dụng nền gradient mặc định.');
+      await saveConfig();
+    });
+  }
 
   // Optimize to 1920x1080 Canvas Tool
   const btnOptimize1080 = document.getElementById('btnOptimize1080');
@@ -854,15 +893,6 @@ function setupEvents() {
     });
   });
 
-  // Category Filter Tabs
-  document.querySelectorAll('.cat-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      const cat = tab.getAttribute('data-cat');
-      renderWallpaperPresets(cat);
-    });
-  });
 
   // Glassmorphism Tiers (Subtle, Deep, Ultra, Cyber)
   document.querySelectorAll('.tier-card').forEach(card => {
@@ -1046,7 +1076,7 @@ function setupEvents() {
     }
 
     if (!motionStudioInstance && typeof MotionStudio !== 'undefined') {
-      const initImg = appState.wallpaperUrl || '../assets/violinist-earth.jpg';
+      const initImg = appState.wallpaperUrl || '';
       motionStudioInstance = new MotionStudio({
         container: mount,
         imgUrl: initImg,
@@ -1076,9 +1106,13 @@ function setupEvents() {
     btnMotionUseWallpaper.addEventListener('click', () => {
       window.initMotionStudio();
       if (motionStudioInstance) {
-        const url = appState.wallpaperUrl || '../assets/violinist-earth.jpg';
-        motionStudioInstance.loadImage(url);
-        showStatus('Đã nạp ảnh Wallpaper vào Motion Studio');
+        const url = appState.wallpaperUrl || '';
+        if (url) {
+          motionStudioInstance.loadImage(url);
+          showStatus('Đã nạp ảnh Wallpaper vào Motion Studio');
+        } else {
+          showStatus('Chưa có ảnh Wallpaper. Hãy chọn hoặc tải ảnh từ máy tính trước!');
+        }
       }
     });
   }
@@ -1255,46 +1289,13 @@ function renderGradientTokens() {
   });
 }
 
-// === WALLPAPER PRESETS DATABASE (CATEGORIES & RESOLUTIONS) ===
-const WALLPAPER_PRESETS = [
-  { id: 'violinist', cat: 'anime', name: 'Cô gái kéo đàn ngắm Trái Đất', res: '1920x1080', bg: 'linear-gradient(135deg, #091c2b, #15334c)' },
-  { id: 'kindred', cat: 'anime', name: 'Kindred Spirit Hunters', res: '1920x1080', bg: 'linear-gradient(135deg, #180926, #321045)' },
-  { id: 'cyberpunk-girl', cat: 'anime', name: 'Cyberpunk Girl Horizon', res: '1920x1080', bg: 'linear-gradient(135deg, #081a26, #2a1130)' },
-  { id: 'tokyo-rain', cat: 'city', name: 'Tokyo Midnight Rain', res: '1920x1080', bg: 'linear-gradient(135deg, #0d1b2a, #1b263b)' },
-  { id: 'neo-seoul', cat: 'city', name: 'Neo Seoul Sunset Horizon', res: '2560x1440', bg: 'linear-gradient(135deg, #2b0e1d, #4c1833)' },
-  { id: 'neon-alley', cat: 'city', name: 'Cyber Neon Alley 1080p', res: '1920x1080', bg: 'linear-gradient(135deg, #0f0c29, #302b63)' },
-  { id: 'frosted-blue', cat: 'minimal', name: 'Deep Frosted Glass Aura', res: '1920x1080', bg: 'linear-gradient(135deg, #081826, #15415E)' },
-  { id: 'nebula', cat: 'minimal', name: 'Cosmic 4K Nebula', res: '3840x2160', bg: 'linear-gradient(135deg, #160a29, #281140)' },
-  { id: 'sakura-glass', cat: 'minimal', name: 'Sakura Dusk Glassmorphism', res: '1920x1080', bg: 'linear-gradient(135deg, #2b1220, #421c32)' },
-  { id: 'synthwave', cat: 'pixel', name: 'Synthwave Neon Sun Grid', res: '1920x1080', bg: 'linear-gradient(135deg, #1a0826, #3f0d40)' },
-  { id: 'pixel-room', cat: 'pixel', name: '8-Bit Cozy Lofi Room', res: '1920x1080', bg: 'linear-gradient(135deg, #1a1c29, #292e42)' },
-  { id: 'ultrawide-cyber', cat: 'minimal', name: 'Ultrawide Cyber Deep Blue', res: '2560x1080', bg: 'linear-gradient(135deg, #040d14, #0d283e)' }
-];
+// === WALLPAPER PRESETS (BỎ HÌNH MẪU CÓ SẴN - CHỈ DÙNG ẢNH TÙY CHỌN TỪ MÁY / LINK) ===
+const WALLPAPER_PRESETS = [];
 
 function renderWallpaperPresets(filterCat = 'all') {
-  wpPresetsGrid.innerHTML = '';
-  const list = filterCat === 'all' ? WALLPAPER_PRESETS : WALLPAPER_PRESETS.filter(p => p.cat === filterCat);
-
-  list.forEach(p => {
-    const card = document.createElement('div');
-    card.className = `wp-preset-card ${appState.wallpaperName?.includes(p.name) ? 'active' : ''}`;
-    card.style.background = p.bg;
-    card.innerHTML = `
-      <span class="wp-preset-title">${p.name}</span>
-      <span style="font-size:9px;color:rgba(125,207,255,0.85);margin-top:2px;">${p.res}</span>
-    `;
-    card.addEventListener('click', async () => {
-      document.querySelectorAll('.wp-preset-card').forEach(c => c.classList.remove('active'));
-      card.classList.add('active');
-      currentWpName.textContent = `${p.name} (${p.res})`;
-      appState.wallpaperName = p.name;
-      const badgeWpRes = document.getElementById('badgeWpRes');
-      if (badgeWpRes) badgeWpRes.textContent = `🖥️ Chuẩn ${p.res}`;
-      updateLivePreview();
-      await saveConfig();
-    });
-    wpPresetsGrid.appendChild(card);
-  });
+  if (wpPresetsGrid) {
+    wpPresetsGrid.innerHTML = '';
+  }
 }
 
 function detectImageResolution(dataUrl) {
@@ -1634,6 +1635,7 @@ function updateLivePreview() {
   if (appState.wallpaperUrl) {
     previewWallpaper.style.backgroundImage = `url(${appState.wallpaperUrl})`;
   } else {
+    previewWallpaper.style.backgroundImage = 'none';
     previewWallpaper.style.background = 'linear-gradient(135deg, #091c2b, #15334c)';
   }
   const fit = appState.wallpaperFit || 'cover';

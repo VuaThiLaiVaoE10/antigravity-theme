@@ -24,13 +24,6 @@ function getInitialConfig() {
 
   // Default initial configuration
   const defaultPalette = PALETTES.find(p => p.id === 'midnight-aqua') || PALETTES[0];
-  const violinPreset = path.join(__dirname, 'assets', 'violinist-earth.jpg');
-  let defaultWp = '';
-  if (fs.existsSync(violinPreset)) {
-    const ext = path.extname(violinPreset).slice(1) || 'jpeg';
-    defaultWp = `data:image/${ext};base64,${fs.readFileSync(violinPreset).toString('base64')}`;
-  }
-
   const petFile = path.join(__dirname, 'assets', 'mascot-pixel-pet.png');
   let defaultPet = '';
   if (fs.existsSync(petFile)) {
@@ -41,13 +34,13 @@ function getInitialConfig() {
     enabled: true,
     activeProfileId: 'default',
     profiles: [
-      { id: 'default', name: 'Midnight Aqua (Ảnh Gốc)', paletteId: 'midnight-aqua', mode: 'dark' }
+      { id: 'default', name: 'Midnight Aqua (Mặc định)', paletteId: 'midnight-aqua', mode: 'dark' }
     ],
     activePaletteId: 'midnight-aqua',
     mode: 'dark',
     language: 'vi',
-    wallpaperUrl: defaultWp,
-    wallpaperName: 'Cô gái kéo đàn ngắm Trái Đất (Mặc định)',
+    wallpaperUrl: '',
+    wallpaperName: '',
     composerGradient: 'linear-gradient(90deg, #E6FF80 0%, #38EF7D 35%, #11998E 70%, #FFE066 100%)',
     mascotUrl: defaultPet,
     mascotSize: 52,

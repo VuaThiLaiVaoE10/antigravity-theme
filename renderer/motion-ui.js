@@ -268,7 +268,7 @@
 
       // Backward compatible fallback to MotionStudio
       if (typeof window !== 'undefined' && typeof window.MotionStudio !== 'undefined' && !window.motionStudioInstance) {
-        const initImg = (window.appState && window.appState.wallpaperUrl) || '../assets/violinist-earth.jpg';
+        const initImg = (window.appState && window.appState.wallpaperUrl) || '';
         try {
           window.motionStudioInstance = new window.MotionStudio({
             container: this.container,

@@ -1097,3 +1097,177 @@
   gap: 6px;
   margin-top: 2px;
 }
+
+/* ───────────────────────────────────────────────────────────── */
+/* GIAI ĐOẠN 3: Visual Load Meter, Safe Zones & Focus Shield     */
+/* ───────────────────────────────────────────────────────────── */
+
+.motion-calm-toolkit {
+  background: rgba(13, 27, 42, 0.7);
+  border: 1px solid rgba(125, 207, 255, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.motion-load-meter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.motion-load-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #c0caf5;
+  font-size: 11px;
+}
+
+.load-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.load-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.motion-load-bar-track {
+  flex: 1;
+  min-width: 120px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.motion-load-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+}
+
+.motion-load-warning-banner {
+  background: rgba(247, 118, 142, 0.15);
+  border: 1px solid rgba(247, 118, 142, 0.45);
+  color: #ff757f;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  animation: loadAlertPulse 2s infinite ease-in-out;
+}
+
+@keyframes loadAlertPulse {
+  0%, 100% { border-color: rgba(247, 118, 142, 0.45); box-shadow: 0 0 0 rgba(247, 118, 142, 0); }
+  50% { border-color: rgba(247, 118, 142, 0.85); box-shadow: 0 0 8px rgba(247, 118, 142, 0.35); }
+}
+
+.btn-calm-reduce {
+  background: #f7768e;
+  color: #1a1b26;
+  border: none;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-calm-reduce:hover {
+  background: #ff757f;
+  box-shadow: 0 0 8px rgba(247, 118, 142, 0.6);
+  transform: translateY(-1px);
+}
+
+.motion-calm-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.calm-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #a9b1d6;
+  font-size: 11px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.calm-toggle-label input[type="checkbox"] {
+  accent-color: #7dcfff;
+  cursor: pointer;
+}
+
+/* ───────────────────────────────────────────────────────────── */
+/* Live Preview Safe Zones Visual Overlay (D-008)               */
+/* ───────────────────────────────────────────────────────────── */
+
+.preview-safezones-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.safe-zone-box {
+  position: absolute;
+  border: 1.5px dashed rgba(125, 207, 255, 0.65);
+  background: rgba(13, 27, 42, 0.22);
+  border-radius: 6px;
+  box-sizing: border-box;
+  pointer-events: auto;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.safe-zone-box:hover {
+  border-color: #7dcfff;
+  background: rgba(125, 207, 255, 0.12);
+  box-shadow: 0 0 10px rgba(125, 207, 255, 0.25);
+}
+
+.safe-zone-tag {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #7dcfff;
+  background: rgba(10, 24, 38, 0.85);
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(125, 207, 255, 0.35);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.preview-safezones-overlay.blur-focus-active .safe-zone-box {
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}

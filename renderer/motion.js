@@ -66,10 +66,10 @@
 })(typeof self !== 'undefined' ? self : this, function (DepthEngineModule, PhysicsEngineModule, SegmentEngineModule) {
   'use strict';
 
-  // High-precision clock
+  // High-precision clock (Absolute epoch ms)
   const getTimeMs = () => {
-    if (typeof performance !== 'undefined' && performance.now) {
-      return performance.now();
+    if (typeof performance !== 'undefined' && typeof performance.now === 'function' && performance.timeOrigin) {
+      return performance.timeOrigin + performance.now();
     }
     return Date.now();
   };
@@ -246,7 +246,11 @@
     imageWidth = 1920,
     imageHeight = 1080,
     simplexNoise = null,
-    cfg = null
+    cfg = null,
+    safeZones = null,
+    safeZoneFactor = null,
+    calmFactor = null,
+    safeZoneMode = 'dampen'
   }) {
     const currentCfg = cfg || getMotionCFG();
     const motionType = (layer && (layer.motionType || (layer.motion && layer.motion.type))) || 'sway';
@@ -389,6 +393,50 @@
       dy = rawDy * scale;
     }
 
+    // 8. Safe Zone & Focus Shield Attenuation (GIAI ĐOẠN 3 / D-008 & D-009)
+    let safeMultiplier = 1.0;
+    if (typeof safeZoneFactor === 'number') {
+      safeMultiplier = Math.max(0.0, Math.min(1.0, safeZoneFactor));
+    } else if (Array.isArray(safeZones) && safeZones.length > 0) {
+      const featherNorm = (currentCfg.safe && typeof currentCfg.safe.featherPermille === 'number')
+        ? (currentCfg.safe.featherPermille / 1000.0)
+        : 0.012;
+      const minAtten = (currentCfg.calm && typeof currentCfg.calm.typingFactor === 'number')
+        ? currentCfg.calm.typingFactor
+        : 0.2;
+      const insideAtten = safeZoneMode === 'freeze' ? 0.0 : minAtten;
+
+      for (const zone of safeZones) {
+        if (!zone || zone.enabled === false) continue;
+        const zx1 = zone.x;
+        const zy1 = zone.y;
+        const zx2 = zone.x + zone.width;
+        const zy2 = zone.y + zone.height;
+
+        if (x >= zx1 && x <= zx2 && y >= zy1 && y <= zy2) {
+          safeMultiplier = Math.min(safeMultiplier, insideAtten);
+        } else if (featherNorm > 0) {
+          const dxDist = Math.max(0, Math.max(zx1 - x, x - zx2));
+          const dyDist = Math.max(0, Math.max(zy1 - y, y - zy2));
+          const dist = Math.hypot(dxDist, dyDist);
+          if (dist < featherNorm) {
+            const u = dist / featherNorm;
+            const smoothU = u * u * (3.0 - 2.0 * u);
+            const factor = insideAtten + (1.0 - insideAtten) * smoothU;
+            safeMultiplier = Math.min(safeMultiplier, factor);
+          }
+        }
+      }
+    }
+
+    const effectiveCalm = (typeof calmFactor === 'number')
+      ? Math.max(0.0, Math.min(1.0, calmFactor))
+      : 1.0;
+
+    const totalModulation = safeMultiplier * effectiveCalm;
+    dx *= totalModulation;
+    dy *= totalModulation;
+
     return {
       dx,
       dy,
@@ -399,7 +447,68 @@
       ampPx: ampPxVal,
       limitPx: limitPxVal,
       isWarning,
-      theta
+      theta,
+      safeMultiplier,
+      calmMultiplier: effectiveCalm,
+      totalModulation
+    };
+  }
+
+  // =========================================================================
+  // 2.2 VISUAL LOAD METER (GIAI ĐOẠN 3: TẢI MẮT & GIỚI HẠN ĐIỂM NHẤN)
+  // =========================================================================
+  function calculateVisualLoad(layers = [], cfg = null) {
+    const currentCfg = cfg || getMotionCFG();
+    const activeLayers = (Array.isArray(layers) ? layers : []).filter(l => {
+      if (!l || l.visible === false) return false;
+      const amp = typeof l.amplitude === 'number'
+        ? l.amplitude
+        : ((l.motion && typeof l.motion.amplitude === 'number') ? l.motion.amplitude : 0);
+      const hasArrows = Array.isArray(l.arrows) && l.arrows.length > 0;
+      return amp > 0 || hasArrows;
+    });
+
+    let totalLoad = 0;
+    activeLayers.forEach(l => {
+      const amp = typeof l.amplitude === 'number'
+        ? l.amplitude
+        : ((l.motion && typeof l.motion.amplitude === 'number') ? l.motion.amplitude : (currentCfg.motion ? currentCfg.motion.defaultAmp : 1.0));
+      const spd = typeof l.speed === 'number'
+        ? l.speed
+        : ((l.motion && typeof l.motion.speed === 'number') ? l.motion.speed : 1.0);
+      totalLoad += amp * spd;
+    });
+
+    const greenMax = (currentCfg.load && currentCfg.load.green) || 1.5;
+    const yellowMax = (currentCfg.load && currentCfg.load.yellow) || 3.0;
+    const maxActive = (currentCfg.load && currentCfg.load.maxActive) || 3;
+
+    let level = 'green';
+    let levelLabel = 'Dịu mắt';
+    let levelColor = '#38EF7D';
+
+    if (totalLoad > yellowMax) {
+      level = 'red';
+      levelLabel = 'Rối mắt';
+      levelColor = '#F7768E';
+    } else if (totalLoad > greenMax) {
+      level = 'yellow';
+      levelLabel = 'Vừa phải';
+      levelColor = '#E0AF68';
+    }
+
+    const isOverloaded = activeLayers.length > maxActive;
+
+    return {
+      load: Number(totalLoad.toFixed(2)),
+      level,
+      levelLabel,
+      levelColor,
+      activeCount: activeLayers.length,
+      maxActive,
+      isOverloaded,
+      greenMax,
+      yellowMax
     };
   }
 
@@ -663,6 +772,16 @@
 
       // Pure JS Simplex Noise for fallback and CPU telemetry
       this.noiseGen = new SimplexNoise2D(2026);
+
+      // GIAI ĐOẠN 3: Safe Zones & Focus Shield (D-008 & D-009)
+      this.safeZones = [];
+      this.showSafeZones = true;
+      this.safeZoneMode = 'dampen'; // 'dampen': 20% displacement, 'freeze': 0% displacement
+      this.focusShieldEnabled = true;
+      this.isTyping = false;
+      this.typingFactor = 1.0;
+      this.lastTypingTime = 0;
+      this.safeZones = this.measureLivePreviewSafeZones();
 
       // Environment bindings (Auto-pause on hidden tab, reduced motion)
       this._bindEnvironment();
@@ -1350,6 +1469,7 @@
 
     renderFrame(t = 0) {
       if (typeof t === 'number') this.currentTime = t;
+      this._updateTypingFactor();
 
       if (this.isWebGL && this.gl && this.shaderProgram) {
         return this._renderWebGLFrame(this.currentTime);
@@ -1383,8 +1503,8 @@
       gl.bindTexture(gl.TEXTURE_2D, this.depthTexture);
       gl.uniform1i(gl.getUniformLocation(this.shaderProgram, 'u_depth'), 2);
 
-      // Intensity preset multipliers (tinh-te: 0.4x, vua: 1.0x, manh: 1.8x)
-      let intensityMult = this.getIntensityMultiplier();
+      // Intensity preset multipliers (tinh-te: 0.4x, vua: 1.0x, manh: 1.8x) modulated by Focus Shield (typingFactor)
+      let intensityMult = this.getIntensityMultiplier() * this.typingFactor;
       let speedMult = this.getSpeedMultiplier();
 
       if (this.reducedMotion) {
@@ -1450,7 +1570,7 @@
 
       const loopPeriodSec = (this.config.loopPeriodMs || 4000) / 1000;
       const adv = this.config.advanced || {};
-      const intensityMult = this.getIntensityMultiplier();
+      const intensityMult = this.getIntensityMultiplier() * this.typingFactor;
 
       let disp = calculateDisplacement({
         timeSec,
@@ -1477,7 +1597,7 @@
         disp = physRes.displacement;
       }
 
-      // Compute individual layer motion (GIAI ĐOẠN 2: Thở, Đung đưa, Trôi, Gợn)
+      // Compute individual layer motion (GIAI ĐOẠN 2 & 3: Thở, Đung đưa, Trôi, Gợn có Safe Zones & Focus Shield)
       let layerShiftX = 0;
       let layerShiftY = 0;
       const activeMotionLayer = this.config.layers.find(l => l.visible !== false && (l.motionType || (l.motion && l.motion.type)));
@@ -1490,7 +1610,10 @@
           loopPeriodSec: (activeMotionLayer.loopSec || loopPeriodSec),
           imageWidth: w,
           imageHeight: h,
-          simplexNoise: this.noiseGen
+          simplexNoise: this.noiseGen,
+          safeZones: this.safeZones,
+          calmFactor: this.typingFactor,
+          safeZoneMode: this.safeZoneMode
         });
         layerShiftX = lm.dx;
         layerShiftY = lm.dy;
@@ -1796,6 +1919,201 @@
       }
     }
 
+    // =======================================================================
+    // GIAI ĐOẠN 3: VISUAL LOAD, SAFE ZONES & FOCUS SHIELD (D-008 & D-009)
+    // =======================================================================
+    getTimeMs() {
+      return getTimeMs();
+    }
+
+    _updateTypingFactor() {
+      if (!this.focusShieldEnabled) {
+        this.typingFactor = 1.0;
+        return;
+      }
+      const now = getTimeMs();
+      const cfg = getMotionCFG();
+      const minFactor = (cfg.calm && typeof cfg.calm.typingFactor === 'number') ? cfg.calm.typingFactor : 0.2;
+      const recoverMs = (cfg.calm && typeof cfg.calm.recoverMs === 'number') ? cfg.calm.recoverMs : 3000;
+      const tau = (cfg.calm && typeof cfg.calm.tau === 'number') ? cfg.calm.tau : 0.5;
+
+      if (this.isTyping) {
+        this.typingFactor = minFactor;
+      } else if (this.lastTypingTime > 0) {
+        const elapsed = Math.max(0, now - this.lastTypingTime);
+        if (elapsed < recoverMs) {
+          this.typingFactor = minFactor;
+        } else {
+          const recoverSec = (elapsed - recoverMs) / 1000.0;
+          const alpha = 1.0 - Math.exp(-recoverSec / tau);
+          this.typingFactor = minFactor + (1.0 - minFactor) * Math.min(1.0, alpha);
+        }
+      } else {
+        this.typingFactor = 1.0;
+      }
+    }
+
+    setTypingState(isTyping) {
+      this.isTyping = !!isTyping;
+      this.lastTypingTime = getTimeMs();
+      if (this.isTyping) {
+        if (this.focusShieldEnabled) {
+          const cfg = getMotionCFG();
+          this.typingFactor = (cfg.calm && typeof cfg.calm.typingFactor === 'number') ? cfg.calm.typingFactor : 0.2;
+        }
+      }
+      this._emitChange('typing', { isTyping: this.isTyping, factor: this.typingFactor });
+    }
+
+    getTypingFactor() {
+      this._updateTypingFactor();
+      return this.typingFactor;
+    }
+
+    setFocusShieldEnabled(enabled) {
+      this.focusShieldEnabled = !!enabled;
+      if (!this.focusShieldEnabled) {
+        this.typingFactor = 1.0;
+      }
+      this._emitChange('focusShield', { enabled: this.focusShieldEnabled });
+    }
+
+    isFocusShieldEnabled() {
+      return this.focusShieldEnabled;
+    }
+
+    measureLivePreviewSafeZones(previewWindowEl = null) {
+      const doc = (typeof document !== 'undefined') ? document : null;
+      const win = previewWindowEl || (doc ? (doc.getElementById('previewWindow') || doc.querySelector('.preview-window')) : null);
+
+      if (!win || !doc || typeof win.getBoundingClientRect !== 'function') {
+        return [
+          { id: 'sidebar', name: 'Thanh bên (Sidebar)', x: 0.0, y: 0.05, width: 0.28, height: 0.95, enabled: true },
+          { id: 'chat', name: 'Khung chat & Lời thoại', x: 0.30, y: 0.08, width: 0.68, height: 0.65, enabled: true },
+          { id: 'composer', name: 'Ô nhập lệnh (Composer)', x: 0.30, y: 0.75, width: 0.68, height: 0.22, enabled: true },
+          { id: 'code', name: 'Vùng soạn thảo / Code', x: 0.32, y: 0.35, width: 0.64, height: 0.35, enabled: true }
+        ];
+      }
+
+      const winRect = win.getBoundingClientRect();
+      if (!winRect || winRect.width <= 0 || winRect.height <= 0) {
+        return [
+          { id: 'sidebar', name: 'Thanh bên (Sidebar)', x: 0.0, y: 0.05, width: 0.28, height: 0.95, enabled: true },
+          { id: 'chat', name: 'Khung chat & Lời thoại', x: 0.30, y: 0.08, width: 0.68, height: 0.65, enabled: true },
+          { id: 'composer', name: 'Ô nhập lệnh (Composer)', x: 0.30, y: 0.75, width: 0.68, height: 0.22, enabled: true },
+          { id: 'code', name: 'Vùng soạn thảo / Code', x: 0.32, y: 0.35, width: 0.64, height: 0.35, enabled: true }
+        ];
+      }
+
+      const toRel = (rect) => {
+        const rx = Math.max(0, Math.min(1, (rect.left - winRect.left) / winRect.width));
+        const ry = Math.max(0, Math.min(1, (rect.top - winRect.top) / winRect.height));
+        const rw = Math.max(0, Math.min(1 - rx, rect.width / winRect.width));
+        const rh = Math.max(0, Math.min(1 - ry, rect.height / winRect.height));
+        return { x: Number(rx.toFixed(3)), y: Number(ry.toFixed(3)), width: Number(rw.toFixed(3)), height: Number(rh.toFixed(3)) };
+      };
+
+      const zones = [];
+      const sbEl = doc.getElementById('previewSidebar') || doc.querySelector('.preview-sidebar');
+      if (sbEl && typeof sbEl.getBoundingClientRect === 'function') {
+        const r = toRel(sbEl.getBoundingClientRect());
+        zones.push({ id: 'sidebar', name: 'Thanh bên (Sidebar)', ...r, enabled: true });
+      }
+
+      const chatEl = doc.querySelector('.chat-sample-area') || doc.getElementById('previewChat');
+      if (chatEl && typeof chatEl.getBoundingClientRect === 'function') {
+        const r = toRel(chatEl.getBoundingClientRect());
+        zones.push({ id: 'chat', name: 'Khung chat & Lời thoại', ...r, enabled: true });
+      }
+
+      const compEl = doc.getElementById('previewComposer') || doc.querySelector('.preview-composer');
+      if (compEl && typeof compEl.getBoundingClientRect === 'function') {
+        const r = toRel(compEl.getBoundingClientRect());
+        zones.push({ id: 'composer', name: 'Ô nhập lệnh (Composer)', ...r, enabled: true });
+      }
+
+      const codeEl = doc.querySelector('.code-snippet-body') || doc.querySelector('pre.code-snippet-body');
+      if (codeEl && typeof codeEl.getBoundingClientRect === 'function') {
+        const r = toRel(codeEl.getBoundingClientRect());
+        zones.push({ id: 'code', name: 'Vùng soạn thảo / Code', ...r, enabled: true });
+      }
+
+      return zones.length > 0 ? zones : [
+        { id: 'sidebar', name: 'Thanh bên (Sidebar)', x: 0.0, y: 0.05, width: 0.28, height: 0.95, enabled: true },
+        { id: 'chat', name: 'Khung chat & Lời thoại', x: 0.30, y: 0.08, width: 0.68, height: 0.65, enabled: true },
+        { id: 'composer', name: 'Ô nhập lệnh (Composer)', x: 0.30, y: 0.75, width: 0.68, height: 0.22, enabled: true },
+        { id: 'code', name: 'Vùng soạn thảo / Code', x: 0.32, y: 0.35, width: 0.64, height: 0.35, enabled: true }
+      ];
+    }
+
+    setSafeZones(zones) {
+      if (Array.isArray(zones)) {
+        this.safeZones = zones;
+        this._emitChange('safezones', { zones: this.safeZones });
+      }
+      return this.safeZones;
+    }
+
+    getSafeZones() {
+      return this.safeZones;
+    }
+
+    getSafeZoneFactor(x, y) {
+      const cfg = getMotionCFG();
+      const featherNorm = (cfg.safe && typeof cfg.safe.featherPermille === 'number')
+        ? (cfg.safe.featherPermille / 1000.0)
+        : 0.012;
+      const minAtten = (cfg.calm && typeof cfg.calm.typingFactor === 'number')
+        ? cfg.calm.typingFactor
+        : 0.2;
+      const insideAtten = this.safeZoneMode === 'freeze' ? 0.0 : minAtten;
+
+      let safeMultiplier = 1.0;
+      for (const zone of this.safeZones) {
+        if (!zone || zone.enabled === false) continue;
+        const zx1 = zone.x;
+        const zy1 = zone.y;
+        const zx2 = zone.x + zone.width;
+        const zy2 = zone.y + zone.height;
+
+        if (x >= zx1 && x <= zx2 && y >= zy1 && y <= zy2) {
+          safeMultiplier = Math.min(safeMultiplier, insideAtten);
+        } else if (featherNorm > 0) {
+          const dxDist = Math.max(0, Math.max(zx1 - x, x - zx2));
+          const dyDist = Math.max(0, Math.max(zy1 - y, y - zy2));
+          const dist = Math.hypot(dxDist, dyDist);
+          if (dist < featherNorm) {
+            const u = dist / featherNorm;
+            const smoothU = u * u * (3.0 - 2.0 * u);
+            const factor = insideAtten + (1.0 - insideAtten) * smoothU;
+            safeMultiplier = Math.min(safeMultiplier, factor);
+          }
+        }
+      }
+      return safeMultiplier;
+    }
+
+    getVisualLoad(layers = null) {
+      return calculateVisualLoad(layers || this.config.layers, getMotionCFG());
+    }
+
+    reduceExcessLayers(maxActive = null) {
+      const cfg = getMotionCFG();
+      const limit = typeof maxActive === 'number' ? maxActive : ((cfg.load && cfg.load.maxActive) || 3);
+      const layers = this.config.layers;
+      const active = layers.filter(l => l.visible !== false);
+
+      if (active.length <= limit) return [];
+
+      const excess = active.slice(limit);
+      excess.forEach(l => {
+        l.visible = false;
+      });
+      this.updateFlowTexture();
+      this._emitChange('layers', this.config.layers);
+      return excess;
+    }
+
     destroy() {
       this.pause();
       if (this.gl && this.shaderProgram) {
@@ -1815,6 +2133,8 @@
   instance.SimplexNoise2D = SimplexNoise2D;
   instance.calculateDisplacement = calculateDisplacement;
   instance.calculateLayerMotion = calculateLayerMotion;
+  instance.calculateVisualLoad = calculateVisualLoad;
+  instance.getTimeMs = getTimeMs;
 
   return instance;
 });

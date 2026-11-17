@@ -241,6 +241,9 @@ async function init() {
   if (typeof window.initVideoImportStudio === 'function') {
     window.initVideoImportStudio();
   }
+  if (typeof _bindFocusShieldTypingEvents === 'function') {
+    _bindFocusShieldTypingEvents();
+  }
 }
 
 // === TABS SETUP ===
@@ -2693,6 +2696,33 @@ function updateLivePreview() {
     }
     if (typeof window.patcherApplyFilterTargets === 'function') {
       window.patcherApplyFilterTargets({ pet: filterPet, bg: filterBg, ui: filterUI });
+    }
+  }
+
+  // ---- Focus Shield Typing Detection (D-009) ----
+  function _bindFocusShieldTypingEvents() {
+    let typingTimer = null;
+    const notifyTyping = (isTyping) => {
+      if (typeof window !== 'undefined' && window.MotionEngine && typeof window.MotionEngine.setTypingState === 'function') {
+        window.MotionEngine.setTypingState(isTyping);
+      }
+      if (typeof window !== 'undefined' && window.StudioEvents && typeof window.StudioEvents.emit === 'function') {
+        window.StudioEvents.emit('user-typing', { isTyping });
+      }
+    };
+
+    const handleUserTyping = (e) => {
+      if (e && (e.ctrlKey || e.altKey || e.metaKey)) return;
+      notifyTyping(true);
+      if (typingTimer) clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => {
+        notifyTyping(false);
+      }, 500);
+    };
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('keydown', handleUserTyping, { passive: true });
+      document.addEventListener('input', handleUserTyping, { passive: true });
     }
   }
 

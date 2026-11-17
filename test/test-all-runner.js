@@ -11,6 +11,7 @@ const fs = require('fs');
 const TEST_FILES = [
   'test-config.js',
   'test-layer-motion.js',
+  'test-safezone-calm.js',
   'test-layers.js',
   'test-viewport.js',
   'test-selection.js',

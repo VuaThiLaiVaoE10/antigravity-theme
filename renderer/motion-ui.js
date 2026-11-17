@@ -246,6 +246,12 @@
       this._suggestCandidates = [];
       this.pickingAnchorLayerId = null;
 
+      // GIAI ĐOẠN 3: Safe Zones & Focus Shield
+      this.showSafeZones = true;
+      this.focusShieldEnabled = true;
+      this.blurFocusEnabled = false;
+      this.safeZones = [];
+
       // Studio instance reference
       this.studioInstance = null;
     }
@@ -1278,6 +1284,102 @@
     }
 
     // ─────────────────────────────────────────────────────────────
+    // GIAI ĐOẠN 3: Visual Load Meter & Safe Zones Overlay (D-008 & D-009)
+    // ─────────────────────────────────────────────────────────────
+    getVisualLoad() {
+      if (typeof window !== 'undefined' && window.MotionEngine && typeof window.MotionEngine.getVisualLoad === 'function') {
+        return window.MotionEngine.getVisualLoad(this.layers);
+      }
+      const cfg = getCFG();
+      const active = (this.layers || []).filter(l => l && l.visible !== false);
+      let total = 0;
+      active.forEach(l => {
+        const a = typeof l.amplitude === 'number' ? l.amplitude : 1.0;
+        const s = typeof l.speed === 'number' ? l.speed : 1.0;
+        total += a * s;
+      });
+      const g = (cfg.load && cfg.load.green) || 1.5;
+      const y = (cfg.load && cfg.load.yellow) || 3.0;
+      const maxActive = (cfg.load && cfg.load.maxActive) || 3;
+      let lvl = total > y ? 'red' : (total > g ? 'yellow' : 'green');
+      let lbl = total > y ? 'Rối mắt' : (total > g ? 'Vừa phải' : 'Dịu mắt');
+      let clr = total > y ? '#F7768E' : (total > g ? '#E0AF68' : '#38EF7D');
+      return {
+        load: Number(total.toFixed(2)),
+        level: lvl,
+        levelLabel: lbl,
+        levelColor: clr,
+        activeCount: active.length,
+        maxActive,
+        isOverloaded: active.length > maxActive,
+        greenMax: g,
+        yellowMax: y
+      };
+    }
+
+    reduceExcessLayers(maxActive = null) {
+      const cfg = getCFG();
+      const limit = typeof maxActive === 'number' ? maxActive : ((cfg.load && cfg.load.maxActive) || 3);
+      const active = (this.layers || []).filter(l => l && l.visible !== false);
+      if (active.length > limit) {
+        this._saveSnapshot();
+        for (let i = limit; i < active.length; i++) {
+          active[i].visible = false;
+        }
+        this._syncToEngine();
+        this.render();
+        if (typeof window !== 'undefined' && typeof window.showStatus === 'function') {
+          window.showStatus(`✓ Đã tắt bớt ${active.length - limit} lớp chuyển động để tránh rối mắt`);
+        }
+      }
+    }
+
+    renderSafeZonesOverlay() {
+      if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
+      const previewWin = document.getElementById('previewWindow') || (typeof document.querySelector === 'function' ? document.querySelector('.preview-window') : null);
+      if (!previewWin || typeof previewWin.appendChild !== 'function') return;
+
+      let overlay = document.getElementById('previewSafeZonesOverlay');
+      if (!overlay) {
+        if (typeof document.createElement !== 'function') return;
+        overlay = document.createElement('div');
+        overlay.id = 'previewSafeZonesOverlay';
+        overlay.className = 'preview-safezones-overlay';
+        previewWin.appendChild(overlay);
+      }
+
+      if (!this.showSafeZones) {
+        if (overlay.style) overlay.style.display = 'none';
+        return;
+      }
+
+      if (overlay.style) overlay.style.display = 'block';
+      if (overlay.classList && typeof overlay.classList.toggle === 'function') {
+        overlay.classList.toggle('blur-focus-active', !!this.blurFocusEnabled);
+      }
+
+      if (!Array.isArray(this.safeZones) || this.safeZones.length === 0) {
+        if (typeof window !== 'undefined' && window.MotionEngine && typeof window.MotionEngine.measureLivePreviewSafeZones === 'function') {
+          this.safeZones = window.MotionEngine.measureLivePreviewSafeZones(previewWin);
+        }
+      }
+
+      overlay.innerHTML = (this.safeZones || []).map(zone => {
+        if (!zone || zone.enabled === false) return '';
+        const l = (zone.x * 100).toFixed(1);
+        const t = (zone.y * 100).toFixed(1);
+        const w = (zone.width * 100).toFixed(1);
+        const h = (zone.height * 100).toFixed(1);
+        return `
+          <div class="safe-zone-box" data-zone-id="${zone.id}" style="left:${l}%; top:${t}%; width:${w}%; height:${h}%;">
+            <span class="safe-zone-tag">🛡️ ${zone.name} (-80% rung)</span>
+            <div class="safe-zone-handle br" title="Kéo để chỉnh kích thước"></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // UI Rendering
     // ─────────────────────────────────────────────────────────────
     render() {
@@ -1285,6 +1387,7 @@
 
       const activeLayer = this.getActiveLayer();
       const curPreset = this.config.intensityPreset || 'vua';
+      const visualLoad = this.getVisualLoad();
 
       this.container.innerHTML = `
         <div class="motion-ui-wrap ${this.cleanViewActive ? 'clean-view' : ''}">
@@ -1366,6 +1469,48 @@
               <button type="button" class="motion-preset-pill preset-demo-btn" id="btnLoadThreeLayers" title="Nạp nhanh 3 lớp: Tóc bay + Váy lay động + Mây trôi">
                 🚀 Nạp bộ 3 lớp mẫu
               </button>
+            </div>
+          </div>
+
+          <!-- GIAI ĐOẠN 3: Visual Load Meter & Safe Zones / Calm Toolkit (D-008 & D-009) -->
+          <div class="motion-calm-toolkit">
+            <div class="motion-load-meter-row">
+              <div class="motion-load-title">
+                <span class="load-icon">👀</span>
+                <span style="font-weight:600;font-size:12px;">TẢI MẮT (VISUAL LOAD):</span>
+                <span class="load-badge ${visualLoad.level}" id="visualLoadBadge" style="background:${visualLoad.levelColor}22; color:${visualLoad.levelColor}; border:1px solid ${visualLoad.levelColor}66;">
+                  <span class="load-dot" style="background:${visualLoad.levelColor};"></span>
+                  ${visualLoad.load} / ${visualLoad.yellowMax} • ${visualLoad.levelLabel}
+                </span>
+              </div>
+              <div class="motion-load-bar-track" title="Thước đo tải mắt: Xanh (<=1.5), Vàng (<=3.0), Đỏ (>3.0)">
+                <div class="motion-load-bar-fill" style="width: ${Math.min(100, Math.round((visualLoad.load / (visualLoad.yellowMax * 1.35)) * 100))}%; background-color: ${visualLoad.levelColor};"></div>
+              </div>
+            </div>
+
+            ${visualLoad.isOverloaded ? `
+              <div class="motion-load-warning-banner" id="bannerOverloadedLayers">
+                <span class="warning-icon">⚠️</span>
+                <span class="warning-msg">Quá nhiều điểm nhấn (${visualLoad.activeCount} lớp đang động). Giới hạn tối đa là ${visualLoad.maxActive} lớp để tránh rối mắt.</span>
+                <button type="button" class="btn-calm-reduce" id="btnCalmReduceLayers" title="Tắt bớt các lớp vượt quá giới hạn 3">
+                  Tắt bớt lớp thừa
+                </button>
+              </div>
+            ` : ''}
+
+            <div class="motion-calm-controls-row">
+              <label class="calm-toggle-label" title="Tự động khóa tĩnh và giảm 80% rung lắc tại các vùng chữ, khung chat và thanh bên">
+                <input type="checkbox" id="chkSafeZones" ${this.showSafeZones ? 'checked' : ''} />
+                <span>🛡️ Vùng an toàn chữ & chat</span>
+              </label>
+              <label class="calm-toggle-label" title="Tự động giảm biên độ chuyển động xuống 20% khi đang gõ phím, hồi lại sau 3s">
+                <input type="checkbox" id="chkFocusShield" ${this.focusShieldEnabled ? 'checked' : ''} />
+                <span>⌨️ Focus Shield (Làm dịu khi gõ)</span>
+              </label>
+              <label class="calm-toggle-label" title="Tùy chọn làm mờ nhẹ vùng an toàn để chữ nổi bật">
+                <input type="checkbox" id="chkBlurFocus" ${this.blurFocusEnabled ? 'checked' : ''} />
+                <span>Mờ nhẹ nền</span>
+              </label>
             </div>
           </div>
 
@@ -1643,6 +1788,7 @@
       `;
 
       this._attachUIEvents();
+      this.renderSafeZonesOverlay();
     }
 
     _escapeHtml(str) {
@@ -1656,6 +1802,41 @@
 
     _attachUIEvents() {
       if (!this.container) return;
+
+      // GIAI ĐOẠN 3: Reduce layers & Calm controls
+      const reduceBtn = this.container.querySelector('#btnCalmReduceLayers');
+      if (reduceBtn) {
+        reduceBtn.onclick = () => this.reduceExcessLayers();
+      }
+
+      const chkSafe = this.container.querySelector('#chkSafeZones');
+      if (chkSafe) {
+        chkSafe.onchange = (e) => {
+          this.showSafeZones = e.target.checked;
+          if (typeof window !== 'undefined' && window.MotionEngine) {
+            window.MotionEngine.showSafeZones = this.showSafeZones;
+          }
+          this.renderSafeZonesOverlay();
+        };
+      }
+
+      const chkFocus = this.container.querySelector('#chkFocusShield');
+      if (chkFocus) {
+        chkFocus.onchange = (e) => {
+          this.focusShieldEnabled = e.target.checked;
+          if (typeof window !== 'undefined' && window.MotionEngine && typeof window.MotionEngine.setFocusShieldEnabled === 'function') {
+            window.MotionEngine.setFocusShieldEnabled(this.focusShieldEnabled);
+          }
+        };
+      }
+
+      const chkBlur = this.container.querySelector('#chkBlurFocus');
+      if (chkBlur) {
+        chkBlur.onchange = (e) => {
+          this.blurFocusEnabled = e.target.checked;
+          this.renderSafeZonesOverlay();
+        };
+      }
 
       // Clean view button
       const cleanBtn = this.container.querySelector('#btnMotionCleanView');

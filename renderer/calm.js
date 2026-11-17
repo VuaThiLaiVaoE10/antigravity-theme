@@ -34,12 +34,21 @@ function loadLevel(load) {
   return 'red';
 }
 
+function testLoad() {
+  const lo = eyeLoadFrom([{ type: 'sway', amp: 1.5, cycles: 1, cov: 0.2 }], 12);
+  const hi = eyeLoadFrom([1, 2, 3, 4].map(() => ({ type: 'sway', amp: 99, cycles: 3, cov: 0.5 })), 12);
+  const ok = Math.abs(lo - 0.5) < 1e-9 && loadLevel(lo) === 'green' && loadLevel(hi) === 'red' && loadLevel(2) === 'yellow';
+  console.log(ok ? 'PASS load' : 'FAIL load ' + [lo, hi]);
+  return ok;
+}
+
 if (typeof window !== 'undefined') {
   window.Calm = Calm;
   window.LOAD_THRESH = LOAD_THRESH;
   window.MAX_ACTIVE = MAX_ACTIVE;
   window.eyeLoadFrom = eyeLoadFrom;
   window.loadLevel = loadLevel;
+  window.testLoad = testLoad;
 }
 
 if (typeof global !== 'undefined') {
@@ -48,8 +57,9 @@ if (typeof global !== 'undefined') {
   global.MAX_ACTIVE = MAX_ACTIVE;
   global.eyeLoadFrom = eyeLoadFrom;
   global.loadLevel = loadLevel;
+  global.testLoad = testLoad;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { Calm, LOAD_THRESH, MAX_ACTIVE, eyeLoadFrom, loadLevel };
+  module.exports = { Calm, LOAD_THRESH, MAX_ACTIVE, eyeLoadFrom, loadLevel, testLoad };
 }

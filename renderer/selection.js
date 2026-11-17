@@ -1099,8 +1099,8 @@ function renderSelectionToolbar(container) {
   if (btnTestShift) {
     btnTestShift.onclick = () => {
       const dist = inputShiftDist ? parseInt(inputShiftDist.value, 10) : 10;
-      if (typeof testShiftReveal === 'function') testShiftReveal(dist);
-      else if (typeof window !== 'undefined' && typeof window.testShiftReveal === 'function') window.testShiftReveal(dist);
+      if (typeof tryShiftReveal === 'function') tryShiftReveal(dist);
+      else if (typeof window !== 'undefined' && typeof window.tryShiftReveal === 'function') window.tryShiftReveal(dist);
     };
   }
 

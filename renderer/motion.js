@@ -2237,6 +2237,50 @@
   instance.getTimeMs = getTimeMs;
   instance.MOTION_LIMITS = MOTION_LIMITS;
   instance.LOOP = LOOP;
+  function testMotion() {
+    if (typeof initProject === 'function' && typeof makeCanvas === 'function') initProject(makeCanvas(1000, 1000));
+    const bad = [];
+    for (const t of ['breathe', 'sway', 'drift', 'ripple']) {
+      const L = typeof addLayer === 'function' ? addLayer(t) : { id: 1, name: t, opacity: 1, canvas: (typeof makeCanvas === 'function' ? makeCanvas(1000, 1000) : null) };
+      L.motion = Object.assign(defaultMotion(t), { amp: 99, cycles: 3, chaos: 0.9 });
+      const a = motionVector(L, 0), b = motionVector(L, 1);
+      if (a.some((v, i) => Math.abs(v - b[i]) > 1e-6)) bad.push('loop ' + t);
+      const cap = ampPx(t, 99) + 1e-6;
+      for (let u = 0; u < 1; u += 0.05) if (motionVector(L, u).some(v => Math.abs(v) > cap)) { bad.push('cap ' + t); break; }
+    }
+    LOOP.seconds = 10; Clock.u = 0; Clock.speed = 0.5; Clock.playing = true; tickClock(10);
+    if (Math.abs(Clock.u - 0.5) > 1e-9) bad.push('clock'); Clock.speed = 1; Clock.u = 0;
+    if (typeof makeCanvas === 'function') {
+      const o = makeCanvas(1000, 1000).getContext('2d');
+      try { renderFrame(o, 0.3); } catch (e) { bad.push('render ' + e.message); }
+    }
+    console.log(bad.length ? 'FAIL motion ' + bad : 'PASS motion');
+    return bad.length === 0;
+  }
+
+  function testUnits() {
+    const mk = size => {
+      if (typeof initProject === 'function' && typeof makeCanvas === 'function') initProject(makeCanvas(size, size));
+      const L = typeof addLayer === 'function' ? addLayer('a') : { id: 1, name: 'a', opacity: 1, canvas: (typeof makeCanvas === 'function' ? makeCanvas(size, size) : null) };
+      L.motion = Object.assign(defaultMotion('drift'), { amp: 2, angle: 0, cycles: 1, chaos: 0, phase: 0 });
+      return motionVector(L, 0.25)[0];
+    };
+    const a = mk(1000), b = mk(2000);
+    const ok = Math.abs(a - 2) < 1e-6 && Math.abs(b - 4) < 1e-6;
+    console.log(ok ? 'PASS units' : 'FAIL units ' + [a, b]);
+    return ok;
+  }
+
+  function testSetMotion() {
+    if (typeof initProject === 'function' && typeof makeCanvas === 'function') initProject(makeCanvas(100, 100));
+    const L = typeof addLayer === 'function' ? addLayer('test') : { id: 1, name: 'test', opacity: 1, canvas: (typeof makeCanvas === 'function' ? makeCanvas(100, 100) : null) };
+    setMotion(L, { type: 'breathe', amp: 99, cycles: 99, chaos: 99 });
+    const m = L.motion;
+    const ok = m.type === 'breathe' && m.amp === CFG.motion.limit.breathe && m.cycles === CFG.motion.cyclesMax && m.chaos === CFG.motion.chaosMax;
+    console.log(ok ? 'PASS setMotion' : 'FAIL setMotion');
+    return ok;
+  }
+
   instance.defaultMotion = defaultMotion;
   instance.activeMotion = activeMotion;
   instance.motionSignal = motionSignal;
@@ -2247,6 +2291,9 @@
   instance.Clock = Clock;
   instance.tickClock = tickClock;
   instance.renderFrame = renderFrame;
+  instance.testMotion = testMotion;
+  instance.testUnits = testUnits;
+  instance.testSetMotion = testSetMotion;
 
   if (typeof window !== 'undefined') {
     window.MOTION_LIMITS = MOTION_LIMITS;
@@ -2261,6 +2308,9 @@
     window.Clock = Clock;
     window.tickClock = tickClock;
     window.renderFrame = renderFrame;
+    window.testMotion = testMotion;
+    window.testUnits = testUnits;
+    window.testSetMotion = testSetMotion;
   }
 
   if (typeof global !== 'undefined') {
@@ -2276,6 +2326,9 @@
     global.Clock = Clock;
     global.tickClock = tickClock;
     global.renderFrame = renderFrame;
+    global.testMotion = testMotion;
+    global.testUnits = testUnits;
+    global.testSetMotion = testSetMotion;
   }
 
   return instance;

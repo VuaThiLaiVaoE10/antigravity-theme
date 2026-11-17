@@ -31,18 +31,30 @@ function applyCalmPreset(name, layers) {
   }
 }
 
+function testPresets() {
+  if (typeof LOOP !== 'undefined') LOOP.seconds = CFG.loop.seconds;
+  const layers = [1, 2, 3, 4].map(() => ({ motion: { enabled: true, amp: 99, chaos: 99, type: 'breathe' } }));
+  applyCalmPreset('subtle', layers);
+  const ms = layers.map(l => l.motion);
+  const P = CFG.presets.subtle, ok = (typeof LOOP !== 'undefined' ? LOOP.seconds === P.loopSec : true) && ms.every(m => m.amp <= P.maxAmp && m.chaos <= P.chaosMax) && ms.filter(m => m.enabled !== false).length === P.maxActive;
+  console.log(ok ? 'PASS presets' : 'FAIL presets');
+  return ok;
+}
+
 if (typeof window !== 'undefined') {
   window.CALM_PRESETS = CALM_PRESETS;
   window.CalmPreset = CalmPreset;
   window.applyCalmPreset = applyCalmPreset;
+  window.testPresets = testPresets;
 }
 
 if (typeof global !== 'undefined') {
   global.CALM_PRESETS = CALM_PRESETS;
   global.CalmPreset = CalmPreset;
   global.applyCalmPreset = applyCalmPreset;
+  global.testPresets = testPresets;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { CALM_PRESETS, CalmPreset, applyCalmPreset };
+  module.exports = { CALM_PRESETS, CalmPreset, applyCalmPreset, testPresets };
 }

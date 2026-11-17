@@ -78,6 +78,9 @@
         <button class="tab-btn" data-tab="tab-advanced">
           <span class="tab-icon">⚙️</span> <span class="tab-text" data-i18n="tabAdvanced">Nâng cao</span>
         </button>
+        <button class="tab-btn" data-tab="tab-tests" id="tabBtnTests">
+          <span class="tab-icon">🧪</span> <span class="tab-text">Kiểm thử</span>
+        </button>
       </div>
 
       <!-- Tab Contents -->
@@ -814,6 +817,12 @@
             </button>
           </div>
         </div>
+
+        <!-- 8. TAB: KIỂM THỬ (TESTS PANEL) -->
+        <div class="tab-pane" id="tab-tests">
+          <div class="section-title">🧪 PANEL KIỂM THỬ HỆ THỐNG (TEST RUNNER)</div>
+          <div id="testsPanelMount"></div>
+        </div>
       </div>
 
       <!-- Bottom Bar -->
@@ -1085,6 +1094,10 @@
   <script src="project-io.js"></script>
   <script src="../petModels.js"></script>
   <script src="motion.js"></script>
+  <script src="calm.js"></script>
+  <script src="safe.js"></script>
+  <script src="parallax.js"></script>
+  <script src="calm-presets.js"></script>
   <script src="depth.js"></script>
   <script src="physics.js"></script>
   <script src="segment.js"></script>
@@ -1097,5 +1110,6 @@
   <script src="petOverlay.js"></script>
   <script src="pack.js"></script>
   <script src="app.js"></script>
+  <script src="tests.js"></script>
 </body>
 </html>

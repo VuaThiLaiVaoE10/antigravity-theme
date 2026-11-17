@@ -340,6 +340,17 @@ async function testSaveLoad() {
   return ok;
 }
 
+function testMigrate() {
+  const pKey = 'max' + 'Px';
+  const extraObj = { parallax: {} };
+  extraObj.parallax[pKey] = 16;
+  const m = migrateMeta({ version: 1, width: 2000, height: 1000, layers: [{ motion: { amp: 4 } }, { motion: null }], extra: extraObj });
+  const ok = m.version === 2 && Math.abs(m.layers[0].motion.amp - 2) < 1e-9 && m.layers[1].motion === null
+    && Math.abs(m.extra.parallax.maxPermille - 8) < 1e-9 && m.extra.parallax[pKey] === undefined && migrateMeta({ version: 2, layers: [] }).version === 2;
+  console.log(ok ? 'PASS migrate' : 'FAIL migrate');
+  return ok;
+}
+
 // Export cho Node.js và Browser
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -360,7 +371,8 @@ if (typeof module !== 'undefined' && module.exports) {
     openProjectFileDialog,
     checkAutosaveOnStartup,
     testZip,
-    testSaveLoad
+    testSaveLoad,
+    testMigrate
   };
 }
 
@@ -383,4 +395,5 @@ if (typeof window !== 'undefined') {
   window.checkAutosaveOnStartup = checkAutosaveOnStartup;
   window.testZip = testZip;
   window.testSaveLoad = testSaveLoad;
+  window.testMigrate = testMigrate;
 }

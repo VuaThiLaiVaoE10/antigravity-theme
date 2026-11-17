@@ -18,18 +18,32 @@ const ParallaxProvider = {
   set: s => { if (s) { Parallax.enabled = !!s.enabled; Parallax.maxPermille = Math.min(CFG.parallax.maxPermille, s.maxPermille || CFG.parallax.maxPermille); } }
 };
 
+function testParallax() {
+  if (typeof initProject === 'function' && typeof makeCanvas === 'function') initProject(makeCanvas(1000, 1000));
+  Parallax.maxPermille = 8;
+  Parallax.enabled = true;
+  Parallax.cx = 1; Parallax.cy = 0;
+  const L = { depth: 1 };
+  const a = parallaxOffset(L);
+  const ok = Math.abs(a.dx + 8) < 0.1 && a.dy === 0;
+  console.log(ok ? 'PASS parallax' : 'FAIL parallax ' + a.dx);
+  return ok;
+}
+
 if (typeof window !== 'undefined') {
   window.Parallax = Parallax;
   window.parallaxOffset = parallaxOffset;
   window.ParallaxProvider = ParallaxProvider;
+  window.testParallax = testParallax;
 }
 
 if (typeof global !== 'undefined') {
   global.Parallax = Parallax;
   global.parallaxOffset = parallaxOffset;
   global.ParallaxProvider = ParallaxProvider;
+  global.testParallax = testParallax;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { Parallax, parallaxOffset, ParallaxProvider };
+  module.exports = { Parallax, parallaxOffset, ParallaxProvider, testParallax };
 }

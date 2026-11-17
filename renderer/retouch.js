@@ -603,7 +603,7 @@ function fillSelectionHole() {
 // BƯỚC 1.5c: THỬ DỊCH LỚP & PHÁT HIỆN VÙNG LỘ
 // -----------------------------------------------------------------------------
 
-function testShiftReveal(distPx) {
+function tryShiftReveal(distPx) {
   const activeLayer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
   if (!activeLayer) {
     notifyRetouchUser('Chưa chọn lớp');
@@ -673,6 +673,10 @@ function selectRevealedRegions() {
   return true;
 }
 
+function testShiftReveal(distPx) {
+  return tryShiftReveal(distPx);
+}
+
 if (typeof window !== 'undefined') {
   window.addEventListener('DOMContentLoaded', () => {
     if (typeof viewCanvas !== 'undefined' && viewCanvas) {
@@ -725,6 +729,7 @@ if (typeof module !== 'undefined' && module.exports) {
     fillHole,
     fillSelectionHole,
     revealMap,
+    tryShiftReveal,
     testShiftReveal,
     selectRevealedRegions,
     RetouchSettings,
@@ -746,7 +751,7 @@ if (typeof window !== 'undefined') {
   window.fillHole = fillHole;
   window.fillSelectionHole = fillSelectionHole;
   window.revealMap = revealMap;
-  window.testShiftReveal = testShiftReveal;
+  window.tryShiftReveal = tryShiftReveal;
   window.selectRevealedRegions = selectRevealedRegions;
   window.RetouchSettings = RetouchSettings;
   window.drawCloneOverlay = drawCloneOverlay;

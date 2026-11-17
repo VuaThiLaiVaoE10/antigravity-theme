@@ -75,3 +75,8 @@
   - **C1-c (`project-io.js`)**: Di chuyển dữ liệu v1 sang v2 (`migrateMeta(m)`), lưu dự án chuẩn `version: CFG.version`, xác thực phiên bản.
   - **C1-d (Kiểm thử & Khử số cứng)**: Quét regex `2048|maxSteps: [0-9]|200 \* 1024|seconds: [0-9]|MAX_ACTIVE = [0-9]|green: [0-9]|maxPx|Math\.min\(16` trên toàn bộ mã nguồn: **KẾT QUẢ RỖNG (0 matches)**.
   - **Kiểm thử**: Đạt 9/9 PASS trong `test/test-card-c1.js`. Chạy tập trung toàn dự án: **32/32 PASS (100.0%)**.
+- [x] **THẺ T1 (Bộ chạy test trong app `tests.js` & Panel Kiểm thử)**:
+  - **Cấu trúc lõi**: `Tests = { results: [], running: false }`, `snapGlobals`, `restoreGlobals`, `discoverTests`, `runAllTests`, `testReport`, `selfCheckRunner`. Chép nguyên văn 100%.
+  - **Quản lý REQUIRED_TESTS**: Đã tích hợp danh sách 22 bài test từ các thẻ hoàn tất (`testConfig`, `testLayers`, `testView`, `testUndo`, `testWand`, `testBrush`, `testLasso`, `testMorph`, `testCut`, `testClone`, `testFill`, `testReveal`, `testZip`, `testSaveLoad`, `testMigrate`, `testMotion`, `testUnits`, `testSetMotion`, `testLoad`, `testSafe`, `testParallax`, `testPresets`).
+  - **Giao diện panel "Kiểm thử"**: Tab `Kiểm thử` trên `tabs-nav`, nút "Chạy tất cả test" kèm hộp thoại xác nhận bảo lưu dự án, nút "Sao chép báo cáo" vào clipboard, vùng `<pre>` hiển thị báo cáo tô màu ngữ nghĩa (PASS xanh lá, FAIL/THIẾU đỏ, KHÔNG KẾT LUẬN vàng).
+  - **Kiểm thử**: `selfCheckRunner()` đạt **PASS runner**. `runAllTests()` đạt **22/22 PASS (100.0%)**. Chạy tập trung toàn bộ dự án: **33/33 PASS (100.0%)**.

@@ -23,16 +23,30 @@ function safeSlice(r, staticCanvas, w, h) {
   Safe.cache[r.name] = { key, canvas: c }; return c;
 }
 
+function testSafe() {
+  if (typeof initProject === 'function' && typeof makeCanvas === 'function') initProject(makeCanvas(100, 100));
+  Safe.feather = 40;
+  const staticC = makeCanvas(100, 100);
+  const r = { name: 'chat', x: 0.1, y: 0.1, w: 0.5, h: 0.5 };
+  const c1 = safeSlice(r, staticC, 100, 100);
+  const c2 = safeSlice(r, staticC, 100, 100);
+  const ok = c1 === c2 && c1.width === 100;
+  console.log(ok ? 'PASS safe' : 'FAIL safe');
+  return ok;
+}
+
 if (typeof window !== 'undefined') {
   window.Safe = Safe;
   window.safeSlice = safeSlice;
+  window.testSafe = testSafe;
 }
 
 if (typeof global !== 'undefined') {
   global.Safe = Safe;
   global.safeSlice = safeSlice;
+  global.testSafe = testSafe;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { Safe, safeSlice };
+  module.exports = { Safe, safeSlice, testSafe };
 }

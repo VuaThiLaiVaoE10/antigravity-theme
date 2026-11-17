@@ -69,3 +69,9 @@
     3. `renderer/modules/export-compare/`: Giữ so sánh trước/sau (hold/split), xem chậm slow-mo 0.25x-2x, xuất video WebM/MP4/APNG tuần hoàn.
   - **Tiêu Chí Hoàn Thành (OCP)**: Thử nghiệm nạp module thứ 4 (`ambient-particles`) động mà **không phải sửa dù chỉ 1 ký tự code của module cũ**.
   - **Kiểm thử**: Viết mới `test/test-modular-architecture.js`, tích hợp vào bộ chạy tập trung: **31/31 PASS (100.0%)**.
+- [x] **THẺ C1 (Đổi biên độ sang ‰ & Thay số cứng bằng CFG)**:
+  - **C1-a (`motion.js`)**: Thay `MOTION_LIMITS = CFG.motion.limit`, `LOOP = { seconds: CFG.loop.seconds }`. Thay nguyên văn các hàm: `defaultMotion`, `layerTransform`, `motionVector`, `drawLayerMotion`, `setMotion`. Cập nhật giao diện `motion-ui.js` sang nhãn ‰ (`amp * unitPx()`), cảnh báo vàng `warnRatio`, chu kỳ từ `CFG.loop`.
+  - **C1-b (Các file module)**: `calm.js` (`Calm`, `LOAD_THRESH`, `MAX_ACTIVE`, `eyeLoadFrom`), `safe.js` (`Safe.feather = CFG.safe.featherPermille`, `safeSlice`), `parallax.js` (`Parallax`, `parallaxOffset`, `ParallaxProvider`), `calm-presets.js` (`CALM_PRESETS`, `CalmPreset`, `applyCalmPreset`), `undo.js` (`CFG.undo`), `layers.js` (`CFG.image.maxSide`).
+  - **C1-c (`project-io.js`)**: Di chuyển dữ liệu v1 sang v2 (`migrateMeta(m)`), lưu dự án chuẩn `version: CFG.version`, xác thực phiên bản.
+  - **C1-d (Kiểm thử & Khử số cứng)**: Quét regex `2048|maxSteps: [0-9]|200 \* 1024|seconds: [0-9]|MAX_ACTIVE = [0-9]|green: [0-9]|maxPx|Math\.min\(16` trên toàn bộ mã nguồn: **KẾT QUẢ RỖNG (0 matches)**.
+  - **Kiểm thử**: Đạt 9/9 PASS trong `test/test-card-c1.js`. Chạy tập trung toàn dự án: **32/32 PASS (100.0%)**.

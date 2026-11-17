@@ -2525,6 +2525,9 @@ function updateLivePreview() {
         if (typeof window.PetEventsUI !== 'undefined' && window.PetEventsUI.init) {
           window.PetEventsUI.init();
         }
+        if (typeof window.PetPack !== 'undefined' && window.PetPack.init) {
+          window.PetPack.init();
+        }
       } else {
         if (typeof appState !== 'undefined' && appState) {
           window._globalPetOverlay.setPetData({

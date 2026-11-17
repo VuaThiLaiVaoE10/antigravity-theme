@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="motion.css">
   <link rel="stylesheet" href="events.css">
+  <link rel="stylesheet" href="pack.css">
   <script>
     function handlePetImageError(img) {
       if (!img) return;
@@ -713,6 +714,9 @@
           <!-- BẢNG PHẢN ỨNG SỰ KIỆN CHO PET (PET EVENTS TABLE) -->
           <div id="petEventsMount"></div>
 
+          <!-- GIAI ĐOẠN 5: XUẤT / NHẬP GÓI PET & KHUNG EXTENSION VSIX -->
+          <div id="petPackMount"></div>
+
           <!-- PHẦN 4: HỌA TIẾT GÓC -->
           <div class="section-title" style="margin-top: 20px;">PHẦN 4: HOA VĂN & HỌA TIẾT GÓC (CORNER ORNAMENTS)</div>
           <div class="ornaments-row" id="ornamentsRow">
@@ -747,6 +751,7 @@
 
           <div id="motionStudioMount"></div>
           <div id="motionUIMount"></div>
+          <div id="motionAdvMount"></div>
         </div>
 
         <!-- 6. TAB: HỒ SƠ (PROFILES) -->
@@ -1073,6 +1078,8 @@
   <script src="../petModels.js"></script>
   <script src="motion.js"></script>
   <script src="depth.js"></script>
+  <script src="physics.js"></script>
+  <script src="segment.js"></script>
   <script src="motionStudio.js"></script>
   <script src="motion-ui.js"></script>
   <script src="events.js"></script>
@@ -1080,6 +1087,7 @@
   <script src="petCanvasStudio.js"></script>
   <script src="petAnimationEngine.js"></script>
   <script src="petOverlay.js"></script>
+  <script src="pack.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -17,6 +17,12 @@ function initProject(img) { // img: Image, ImageBitmap hoặc canvas
   Project.original = g.getImageData(0, 0, w, h); // BẤT BIẾN, không bao giờ ghi vào
   const L = addLayer('Nền', base);
   Project.activeId = L.id;
+  if (typeof resetUndo === 'function') resetUndo();
+  else if (typeof window !== 'undefined' && typeof window.resetUndo === 'function') window.resetUndo();
+  else if (typeof global !== 'undefined' && typeof global.resetUndo === 'function') global.resetUndo();
+  if (typeof Selection !== 'undefined') Selection.mask = new Uint8ClampedArray(w * h);
+  else if (typeof window !== 'undefined' && window.Selection) window.Selection.mask = new Uint8ClampedArray(w * h);
+  else if (typeof global !== 'undefined' && global.Selection) global.Selection.mask = new Uint8ClampedArray(w * h);
   return L;
 }
 
@@ -265,6 +271,13 @@ function drawCheckerboard(ctx, w, h) {
   }
 }
 
+function callWithStructureUndo(label, fn) {
+  if (typeof withStructureUndo === 'function') return withStructureUndo(label, fn);
+  if (typeof window !== 'undefined' && typeof window.withStructureUndo === 'function') return window.withStructureUndo(label, fn);
+  if (typeof global !== 'undefined' && typeof global.withStructureUndo === 'function') return global.withStructureUndo(label, fn);
+  return fn();
+}
+
 function renderLayersPanel(container) {
   if (typeof document === 'undefined') return;
   const el = typeof container === 'string' ? document.querySelector(container) : container;
@@ -285,6 +298,8 @@ function renderLayersPanel(container) {
       <div class="layers-panel-header">
         <span class="layers-panel-title">DANH SÁCH LỚP (${Project.layers.length})</span>
         <div class="layers-panel-actions">
+          <button type="button" class="layer-action-btn btn-undo" id="btnUndo" title="Hoàn tác (Ctrl+Z)" disabled>↩ Hoàn tác</button>
+          <button type="button" class="layer-action-btn btn-redo" id="btnRedo" title="Làm lại (Ctrl+Y)" disabled>↪ Làm lại</button>
           <button type="button" class="layer-action-btn" id="btnLayersAddEmpty" title="Thêm lớp trống">➕ Thêm</button>
           <button type="button" class="layer-action-btn" id="btnLayersDuplicate" title="Nhân bản lớp đang chọn">📋 Nhân bản</button>
           <button type="button" class="layer-action-btn" id="btnLayersDelete" title="Xóa lớp đang chọn" ${canDelete ? '' : 'disabled'}>🗑️ Xóa</button>
@@ -294,12 +309,35 @@ function renderLayersPanel(container) {
     </div>
   `;
 
+  // Gán sự kiện nút Hoàn tác / Làm lại
+  const btnUndo = el.querySelector('#btnUndo');
+  if (btnUndo) {
+    btnUndo.onclick = () => {
+      if (typeof undo === 'function') undo();
+      else if (typeof window !== 'undefined' && typeof window.undo === 'function') window.undo();
+      renderLayersPanel(el);
+    };
+  }
+  const btnRedo = el.querySelector('#btnRedo');
+  if (btnRedo) {
+    btnRedo.onclick = () => {
+      if (typeof redo === 'function') redo();
+      else if (typeof window !== 'undefined' && typeof window.redo === 'function') window.redo();
+      renderLayersPanel(el);
+    };
+  }
+
+  if (typeof updateUndoUI === 'function') updateUndoUI();
+  else if (typeof window !== 'undefined' && typeof window.updateUndoUI === 'function') window.updateUndoUI();
+
   // Gán sự kiện nút trên Header
   const btnAdd = el.querySelector('#btnLayersAddEmpty');
   if (btnAdd) {
     btnAdd.onclick = () => {
-      const newLayer = addLayer('Lớp ' + Project.nextId);
-      Project.activeId = newLayer.id;
+      callWithStructureUndo('Thêm lớp', () => {
+        const newLayer = addLayer('Lớp ' + Project.nextId);
+        Project.activeId = newLayer.id;
+      });
       requestRedraw();
       renderLayersPanel(el);
     };
@@ -309,11 +347,11 @@ function renderLayersPanel(container) {
   if (btnDup) {
     btnDup.onclick = () => {
       if (Project.activeId != null) {
-        const dup = duplicateLayer(Project.activeId);
-        if (dup) {
-          requestRedraw();
-          renderLayersPanel(el);
-        }
+        callWithStructureUndo('Nhân bản lớp', () => {
+          duplicateLayer(Project.activeId);
+        });
+        requestRedraw();
+        renderLayersPanel(el);
       }
     };
   }
@@ -322,10 +360,11 @@ function renderLayersPanel(container) {
   if (btnDel) {
     btnDel.onclick = () => {
       if (Project.activeId != null && Project.layers.length > 1) {
-        if (removeLayer(Project.activeId)) {
-          requestRedraw();
-          renderLayersPanel(el);
-        }
+        callWithStructureUndo('Xóa lớp', () => {
+          removeLayer(Project.activeId);
+        });
+        requestRedraw();
+        renderLayersPanel(el);
       }
     };
   }
@@ -401,7 +440,9 @@ function renderLayersPanel(container) {
       const finishRename = () => {
         const val = nameInput.value.trim();
         if (val && val !== L.name) {
-          L.name = val;
+          callWithStructureUndo('Đổi tên lớp', () => {
+            L.name = val;
+          });
           requestRedraw();
         }
         renderLayersPanel(el);
@@ -425,7 +466,9 @@ function renderLayersPanel(container) {
     if (visBtn) {
       visBtn.onclick = (e) => {
         e.stopPropagation();
-        L.visible = !L.visible;
+        callWithStructureUndo('Ẩn/hiện lớp', () => {
+          L.visible = !L.visible;
+        });
         requestRedraw();
         renderLayersPanel(el);
       };
@@ -436,16 +479,21 @@ function renderLayersPanel(container) {
     if (lockBtn) {
       lockBtn.onclick = (e) => {
         e.stopPropagation();
-        L.locked = !L.locked;
+        callWithStructureUndo('Khóa/mở khóa lớp', () => {
+          L.locked = !L.locked;
+        });
         requestRedraw();
         renderLayersPanel(el);
       };
     }
 
-    // Thanh trượt opacity 0-100
+    // Thanh trượt opacity 0-100 (chỉ gọi withStructureUndo ở sự kiện 'change', không gọi ở 'input')
     const opSlider = row.querySelector('.layer-opacity-slider');
     const opLabel = row.querySelector('.layer-opacity-label');
     if (opSlider && opLabel) {
+      opSlider.onpointerdown = opSlider.onmousedown = () => {
+        opSlider.dataset.startOpacity = String(L.opacity);
+      };
       opSlider.oninput = (e) => {
         e.stopPropagation();
         const num = Number(e.target.value);
@@ -455,11 +503,17 @@ function renderLayersPanel(container) {
       };
       opSlider.onchange = (e) => {
         e.stopPropagation();
+        const newOp = Math.max(0, Math.min(100, Number(e.target.value))) / 100;
+        const startOp = opSlider.dataset.startOpacity !== undefined ? Number(opSlider.dataset.startOpacity) : L.opacity;
+        L.opacity = startOp;
+        callWithStructureUndo('Chỉnh độ mờ', () => {
+          L.opacity = newOp;
+        });
         requestRedraw();
       };
     }
 
-    // Kéo thả dòng để đổi thứ tự (gọi moveLayer)
+    // Kéo thả dòng để đổi thứ tự (gọi moveLayer qua withStructureUndo)
     row.ondragstart = (e) => {
       e.dataTransfer.setData('text/plain', String(L.id));
       row.classList.add('dragging');
@@ -483,7 +537,9 @@ function renderLayersPanel(container) {
       if (!dragId || dragId === L.id) return;
       const targetIndex = Project.layers.findIndex((l) => l.id === L.id);
       if (targetIndex >= 0) {
-        moveLayer(dragId, targetIndex);
+        callWithStructureUndo('Đổi thứ tự lớp', () => {
+          moveLayer(dragId, targetIndex);
+        });
         requestRedraw();
         renderLayersPanel(el);
       }

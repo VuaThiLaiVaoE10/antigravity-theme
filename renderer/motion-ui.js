@@ -157,7 +157,15 @@
           direction: 15,
           feather: 12,
           maxShift: 24,
-          depth: 0.85
+          depth: 0.85,
+          physics: {
+            enabled: true,
+            anchor: { x: 0.5, y: 0.15 },
+            stiffness: 1.2,
+            damping: 0.7,
+            lag: 0.4,
+            maxDisplacement: 35.0
+          }
         }
       ];
 
@@ -180,6 +188,11 @@
       this.history = [];
       this.historyIndex = -1;
       this._maxHistory = 50;
+
+      // Region Suggestion state & Modal
+      this.isSuggestModalOpen = false;
+      this._suggestCandidates = [];
+      this.pickingAnchorLayerId = null;
 
       // Studio instance reference
       this.studioInstance = null;
@@ -655,7 +668,15 @@
         direction: 0,
         feather: 10,
         maxShift: 20,
-        depth: 0.50
+        depth: 0.50,
+        physics: {
+          enabled: false,
+          anchor: { x: 0.5, y: 0.1 },
+          stiffness: 1.0,
+          damping: 0.7,
+          lag: 0.4,
+          maxDisplacement: 35.0
+        }
       };
 
       this.layers.push(newLayer);
@@ -687,7 +708,15 @@
         direction: src.direction,
         feather: src.feather,
         maxShift: src.maxShift,
-        depth: src.depth
+        depth: src.depth,
+        physics: src.physics ? JSON.parse(JSON.stringify(src.physics)) : {
+          enabled: false,
+          anchor: { x: 0.5, y: 0.1 },
+          stiffness: 1.0,
+          damping: 0.7,
+          lag: 0.4,
+          maxDisplacement: 35.0
+        }
       };
 
       this.layers.push(clone);
@@ -804,7 +833,15 @@
           direction: 15,
           feather: 12,
           maxShift: 24,
-          depth: 0.85
+          depth: 0.85,
+          physics: {
+            enabled: true,
+            anchor: { x: 0.5, y: 0.15 },
+            stiffness: 1.2,
+            damping: 0.7,
+            lag: 0.4,
+            maxDisplacement: 35.0
+          }
         },
         {
           id: 'layer-dress-demo',
@@ -820,7 +857,15 @@
           direction: 45,
           feather: 10,
           maxShift: 20,
-          depth: 0.60
+          depth: 0.60,
+          physics: {
+            enabled: true,
+            anchor: { x: 0.5, y: 0.55 },
+            stiffness: 0.8,
+            damping: 0.8,
+            lag: 0.5,
+            maxDisplacement: 35.0
+          }
         },
         {
           id: 'layer-clouds-demo',
@@ -836,7 +881,15 @@
           direction: 0,
           feather: 25,
           maxShift: 18,
-          depth: 0.10
+          depth: 0.10,
+          physics: {
+            enabled: false,
+            anchor: { x: 0.5, y: 0.2 },
+            stiffness: 1.0,
+            damping: 0.7,
+            lag: 0.3,
+            maxDisplacement: 35.0
+          }
         }
       ];
 
@@ -873,12 +926,184 @@
     }
 
     _syncToEngine() {
-      if (typeof window !== 'undefined' && window.MotionEngine && typeof window.MotionEngine.setConfig === 'function') {
-        window.MotionEngine.setConfig(this.getConfig());
+      if (typeof window !== 'undefined' && window.MotionEngine) {
+        if (typeof window.MotionEngine.setConfig === 'function') {
+          window.MotionEngine.setConfig(this.getConfig());
+        }
+        if (typeof window.MotionEngine.setPhysics === 'function') {
+          for (const l of this.layers) {
+            if (l.physics) window.MotionEngine.setPhysics(l.id, l.physics);
+          }
+        }
       }
       if (typeof window !== 'undefined' && window.appState) {
         window.appState.motionFlow = this.getConfig();
       }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // GIAI ĐOẠN 6: Physics & Region Suggestion Controller Methods
+    // ─────────────────────────────────────────────────────────────
+
+    setLayerPhysics(layerId, partialCfg) {
+      const target = this.layers.find(l => l.id === layerId) || this.getActiveLayer();
+      if (!target) return null;
+      if (!target.physics) {
+        target.physics = {
+          enabled: false,
+          anchor: { x: 0.5, y: 0.1 },
+          stiffness: 1.0,
+          damping: 0.7,
+          lag: 0.4,
+          maxDisplacement: 35.0
+        };
+      }
+      Object.assign(target.physics, partialCfg);
+      this._saveSnapshot();
+      this._syncToEngine();
+
+      if (typeof window !== 'undefined' && window.MotionEngine && typeof window.MotionEngine.setPhysics === 'function') {
+        window.MotionEngine.setPhysics(target.id, target.physics);
+      }
+      return target.physics;
+    }
+
+    pickAnchor(layerId, coords) {
+      const target = this.layers.find(l => l.id === layerId) || this.getActiveLayer();
+      if (!target) return null;
+      const newAnchor = coords || { x: 0.5, y: 0.15 };
+      this.setLayerPhysics(target.id, { anchor: newAnchor });
+      this.render();
+      return newAnchor;
+    }
+
+    async openSuggestRegionsModal() {
+      let candidates = [];
+      try {
+        if (typeof window !== 'undefined' && window.MotionEngine && typeof window.MotionEngine.suggestRegions === 'function') {
+          const img = (this.studioInstance && this.studioInstance.currentImg) || null;
+          candidates = await window.MotionEngine.suggestRegions(img);
+        } else if (typeof window !== 'undefined' && window.PetSegment && typeof window.PetSegment.suggestRegions === 'function') {
+          const img = (this.studioInstance && this.studioInstance.currentImg) || null;
+          candidates = await window.PetSegment.suggestRegions(img);
+        }
+      } catch (err) {
+        console.warn('[MotionUI] Không thể gợi ý vùng tự động:', err);
+      }
+
+      if (!candidates || candidates.length === 0) {
+        candidates = [
+          {
+            id: `sug-${Date.now()}-1`,
+            name: 'Tóc bay',
+            color: '#FF9EAF',
+            depth: 0.85,
+            speed: 1.2,
+            intensity: 1.2,
+            direction: 15,
+            physics: { enabled: true, anchor: { x: 0.5, y: 0.15 }, stiffness: 1.2, damping: 0.7, lag: 0.4, maxDisplacement: 35.0 }
+          },
+          {
+            id: `sug-${Date.now()}-2`,
+            name: 'Váy lay động',
+            color: '#BB9AF7',
+            depth: 0.70,
+            speed: 0.8,
+            intensity: 1.0,
+            direction: 0,
+            physics: { enabled: true, anchor: { x: 0.5, y: 0.55 }, stiffness: 0.8, damping: 0.8, lag: 0.5, maxDisplacement: 35.0 }
+          },
+          {
+            id: `sug-${Date.now()}-3`,
+            name: 'Suối nước',
+            color: '#7AA2F7',
+            depth: 0.45,
+            speed: 1.5,
+            intensity: 1.4,
+            direction: -90,
+            physics: { enabled: false, anchor: { x: 0.5, y: 0.5 }, stiffness: 1.0, damping: 0.7, lag: 0.3, maxDisplacement: 35.0 }
+          },
+          {
+            id: `sug-${Date.now()}-4`,
+            name: 'Mây trôi',
+            color: '#7DCFFF',
+            depth: 0.15,
+            speed: 0.7,
+            intensity: 0.8,
+            direction: 90,
+            physics: { enabled: false, anchor: { x: 0.5, y: 0.2 }, stiffness: 1.0, damping: 0.7, lag: 0.3, maxDisplacement: 35.0 }
+          }
+        ];
+      }
+
+      this._suggestCandidates = candidates.map(c => ({
+        ...c,
+        selected: true
+      }));
+
+      this.isSuggestModalOpen = true;
+      this.render();
+      return this._suggestCandidates;
+    }
+
+    closeSuggestRegionsModal() {
+      this.isSuggestModalOpen = false;
+      this.render();
+    }
+
+    toggleSuggestCandidate(candId) {
+      const cand = this._suggestCandidates.find(c => c.id === candId);
+      if (cand) {
+        cand.selected = !cand.selected;
+        this.render();
+      }
+    }
+
+    removeSuggestCandidate(candId) {
+      this._suggestCandidates = this._suggestCandidates.filter(c => c.id !== candId);
+      this.render();
+    }
+
+    applySuggestedRegions(selectedCandidates) {
+      const toAdd = selectedCandidates || (this._suggestCandidates || []).filter(c => c.selected);
+      if (!toAdd || toAdd.length === 0) return 0;
+
+      for (const cand of toAdd) {
+        const idx = this.layers.length + 1;
+        const newL = {
+          id: cand.id || `layer-sug-${Date.now()}-${idx}`,
+          name: cand.name || `Lớp gợi ý ${idx}`,
+          color: cand.color || '#7DCFFF',
+          visible: true,
+          locked: false,
+          mask: cand.maskCanvas || null,
+          arrows: cand.arrows ? JSON.parse(JSON.stringify(cand.arrows)) : [],
+          pins: cand.pins ? JSON.parse(JSON.stringify(cand.pins)) : [],
+          speed: cand.speed ?? 1.0,
+          intensity: cand.intensity ?? 1.0,
+          direction: cand.direction ?? 0,
+          feather: cand.feather ?? 15,
+          maxShift: cand.maxShift ?? 20,
+          depth: cand.depth ?? 0.5,
+          physics: cand.physics ? JSON.parse(JSON.stringify(cand.physics)) : {
+            enabled: false,
+            anchor: { x: 0.5, y: 0.1 },
+            stiffness: 1.0,
+            damping: 0.7,
+            lag: 0.4,
+            maxDisplacement: 35.0
+          }
+        };
+        this.layers.push(newL);
+      }
+
+      this.activeLayerId = this.layers[this.layers.length - 1].id;
+      this.isSuggestModalOpen = false;
+      this._saveSnapshot();
+      this._syncStudioWithActiveLayer();
+      this._syncToEngine();
+      this.render();
+      return toAdd.length;
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -977,9 +1202,14 @@
                 <span class="panel-icon">🥞</span>
                 <span>DANH SÁCH LỚP (${this.layers.length})</span>
               </div>
-              <button type="button" id="btnMotionAddLayer" class="motion-btn-add-layer" title="Thêm lớp chuyển động trống">
-                + Thêm lớp
-              </button>
+              <div class="motion-layers-header-actions">
+                <button type="button" id="btnMotionSuggestRegions" class="motion-btn-suggest-regions" title="Tự động phân đoạn và gợi ý các vùng chuyển động tự nhiên (0 AI)">
+                  ✨ Gợi ý vùng
+                </button>
+                <button type="button" id="btnMotionAddLayer" class="motion-btn-add-layer" title="Thêm lớp chuyển động trống">
+                  + Thêm lớp
+                </button>
+              </div>
             </div>
 
             <div class="motion-layer-list">
@@ -1035,6 +1265,49 @@
                           <input type="range" class="slider-layer-depth" data-layer-id="${layer.id}" min="0.0" max="1.0" step="0.05" value="${layer.depth}" />
                           <span class="slider-val val-depth">${layer.depth.toFixed(2)} (${depthLabel})</span>
                         </div>
+
+                        <!-- GIAI ĐOẠN 6: Bảng điều khiển Vật lý nhẹ (tóc/váy/dây) -->
+                        <div class="layer-physics-box">
+                          <div class="layer-physics-header">
+                            <label class="layer-physics-toggle-label">
+                              <input type="checkbox" class="chk-layer-physics" data-layer-id="${layer.id}" ${(layer.physics && layer.physics.enabled) ? 'checked' : ''} />
+                              <span class="physics-title">🌀 Vật lý đàn hồi (Tóc/Váy/Dây)</span>
+                            </label>
+                            ${(layer.physics && layer.physics.enabled) ? `<span class="physics-badge active">Đang bật</span>` : `<span class="physics-badge">Tắt</span>`}
+                          </div>
+
+                          ${(layer.physics && layer.physics.enabled) ? `
+                            <div class="layer-physics-controls">
+                              <div class="layer-physics-row">
+                                <label>Neo gốc (Anchor):</label>
+                                <div class="physics-anchor-wrap">
+                                  <span class="physics-anchor-coords">(${((layer.physics.anchor?.x ?? 0.5) * 100).toFixed(0)}%, ${((layer.physics.anchor?.y ?? 0.1) * 100).toFixed(0)}%)</span>
+                                  <button type="button" class="btn-pick-anchor" data-layer-id="${layer.id}" title="Nhấp để đặt điểm neo gốc">
+                                    🎯 Đặt neo
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div class="layer-slider-row">
+                                <label>Độ cứng (Stiffness):</label>
+                                <input type="range" class="slider-physics-stiffness" data-layer-id="${layer.id}" min="0.1" max="5.0" step="0.1" value="${layer.physics.stiffness ?? 1.0}" />
+                                <span class="slider-val">${(layer.physics.stiffness ?? 1.0).toFixed(1)}</span>
+                              </div>
+
+                              <div class="layer-slider-row">
+                                <label>Giảm chấn (Damping):</label>
+                                <input type="range" class="slider-physics-damping" data-layer-id="${layer.id}" min="0.1" max="1.0" step="0.05" value="${layer.physics.damping ?? 0.7}" />
+                                <span class="slider-val">${(layer.physics.damping ?? 0.7).toFixed(2)}</span>
+                              </div>
+
+                              <div class="layer-slider-row">
+                                <label>Độ trễ pha (Lag):</label>
+                                <input type="range" class="slider-physics-lag" data-layer-id="${layer.id}" min="0.0" max="1.0" step="0.05" value="${layer.physics.lag ?? 0.4}" />
+                                <span class="slider-val">${(layer.physics.lag ?? 0.4).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          ` : ''}
+                        </div>
                       </div>
                     ` : ''}
                   </div>
@@ -1071,6 +1344,62 @@
               </div>
             </div>
           </details>
+
+          <!-- GIAI ĐOẠN 6: Modal Gợi ý vùng tự động (0 AI) -->
+          ${this.isSuggestModalOpen ? `
+            <div class="motion-suggest-modal-backdrop" id="motionSuggestModalBackdrop">
+              <div class="motion-suggest-modal" id="motionSuggestModal">
+                <div class="suggest-modal-header">
+                  <div class="suggest-modal-title-wrap">
+                    <span class="suggest-modal-icon">✨</span>
+                    <div>
+                      <h4 class="suggest-modal-title">GỢI Ý VÙNG TỰ ĐỘNG (0 AI)</h4>
+                      <p class="suggest-modal-subtitle">Phân tích không gian màu &amp; gradient biên phát hiện các vùng chuyển động tự nhiên</p>
+                    </div>
+                  </div>
+                  <button type="button" class="suggest-modal-close" id="btnCloseSuggestModal" title="Đóng">&times;</button>
+                </div>
+
+                <div class="suggest-modal-body">
+                  <div class="suggest-modal-hint">
+                    Chọn các vùng chuyển động bạn muốn thêm vào danh sách lớp:
+                  </div>
+                  <div class="suggest-candidates-list">
+                    ${this._suggestCandidates.map(cand => `
+                      <div class="suggest-candidate-card ${cand.selected ? 'is-selected' : ''}" data-cand-id="${cand.id}">
+                        <div class="cand-checkbox-wrap">
+                          <input type="checkbox" class="chk-candidate" data-cand-id="${cand.id}" ${cand.selected ? 'checked' : ''} />
+                        </div>
+                        <div class="cand-swatch" style="background-color: ${cand.color}; box-shadow: 0 0 8px ${cand.color}88;"></div>
+                        <div class="cand-info">
+                          <div class="cand-name-row">
+                            <span class="cand-name">${this._escapeHtml(cand.name)}</span>
+                            <span class="cand-depth-badge">Độ sâu: ${(cand.depth ?? 0.5).toFixed(2)} (${cand.depth >= 0.7 ? 'Gần' : (cand.depth <= 0.3 ? 'Xa' : 'Trung')})</span>
+                          </div>
+                          <div class="cand-meta-row">
+                            <span class="cand-physics-tag ${(cand.physics && cand.physics.enabled) ? 'physics-on' : 'physics-off'}">
+                              ${(cand.physics && cand.physics.enabled) ? '🌀 Lò xo đàn hồi (Anchor + Lag)' : '🌊 Dòng chảy mượt'}
+                            </span>
+                            <span class="cand-speed-tag">Tốc độ: ${(cand.speed ?? 1.0).toFixed(1)}x</span>
+                          </div>
+                        </div>
+                        <button type="button" class="btn-remove-candidate" data-cand-id="${cand.id}" title="Xóa đề xuất này">
+                          🗑️
+                        </button>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+
+                <div class="suggest-modal-footer">
+                  <button type="button" class="suggest-btn-cancel" id="btnCancelSuggestModal">Hủy</button>
+                  <button type="button" class="suggest-btn-apply" id="btnApplySuggestModal">
+                    ✓ Thêm vào danh sách lớp (${this._suggestCandidates.filter(c => c.selected).length})
+                  </button>
+                </div>
+              </div>
+            </div>
+          ` : ''}
         </div>
       `;
 
@@ -1154,6 +1483,12 @@
       // Add layer
       const addBtn = this.container.querySelector('#btnMotionAddLayer');
       if (addBtn) addBtn.onclick = () => this.addLayer();
+
+      // Suggest regions button
+      const suggestBtn = this.container.querySelector('#btnMotionSuggestRegions');
+      if (suggestBtn) {
+        suggestBtn.onclick = () => this.openSuggestRegionsModal();
+      }
 
       // Select active layer
       const items = this.container.querySelectorAll('.motion-layer-item');
@@ -1255,6 +1590,82 @@
         };
         depthSliders.onchange = () => this._saveSnapshot();
       });
+
+      // ─────────────────────────────────────────────────────────────
+      // GIAI ĐOẠN 6: Physics Controls & Suggest Regions Modal Events
+      // ─────────────────────────────────────────────────────────────
+      const chkPhysics = this.container.querySelectorAll('.chk-layer-physics');
+      chkPhysics.forEach(chk => {
+        chk.onchange = (e) => {
+          this.setLayerPhysics(e.target.dataset.layerId, { enabled: e.target.checked });
+          this.render();
+        };
+      });
+
+      const anchorBtns = this.container.querySelectorAll('.btn-pick-anchor');
+      anchorBtns.forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          this.pickAnchor(btn.dataset.layerId);
+        };
+      });
+
+      const stiffSliders = this.container.querySelectorAll('.slider-physics-stiffness');
+      stiffSliders.forEach(sl => {
+        sl.oninput = (e) => {
+          const val = Number(e.target.value);
+          this.setLayerPhysics(e.target.dataset.layerId, { stiffness: val });
+          const s = e.target.parentNode.querySelector('.slider-val');
+          if (s) s.textContent = val.toFixed(1);
+        };
+      });
+
+      const dampSliders = this.container.querySelectorAll('.slider-physics-damping');
+      dampSliders.forEach(sl => {
+        sl.oninput = (e) => {
+          const val = Number(e.target.value);
+          this.setLayerPhysics(e.target.dataset.layerId, { damping: val });
+          const s = e.target.parentNode.querySelector('.slider-val');
+          if (s) s.textContent = val.toFixed(2);
+        };
+      });
+
+      const lagSliders = this.container.querySelectorAll('.slider-physics-lag');
+      lagSliders.forEach(sl => {
+        sl.oninput = (e) => {
+          const val = Number(e.target.value);
+          this.setLayerPhysics(e.target.dataset.layerId, { lag: val });
+          const s = e.target.parentNode.querySelector('.slider-val');
+          if (s) s.textContent = val.toFixed(2);
+        };
+      });
+
+      // Suggest Regions Modal Actions
+      const closeSugBtn = this.container.querySelector('#btnCloseSuggestModal');
+      if (closeSugBtn) closeSugBtn.onclick = () => this.closeSuggestRegionsModal();
+
+      const cancelSugBtn = this.container.querySelector('#btnCancelSuggestModal');
+      if (cancelSugBtn) cancelSugBtn.onclick = () => this.closeSuggestRegionsModal();
+
+      const chkCands = this.container.querySelectorAll('.chk-candidate');
+      chkCands.forEach(chk => {
+        chk.onchange = (e) => {
+          this.toggleSuggestCandidate(e.target.dataset.candId);
+        };
+      });
+
+      const delCandBtns = this.container.querySelectorAll('.btn-remove-candidate');
+      delCandBtns.forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          this.removeSuggestCandidate(btn.dataset.candId);
+        };
+      });
+
+      const applySugBtn = this.container.querySelector('#btnApplySuggestModal');
+      if (applySugBtn) {
+        applySugBtn.onclick = () => this.applySuggestedRegions();
+      }
 
       // Advanced Wave controls
       const advWaves = this.container.querySelector('#advSliderWaves');

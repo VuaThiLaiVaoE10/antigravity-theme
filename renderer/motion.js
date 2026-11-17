@@ -51,15 +51,19 @@
 
 (function (root, factory) {
   if (typeof define === 'function' && define.amd) {
-    define(['./depth'], factory);
+    define(['./depth', './physics', './segment'], factory);
   } else if (typeof module === 'object' && module.exports) {
     let depthMod = null;
+    let physMod = null;
+    let segMod = null;
     try { depthMod = require('./depth.js'); } catch (e) {}
-    module.exports = factory(depthMod);
+    try { physMod = require('./physics.js'); } catch (e) {}
+    try { segMod = require('./segment.js'); } catch (e) {}
+    module.exports = factory(depthMod, physMod, segMod);
   } else {
-    root.MotionEngine = factory(root.DepthEngine);
+    root.MotionEngine = factory(root.DepthEngine, root.PetPhysics, root.PetSegment);
   }
-})(typeof self !== 'undefined' ? self : this, function (DepthEngineModule) {
+})(typeof self !== 'undefined' ? self : this, function (DepthEngineModule, PhysicsEngineModule, SegmentEngineModule) {
   'use strict';
 
   // High-precision clock
@@ -460,12 +464,52 @@
 
       // Depth Engine Module integration
       this.depthEngine = DepthEngineModule || null;
+      this.physicsEngine = PhysicsEngineModule || null;
+      this.segmentEngine = SegmentEngineModule || null;
 
       // Pure JS Simplex Noise for fallback and CPU telemetry
       this.noiseGen = new SimplexNoise2D(2026);
 
       // Environment bindings (Auto-pause on hidden tab, reduced motion)
       this._bindEnvironment();
+    }
+
+    _getPhysicsEngine() {
+      if (this.physicsEngine) return this.physicsEngine;
+      if (typeof window !== 'undefined' && window.PetPhysics) {
+        this.physicsEngine = window.PetPhysics;
+        return this.physicsEngine;
+      }
+      if (typeof PetPhysics !== 'undefined') {
+        this.physicsEngine = PetPhysics;
+        return this.physicsEngine;
+      }
+      try {
+        if (typeof require !== 'undefined') {
+          this.physicsEngine = require('./physics.js');
+          return this.physicsEngine;
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    _getSegmentEngine() {
+      if (this.segmentEngine) return this.segmentEngine;
+      if (typeof window !== 'undefined' && window.PetSegment) {
+        this.segmentEngine = window.PetSegment;
+        return this.segmentEngine;
+      }
+      if (typeof PetSegment !== 'undefined') {
+        this.segmentEngine = PetSegment;
+        return this.segmentEngine;
+      }
+      try {
+        if (typeof require !== 'undefined') {
+          this.segmentEngine = require('./segment.js');
+          return this.segmentEngine;
+        }
+      } catch (e) {}
+      return null;
     }
 
     _initOffscreenFlowCanvas() {
@@ -997,7 +1041,21 @@
             // Parallax depth scaling: foreground layers (depth ~ 1.0) displace with full amplitude, background layers scale down
             const layerDepth = typeof layer.depth === 'number' ? layer.depth : 0.5;
             const depthScale = 0.3 + 0.7 * Math.max(0, Math.min(1, layerDepth));
-            const layerIntensity = (layer.intensity || 1.0) * depthScale;
+            let layerIntensity = (layer.intensity || 1.0) * depthScale;
+
+            // Physics Anchor Restraint: anchor point stays fixed, displacement ramps up smoothly with distance
+            if (layer.physics && layer.physics.enabled) {
+              const pe = this._getPhysicsEngine();
+              if (pe && typeof pe.getAnchorRestraint === 'function') {
+                const { factor } = pe.getAnchorRestraint({ x: nx, y: ny }, layer.physics.anchor);
+                layerIntensity *= factor;
+              } else {
+                const anchor = layer.physics.anchor || { x: 0.5, y: 0.1 };
+                const distFromAnchor = Math.hypot(nx - anchor.x, ny - anchor.y);
+                const anchorRestraint = Math.min(1.0, 1.0 - Math.exp(-4.0 * Math.max(0, distFromAnchor)));
+                layerIntensity *= anchorRestraint;
+              }
+            }
 
             for (const arrow of layer.arrows || []) {
               const mx = (arrow.x1 + arrow.x2) / 2;
@@ -1137,6 +1195,17 @@
       const adv = this.config.advanced || {};
       const loopPeriodSec = (this.config.loopPeriodMs || 4000) / 1000;
 
+      let effectivePhaseLag = adv.phaseLag || 0.5;
+      const activePhysicsLayer = this.config.layers.find(l => l.visible !== false && l.physics && l.physics.enabled);
+      if (activePhysicsLayer) {
+        const pe = this._getPhysicsEngine();
+        if (pe && typeof pe.getEffectivePhaseLag === 'function') {
+          effectivePhaseLag = pe.getEffectivePhaseLag(activePhysicsLayer, effectivePhaseLag);
+        } else if (typeof activePhysicsLayer.physics.lag === 'number') {
+          effectivePhaseLag += activePhysicsLayer.physics.lag * 0.8;
+        }
+      }
+
       // Set Uniforms
       gl.uniform1f(gl.getUniformLocation(this.shaderProgram, 'u_time'), timeSec);
       gl.uniform1f(gl.getUniformLocation(this.shaderProgram, 'u_loopPeriod'), loopPeriodSec);
@@ -1144,7 +1213,7 @@
       gl.uniform1f(gl.getUniformLocation(this.shaderProgram, 'u_waves'), adv.waves || 3);
       gl.uniform1f(gl.getUniformLocation(this.shaderProgram, 'u_freq'), adv.freq || 1.0);
       gl.uniform1f(gl.getUniformLocation(this.shaderProgram, 'u_noiseAmp'), adv.noise || 0.2);
-      gl.uniform1f(gl.getUniformLocation(this.shaderProgram, 'u_phaseLag'), adv.phaseLag || 0.5);
+      gl.uniform1f(gl.getUniformLocation(this.shaderProgram, 'u_phaseLag'), effectivePhaseLag);
       gl.uniform1f(gl.getUniformLocation(this.shaderProgram, 'u_compareRatio'), this.compareRatio !== null ? this.compareRatio : -1.0);
       gl.uniform2f(gl.getUniformLocation(this.shaderProgram, 'u_resolution'), w, h);
       gl.uniform1f(gl.getUniformLocation(this.shaderProgram, 'u_maxShift'), 25.0);
@@ -1183,7 +1252,7 @@
       const adv = this.config.advanced || {};
       const intensityMult = this.getIntensityMultiplier();
 
-      const disp = calculateDisplacement({
+      let disp = calculateDisplacement({
         timeSec,
         loopPeriodSec,
         x: 0.5,
@@ -1196,6 +1265,18 @@
         simplexNoise: this.noiseGen
       });
 
+      // Modulate displacement when physics is enabled on any active layer
+      const pe = this._getPhysicsEngine();
+      let physicsShiftX = 0;
+      let physicsShiftY = 0;
+      const physicsLayer = this.config.layers.find(l => l.visible !== false && l.physics && l.physics.enabled);
+      if (physicsLayer && pe && typeof pe.applyPhysics === 'function') {
+        const physRes = pe.applyPhysics({ x: 0.5, y: 0.5 }, physicsLayer, timeSec, this.config.loopPeriodMs || 4000, disp);
+        physicsShiftX = physRes.dx;
+        physicsShiftY = physRes.dy;
+        disp = physRes.displacement;
+      }
+
       // Mouse Parallax offset in 2D
       let mouseShiftX = 0;
       let mouseShiftY = 0;
@@ -1204,8 +1285,8 @@
         mouseShiftY = this.mousePos.y * 12.0;
       }
 
-      const shiftX = Math.round(disp * 8.0 * intensityMult + mouseShiftX);
-      const shiftY = Math.round(disp * 4.0 * intensityMult + mouseShiftY);
+      const shiftX = Math.round(disp * 8.0 * intensityMult + mouseShiftX + physicsShiftX * 0.5);
+      const shiftY = Math.round(disp * 4.0 * intensityMult + mouseShiftY + physicsShiftY * 0.5);
 
       if (this.compareRatio !== null && this.compareRatio >= 0 && this.compareRatio <= 1) {
         const splitX = Math.round(w * this.compareRatio);
@@ -1434,6 +1515,35 @@
         }
       }
       return cfg;
+    }
+
+    // =======================================================================
+    // GIAI ĐOẠN 6: ATTACHMENT POINTS (setPhysics & suggestRegions)
+    // =======================================================================
+    setPhysics(layerId, physicsCfg) {
+      const layer = this.config.layers.find(l => l.id === layerId);
+      if (layer) {
+        layer.physics = Object.assign({
+          enabled: true,
+          anchor: { x: 0.5, y: 0.1 },
+          stiffness: 1.0,
+          damping: 0.8,
+          lag: 0.3
+        }, physicsCfg);
+        this.updateFlowTexture();
+        this._emitChange('physics', { layerId, physics: layer.physics });
+        return layer.physics;
+      }
+      return null;
+    }
+
+    async suggestRegions() {
+      const se = this._getSegmentEngine();
+      if (se && typeof se.suggestRegions === 'function') {
+        const regions = await se.suggestRegions(this.currentImage);
+        return regions;
+      }
+      return [];
     }
 
     // =======================================================================

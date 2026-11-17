@@ -495,16 +495,13 @@ function setupEvents() {
   const btnUploadPetCustom = document.getElementById('btnUploadPetCustom');
   if (btnUploadPetCustom) {
     btnUploadPetCustom.addEventListener('click', async () => {
-      if (!window.api) return;
-      const res = await window.api.selectWallpaper();
-      if (res && !res.canceled && res.dataUrl) {
-        document.querySelectorAll('#mascotPresetsGrid2 .mascot-card').forEach(c => c.classList.remove('active'));
-        btnUploadPetCustom.classList.add('active');
-        appState.mascotType = 'custom';
-        appState.mascotUrl = res.dataUrl;
-        showStatus('Đã tải ảnh Pet riêng của bạn: ' + res.fileName);
-        updateLivePreview();
-        await saveConfig();
+      document.querySelectorAll('#mascotPresetsGrid2 .mascot-card').forEach(c => c.classList.remove('active'));
+      btnUploadPetCustom.classList.add('active');
+      if (window.PetBuilderStudio && typeof window.PetBuilderStudio.open === 'function') {
+        window.PetBuilderStudio.open();
+      } else {
+        const fi = document.getElementById('pbsFileInput');
+        if (fi) fi.click();
       }
     });
   }
@@ -514,17 +511,13 @@ function setupEvents() {
     card.addEventListener('click', async () => {
       const modelId = card.getAttribute('data-model');
       if (modelId === 'custom') {
-        if (!window.api) return;
-        const res = await window.api.selectWallpaper();
-        if (res && !res.canceled && res.dataUrl) {
-          document.querySelectorAll('#petModelsGrid .pet-model-card').forEach(c => c.classList.remove('active'));
-          card.classList.add('active');
-          appState.activePetModelId = 'custom';
-          appState.mascotType = 'custom';
-          appState.mascotUrl = res.dataUrl;
-          showStatus('Đã nạp Pet riêng tùy chỉnh: ' + res.fileName);
-          updateLivePreview();
-          await saveConfig();
+        document.querySelectorAll('#petModelsGrid .pet-model-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        if (window.PetBuilderStudio && typeof window.PetBuilderStudio.open === 'function') {
+          window.PetBuilderStudio.open();
+        } else {
+          const fi = document.getElementById('pbsFileInput');
+          if (fi) fi.click();
         }
         return;
       }
@@ -548,17 +541,13 @@ function setupEvents() {
   const btnUploadPetModel = document.getElementById('btnUploadPetModel');
   if (btnUploadPetModel) {
     btnUploadPetModel.addEventListener('click', async () => {
-      if (!window.api) return;
-      const res = await window.api.selectWallpaper();
-      if (res && !res.canceled && res.dataUrl) {
-        document.querySelectorAll('#petModelsGrid .pet-model-card').forEach(c => c.classList.remove('active'));
-        btnUploadPetModel.classList.add('active');
-        appState.activePetModelId = 'custom';
-        appState.mascotType = 'custom';
-        appState.mascotUrl = res.dataUrl;
-        showStatus('Đã nạp Pet riêng tùy chỉnh: ' + res.fileName);
-        updateLivePreview();
-        await saveConfig();
+      document.querySelectorAll('#petModelsGrid .pet-model-card').forEach(c => c.classList.remove('active'));
+      btnUploadPetModel.classList.add('active');
+      if (window.PetBuilderStudio && typeof window.PetBuilderStudio.open === 'function') {
+        window.PetBuilderStudio.open();
+      } else {
+        const fi = document.getElementById('pbsFileInput');
+        if (fi) fi.click();
       }
     });
   }
@@ -1922,29 +1911,118 @@ function updateLivePreview() {
   }
 
   function _loadFile(file) {
+    if (!file) return;
+    // Handle GIF / APNG / WebP animations using native ImageDecoder if available
+    const isAnim = file.type === 'image/gif' || file.type === 'image/webp' || 
+                   (file.name && (file.name.endsWith('.gif') || file.name.endsWith('.webp') || file.name.endsWith('.apng')));
+    if (typeof ImageDecoder !== 'undefined' && isAnim) {
+      file.arrayBuffer().then(buf => {
+        _decodeAnimatedFrames(buf, file.type || 'image/gif');
+      }).catch(() => {
+        const reader = new FileReader();
+        reader.onload = (ev) => _loadDataUrl(ev.target.result);
+        reader.readAsDataURL(file);
+      });
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const img = new Image();
-      img.onload = () => {
-        pbsSourceImage = img;
-        pbsCanvas.width = img.width;
-        pbsCanvas.height = img.height;
-        if (pbsOverlayCanvas) {
-          pbsOverlayCanvas.width = img.width;
-          pbsOverlayCanvas.height = img.height;
-        }
-        pbsCtx.clearRect(0, 0, pbsCanvas.width, pbsCanvas.height);
-        pbsCtx.drawImage(img, 0, 0);
-        pbsOrigImageData = pbsCtx.getImageData(0, 0, pbsCanvas.width, pbsCanvas.height);
-        pbsHistory = [];
-        pbsHistoryIndex = -1;
-        _pushHistory();
-        _zoomFit();
-        document.getElementById('pbsViewportWrap') && (document.getElementById('pbsViewportWrap').style.display = '');
-      };
-      img.src = ev.target.result;
+      _loadDataUrl(ev.target.result);
     };
     reader.readAsDataURL(file);
+  }
+
+  function _loadDataUrl(dataUrl) {
+    const img = new Image();
+    img.onload = () => {
+      pbsSourceImage = img;
+      if (!pbsCanvas) pbsCanvas = document.getElementById('pbsCanvas');
+      if (!pbsCtx && pbsCanvas) pbsCtx = pbsCanvas.getContext('2d', { willReadFrequently: true });
+      if (!pbsOverlayCanvas) pbsOverlayCanvas = document.getElementById('pbsOverlayCanvas');
+      if (!pbsOverlayCtx && pbsOverlayCanvas) pbsOverlayCtx = pbsOverlayCanvas.getContext('2d');
+      if (!pbsCanvas) return;
+
+      pbsCanvas.width = img.width;
+      pbsCanvas.height = img.height;
+      if (pbsOverlayCanvas) {
+        pbsOverlayCanvas.width = img.width;
+        pbsOverlayCanvas.height = img.height;
+      }
+      pbsCtx.clearRect(0, 0, pbsCanvas.width, pbsCanvas.height);
+      pbsCtx.drawImage(img, 0, 0);
+      pbsOrigImageData = pbsCtx.getImageData(0, 0, pbsCanvas.width, pbsCanvas.height);
+      pbsHistory = [];
+      pbsHistoryIndex = -1;
+      _pushHistory();
+      _zoomFit();
+      const wrap = document.getElementById('pbsViewportWrap');
+      if (wrap) wrap.style.display = '';
+      const dz = document.getElementById('pbsDropzone');
+      if (dz) dz.classList.add('has-image');
+
+      pbsAnchor = { x: Math.round(img.width / 2), y: img.height };
+      pbsHitbox = { x1: 0, y1: 0, x2: img.width, y2: img.height };
+      _drawOverlay();
+      _sliceFrames();
+      if (typeof showStatus === 'function') {
+        showStatus('Đã nạp ảnh vào Pet Builder Studio! Bạn có thể xóa nền, đặt điểm chân và hitbox.');
+      }
+    };
+    img.src = dataUrl;
+  }
+
+  async function _decodeAnimatedFrames(buf, mimeType) {
+    try {
+      const decoder = new ImageDecoder({ data: buf, type: mimeType });
+      await decoder.tracks.ready;
+      const count = decoder.tracks.selectedTrack.frameCount;
+      if (count > 1) {
+        sbFrames = [];
+        for (let i = 0; i < count; i++) {
+          const result = await decoder.decode({ frameIndex: i });
+          const tmpCanvas = document.createElement('canvas');
+          tmpCanvas.width = result.image.displayWidth;
+          tmpCanvas.height = result.image.displayHeight;
+          const tmpCtx = tmpCanvas.getContext('2d');
+          tmpCtx.drawImage(result.image, 0, 0);
+          sbFrames.push(tmpCtx.getImageData(0, 0, tmpCanvas.width, tmpCanvas.height));
+        }
+        if (sbFrames.length > 0) {
+          pbsCanvas.width = sbFrames[0].width;
+          pbsCanvas.height = sbFrames[0].height;
+          if (pbsOverlayCanvas) {
+            pbsOverlayCanvas.width = sbFrames[0].width;
+            pbsOverlayCanvas.height = sbFrames[0].height;
+          }
+          pbsCtx.putImageData(sbFrames[0], 0, 0);
+          pbsOrigImageData = pbsCtx.getImageData(0, 0, pbsCanvas.width, pbsCanvas.height);
+          pbsHistory = [];
+          pbsHistoryIndex = -1;
+          _pushHistory();
+          _zoomFit();
+          const wrap = document.getElementById('pbsViewportWrap');
+          if (wrap) wrap.style.display = '';
+          const dz = document.getElementById('pbsDropzone');
+          if (dz) dz.classList.add('has-image');
+          pbsAnchor = { x: Math.round(sbFrames[0].width / 2), y: sbFrames[0].height };
+          pbsHitbox = { x1: 0, y1: 0, x2: sbFrames[0].width, y2: sbFrames[0].height };
+          _drawOverlay();
+          _parseStates();
+          _renderSandboxFrame();
+          if (typeof showStatus === 'function') {
+            showStatus(`✓ Đã tách thành công ${sbFrames.length} khung hình động (${mimeType})!`);
+          }
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('ImageDecoder error, fallback to static image:', e);
+    }
+    const blob = new Blob([buf], { type: mimeType });
+    const reader = new FileReader();
+    reader.onload = (ev) => _loadDataUrl(ev.target.result);
+    reader.readAsDataURL(blob);
   }
 
   // ---- History ----
@@ -2503,7 +2581,25 @@ function updateLivePreview() {
       hitbox: pbsHitbox
     };
   }
-  window.PetBuilderStudio = { getAnimationConfig: _getAnimationConfig };
+  window.PetBuilderStudio = {
+    getAnimationConfig: _getAnimationConfig,
+    loadDataUrl: _loadDataUrl,
+    loadFile: _loadFile,
+    open: function() {
+      const studio = document.getElementById('petBuilderStudio');
+      if (studio) {
+        studio.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        studio.style.outline = '2px solid #38EF7D';
+        studio.style.boxShadow = '0 0 20px rgba(56, 239, 125, 0.4)';
+        setTimeout(() => {
+          studio.style.outline = '';
+          studio.style.boxShadow = '';
+        }, 1800);
+      }
+      const fi = document.getElementById('pbsFileInput');
+      if (fi) fi.click();
+    }
+  };
 
   // ---- Mount PetOverlay ----
   function _mountPetOverlayInPreview() {

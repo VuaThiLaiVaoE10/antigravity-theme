@@ -819,6 +819,45 @@ function renderSelectionToolbar(container) {
           <span>Loại viền sáng</span>
         </label>
       </div>
+
+      <!-- 4. Hàng nhóm công cụ "Tu sửa ảnh" (BƯỚC 1.5a: Cọ nhân bản, BƯỚC 1.5b: Lấp vùng chọn) -->
+      <div class="selection-toolbar-group" id="retouchToolbarGroup">
+        <span style="font-weight:600;color:#7dcfff;">Tu sửa:</span>
+        <button type="button" class="selection-tool-btn ${typeof RetouchSettings !== 'undefined' && RetouchSettings.activeTool === 'clone' ? 'active' : ''}" id="btnToolClone" title="Cọ nhân bản (Alt+nhấp để chọn điểm nguồn, kéo vẽ để sao chép pixel)">
+          👥 Cọ nhân bản
+        </button>
+        <button type="button" class="selection-btn" id="btnFillHole" title="Lấp vùng trống theo vùng chọn (Inpainting bóc dần + Laplace + Nhiễu hạt)">
+          ✨ Lấp vùng chọn
+        </button>
+        <div class="selection-opt-item" id="cloneOptSize" title="Kích thước cọ nhân bản">
+          <span>Kích thước:</span>
+          <input type="range" id="sliderCloneSize" class="selection-opt-slider" min="1" max="200" value="${typeof RetouchSettings !== 'undefined' ? RetouchSettings.cloneRadius * 2 : 30}" />
+          <span class="selection-opt-val" id="valCloneSize">${typeof RetouchSettings !== 'undefined' ? RetouchSettings.cloneRadius * 2 : 30}px</span>
+        </div>
+        <div class="selection-opt-item" id="cloneOptHardness" title="Độ cứng cọ nhân bản 0-100%">
+          <span>Độ cứng:</span>
+          <input type="range" id="sliderCloneHardness" class="selection-opt-slider" min="0" max="100" value="${typeof RetouchSettings !== 'undefined' ? Math.round(RetouchSettings.cloneHardness * 100) : 80}" />
+          <span class="selection-opt-val" id="valCloneHardness">${typeof RetouchSettings !== 'undefined' ? Math.round(RetouchSettings.cloneHardness * 100) : 80}%</span>
+        </div>
+        <div class="selection-opt-item" id="cloneOptOpacity" title="Độ trong suốt cọ nhân bản 0-100%">
+          <span>Độ mờ:</span>
+          <input type="range" id="sliderCloneOpacity" class="selection-opt-slider" min="1" max="100" value="${typeof RetouchSettings !== 'undefined' ? Math.round(RetouchSettings.cloneOpacity * 100) : 100}" />
+          <span class="selection-opt-val" id="valCloneOpacity">${typeof RetouchSettings !== 'undefined' ? Math.round(RetouchSettings.cloneOpacity * 100) : 100}%</span>
+        </div>
+        <!-- BƯỚC 1.5c: Thử dịch lớp & Chọn vùng lộ -->
+        <button type="button" class="selection-btn" id="btnTestShift" title="Thử dịch lớp để phát hiện các vùng nền bị lộ">
+          ↔️ Thử dịch lớp
+        </button>
+        <div class="selection-opt-item" id="shiftOptDist" title="Khoảng cách dịch thử (px)">
+          <span>Dịch:</span>
+          <input type="number" id="inputShiftDist" class="selection-opt-num" min="1" max="100" value="${typeof RetouchSettings !== 'undefined' ? RetouchSettings.shiftDist || 10 : 10}" style="width:45px;background:#1e1e2e;color:#cdd6f4;border:1px solid #45475a;border-radius:4px;padding:2px 4px;" />
+          <span>px</span>
+        </div>
+        <button type="button" class="selection-btn" id="btnSelectRevealed" title="Biến kết quả các pixel lộ thành vùng chọn để dùng thẳng với 'Lấp vùng chọn'">
+          🎯 Chọn các vùng lộ
+        </button>
+        <span class="selection-opt-val" id="revealStatusMsg" style="color:#ff757f;font-weight:600;font-size:11px;"></span>
+      </div>
     </div>
   `;
 
@@ -826,12 +865,14 @@ function renderSelectionToolbar(container) {
   const btnBrush = el.querySelector('#btnToolBrush');
   const btnBrushErase = el.querySelector('#btnToolBrushErase');
   const btnLasso = el.querySelector('#btnToolLasso');
+  const btnClone = el.querySelector('#btnToolClone');
 
   const updateToolButtons = () => {
     if (btnWand) btnWand.classList.toggle('active', SelectionSettings.activeTool === 'wand');
     if (btnBrush) btnBrush.classList.toggle('active', SelectionSettings.activeTool === 'brush');
     if (btnBrushErase) btnBrushErase.classList.toggle('active', SelectionSettings.activeTool === 'brush-erase');
     if (btnLasso) btnLasso.classList.toggle('active', SelectionSettings.activeTool === 'lasso');
+    if (btnClone) btnClone.classList.toggle('active', typeof RetouchSettings !== 'undefined' && RetouchSettings.activeTool === 'clone');
     if (typeof requestRedraw === 'function') requestRedraw();
   };
 
@@ -839,6 +880,7 @@ function renderSelectionToolbar(container) {
     btnWand.onclick = () => {
       SelectionSettings.activeTool = SelectionSettings.activeTool === 'wand' ? null : 'wand';
       SelectionSettings.lassoPoints = [];
+      if (SelectionSettings.activeTool && typeof RetouchSettings !== 'undefined') RetouchSettings.activeTool = null;
       updateToolButtons();
     };
   }
@@ -847,6 +889,7 @@ function renderSelectionToolbar(container) {
     btnBrush.onclick = () => {
       SelectionSettings.activeTool = SelectionSettings.activeTool === 'brush' ? null : 'brush';
       SelectionSettings.lassoPoints = [];
+      if (SelectionSettings.activeTool && typeof RetouchSettings !== 'undefined') RetouchSettings.activeTool = null;
       updateToolButtons();
     };
   }
@@ -855,6 +898,7 @@ function renderSelectionToolbar(container) {
     btnBrushErase.onclick = () => {
       SelectionSettings.activeTool = SelectionSettings.activeTool === 'brush-erase' ? null : 'brush-erase';
       SelectionSettings.lassoPoints = [];
+      if (SelectionSettings.activeTool && typeof RetouchSettings !== 'undefined') RetouchSettings.activeTool = null;
       updateToolButtons();
     };
   }
@@ -863,7 +907,32 @@ function renderSelectionToolbar(container) {
     btnLasso.onclick = () => {
       SelectionSettings.activeTool = SelectionSettings.activeTool === 'lasso' ? null : 'lasso';
       SelectionSettings.lassoPoints = [];
+      if (SelectionSettings.activeTool && typeof RetouchSettings !== 'undefined') RetouchSettings.activeTool = null;
       updateToolButtons();
+    };
+  }
+
+  if (btnClone) {
+    btnClone.onclick = () => {
+      if (typeof RetouchSettings !== 'undefined') {
+        RetouchSettings.activeTool = RetouchSettings.activeTool === 'clone' ? null : 'clone';
+        if (RetouchSettings.activeTool === 'clone') {
+          SelectionSettings.activeTool = null;
+          SelectionSettings.lassoPoints = [];
+        }
+      }
+      updateToolButtons();
+    };
+  }
+
+  const btnFillHole = el.querySelector('#btnFillHole');
+  if (btnFillHole) {
+    btnFillHole.onclick = () => {
+      if (typeof fillSelectionHole === 'function') {
+        fillSelectionHole();
+      } else if (typeof window !== 'undefined' && typeof window.fillSelectionHole === 'function') {
+        window.fillSelectionHole();
+      }
     };
   }
 
@@ -981,6 +1050,65 @@ function renderSelectionToolbar(container) {
     chkDec.onchange = (e) => {
       if (typeof CutSettings !== 'undefined') CutSettings.decontaminate = e.target.checked;
       else if (typeof window !== 'undefined' && window.CutSettings) window.CutSettings.decontaminate = e.target.checked;
+    };
+  }
+
+  // Sự kiện nhóm "Tu sửa ảnh" (BƯỚC 1.5a: Cọ nhân bản)
+  const sliderCloneSize = el.querySelector('#sliderCloneSize');
+  const valCloneSize = el.querySelector('#valCloneSize');
+  if (sliderCloneSize && valCloneSize) {
+    sliderCloneSize.oninput = (e) => {
+      const sz = parseInt(e.target.value, 10);
+      if (typeof RetouchSettings !== 'undefined') {
+        RetouchSettings.cloneRadius = Math.max(1, sz / 2);
+      }
+      valCloneSize.textContent = sz + 'px';
+      if (typeof requestRedraw === 'function') requestRedraw();
+    };
+  }
+
+  const sliderCloneHardness = el.querySelector('#sliderCloneHardness');
+  const valCloneHardness = el.querySelector('#valCloneHardness');
+  if (sliderCloneHardness && valCloneHardness) {
+    sliderCloneHardness.oninput = (e) => {
+      const hd = parseInt(e.target.value, 10);
+      if (typeof RetouchSettings !== 'undefined') {
+        RetouchSettings.cloneHardness = hd / 100;
+      }
+      valCloneHardness.textContent = hd + '%';
+      if (typeof requestRedraw === 'function') requestRedraw();
+    };
+  }
+
+  const sliderCloneOpacity = el.querySelector('#sliderCloneOpacity');
+  const valCloneOpacity = el.querySelector('#valCloneOpacity');
+  if (sliderCloneOpacity && valCloneOpacity) {
+    sliderCloneOpacity.oninput = (e) => {
+      const op = parseInt(e.target.value, 10);
+      if (typeof RetouchSettings !== 'undefined') {
+        RetouchSettings.cloneOpacity = op / 100;
+      }
+      valCloneOpacity.textContent = op + '%';
+      if (typeof requestRedraw === 'function') requestRedraw();
+    };
+  }
+
+  // Sự kiện nhóm "Thử dịch lớp" (BƯỚC 1.5c)
+  const btnTestShift = el.querySelector('#btnTestShift');
+  const inputShiftDist = el.querySelector('#inputShiftDist');
+  if (btnTestShift) {
+    btnTestShift.onclick = () => {
+      const dist = inputShiftDist ? parseInt(inputShiftDist.value, 10) : 10;
+      if (typeof testShiftReveal === 'function') testShiftReveal(dist);
+      else if (typeof window !== 'undefined' && typeof window.testShiftReveal === 'function') window.testShiftReveal(dist);
+    };
+  }
+
+  const btnSelectRevealed = el.querySelector('#btnSelectRevealed');
+  if (btnSelectRevealed) {
+    btnSelectRevealed.onclick = () => {
+      if (typeof selectRevealedRegions === 'function') selectRevealedRegions();
+      else if (typeof window !== 'undefined' && typeof window.selectRevealedRegions === 'function') window.selectRevealedRegions();
     };
   }
 }

@@ -36,11 +36,13 @@ if (typeof Project === 'undefined') {
   } catch (err) {}
 }
 
+const { CFG } = (typeof window !== 'undefined' && window.CFG) ? window : (typeof global !== 'undefined' && global.CFG ? global : require('./config.js'));
+
 // -----------------------------------------------------------------------------
 // CHÉP NGUYÊN VĂN THEO YÊU CẦU ĐỀ BÀI
 // -----------------------------------------------------------------------------
 
-const Undo = { stack: [], index: 0, maxSteps: 50, maxBytes: 200 * 1024 * 1024, group: null };
+const Undo = { stack: [], index: 0, maxSteps: CFG.undo.maxSteps, maxBytes: CFG.undo.maxBytes, group: null };
 const Selection = { mask: null, phase: 0 }; // mask: Uint8ClampedArray(width*height) hoặc null = không chọn
 let projectDirty = false;
 

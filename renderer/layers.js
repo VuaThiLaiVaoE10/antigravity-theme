@@ -3,13 +3,15 @@
  * BƯỚC 1.1: Quản lý các lớp hình ảnh xếp từ dưới lên trên (layers[0] là lớp dưới cùng).
  */
 
+const { CFG } = (typeof window !== 'undefined' && window.CFG) ? window : (typeof global !== 'undefined' && global.CFG ? global : require('./config.js'));
+
 const Project = { width: 0, height: 0, original: null, layers: [], activeId: null, nextId: 1 };
 
 function makeCanvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
 
 function initProject(img) { // img: Image, ImageBitmap hoặc canvas
   let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
-  const s = Math.min(1, 2048 / Math.max(w, h));
+  const s = Math.min(1, CFG.image.maxSide / Math.max(w, h));
   w = Math.max(1, Math.round(w * s)); h = Math.max(1, Math.round(h * s));
   Project.width = w; Project.height = h; Project.layers = []; Project.nextId = 1;
   const base = makeCanvas(w, h), g = base.getContext('2d');

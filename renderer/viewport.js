@@ -53,6 +53,7 @@ function zoomAt(lx, ly, factor) {
   requestRedraw();
 }
 function fitToView() {
+  if (!viewCanvas || !Project.width || !Project.height) return;
   const z = Math.min(viewCanvas.width / Project.width, viewCanvas.height / Project.height) * 0.95;
   View.zoom = z; View.panX = (viewCanvas.width - Project.width * z) / 2; View.panY = (viewCanvas.height - Project.height * z) / 2;
   requestRedraw();

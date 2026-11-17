@@ -22,7 +22,7 @@ const CFG = deepFreeze({
   defaultPreset: 'medium'
 });
 
-function unitPx() { return Math.max(Project.width, Project.height) / 1000; }
+function unitPx() { const p = typeof Project !== 'undefined' ? Project : (typeof window !== 'undefined' && window.Project ? window.Project : null); return p ? Math.max(p.width, p.height) / 1000 : 1; }
 function ampPx(type, amp) { return Math.min(amp, CFG.motion.limit[type]) * unitPx(); }
 
 // Module exports for Node.js & browser contexts

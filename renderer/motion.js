@@ -74,30 +74,122 @@
     return Date.now();
   };
 
+  const CFG = (typeof window !== 'undefined' && window.CFG) ? window.CFG : (typeof global !== 'undefined' && global.CFG ? global.CFG : require('./config.js').CFG);
+  const { unitPx, ampPx } = (typeof window !== 'undefined' && window.ampPx) ? window : (typeof global !== 'undefined' && global.ampPx ? global : require('./config.js'));
+
+  const MOTION_LIMITS = CFG.motion.limit; // đơn vị ‰
+  const LOOP = { seconds: CFG.loop.seconds };
+
+  function defaultMotion(type) { return { type, enabled: true, amp: CFG.motion.defaultAmp, cycles: 1, phase: 0, chaos: CFG.motion.defaultChaos, angle: 0, seed: Math.floor(Math.random() * 1000) }; }
+
+  function activeMotion(L) {
+    return (L && L.motion && L.motion.enabled !== false) ? L.motion : null;
+  }
+
+  function motionSignal(m, u, yn = 0.5) {
+    const cyc = m.cycles || 1;
+    const phase = m.phase || 0;
+    const yShift = (m.type === 'ripple') ? Math.sin(2 * Math.PI * yn) : 0;
+    const angle = 2 * Math.PI * (cyc * u + phase) + yShift;
+    const base = Math.sin(angle);
+    const chaos = Math.min(1, Math.max(0, m.chaos || 0));
+    if (chaos <= 0) return base;
+    const noise = Math.sin(2 * angle + ((m.seed || 0) % 100));
+    return (1 - chaos) * base + chaos * noise;
+  }
+
+  function layerTransform(L, u, ampScale = 1) {
+    const m = activeMotion(L), T = { dx: 0, dy: 0, rot: 0, scale: 1 };
+    if (!m || m.type === 'ripple') return T;
+    const half = Math.max(Project.width, Project.height) / 2;
+    const amp = ampPx(m.type, m.amp) * ampScale, s = motionSignal(m, u);
+    if (m.type === 'breathe') T.scale = 1 + s * amp / (2 * half);
+    else if (m.type === 'sway') T.rot = s * amp / half;
+    else if (m.type === 'drift') { T.dx = Math.cos(m.angle) * s * amp; T.dy = Math.sin(m.angle) * s * amp; }
+    return T;
+  }
+
+  function motionVector(L, u, ampScale = 1) { // 4 số cùng đơn vị px ảnh làm việc
+    const m = activeMotion(L); if (!m) return [0, 0, 0, 0];
+    const half = Math.max(Project.width, Project.height) / 2;
+    if (m.type === 'ripple') { const amp = ampPx('ripple', m.amp) * ampScale; return [0.1, 0.5, 0.9].map(yn => amp * motionSignal(m, u, yn)).concat([0]); }
+    const T = layerTransform(L, u, ampScale); return [T.dx, T.dy, T.rot * half, (T.scale - 1) * half];
+  }
+
+  function drawLayerMotion(ctx, L, u, ampScale = 1, off = { dx: 0, dy: 0 }) {
+    if (!off) off = { dx: 0, dy: 0 };
+    if (!L.pivot) L.pivot = { x: 0, y: 0 };
+    const m = activeMotion(L), w = L.canvas.width, h = L.canvas.height;
+    ctx.save(); ctx.globalAlpha = L.opacity !== undefined ? L.opacity : 1;
+    if (m && m.type === 'ripple') {
+      const amp = ampPx('ripple', m.amp) * ampScale, SH = 8;
+      for (let y = 0; y < h; y += SH) { const sh = Math.min(SH + 1, h - y), yn = (y + SH / 2) / h;
+        ctx.drawImage(L.canvas, 0, y, w, sh, amp * motionSignal(m, u, yn) + off.dx, y + off.dy, w, sh); }
+    } else {
+      const T = layerTransform(L, u, ampScale);
+      ctx.translate(L.pivot.x + T.dx + off.dx, L.pivot.y + T.dy + off.dy);
+      ctx.rotate(T.rot); ctx.scale(T.scale, T.scale); ctx.translate(-L.pivot.x, -L.pivot.y);
+      ctx.drawImage(L.canvas, 0, 0);
+    }
+    ctx.restore();
+  }
+
+  function setMotion(L, patch) {
+    withStructureUndo('Chỉnh chuyển động', () => {
+      L.motion = Object.assign(L.motion || defaultMotion(patch.type || 'breathe'), patch);
+      const m = L.motion;
+      m.amp = Math.min(CFG.motion.limit[m.type], Math.max(0, m.amp));
+      m.cycles = Math.min(CFG.motion.cyclesMax, Math.max(CFG.motion.cyclesMin, Math.round(m.cycles)));
+      m.chaos = Math.min(CFG.motion.chaosMax, Math.max(0, m.chaos));
+    });
+    requestRedraw();
+  }
+
+  const Clock = { u: 0, speed: 1, playing: false };
+  function tickClock(dt) {
+    if (!Clock.playing) return;
+    Clock.u = (Clock.u + (dt * Clock.speed) / (LOOP.seconds || CFG.loop.seconds)) % 1;
+    if (Clock.u < 0) Clock.u += 1;
+  }
+
+  function renderLayerMotion(ctx, u) {
+    if (!ctx || typeof ctx.clearRect !== 'function') return;
+    const w = (typeof Project !== 'undefined' && Project.width) || (ctx.canvas && ctx.canvas.width) || 1000;
+    const h = (typeof Project !== 'undefined' && Project.height) || (ctx.canvas && ctx.canvas.height) || 1000;
+    ctx.clearRect(0, 0, w, h);
+    const layers = (typeof Project !== 'undefined' && Project.layers) || [];
+    for (const L of layers) {
+      if (L.visible !== false) {
+        drawLayerMotion(ctx, L, u, 1, { dx: 0, dy: 0 });
+      }
+    }
+  }
+
+  function renderFrame(arg1 = 0, arg2) {
+    if (arg1 && typeof arg1 === 'object') {
+      renderLayerMotion(arg1, arg2);
+      return { rendered: true, isWebGL: false };
+    }
+    return instance._renderFrameEngine(arg1);
+  }
+
+  function withStructureUndo(label, fn) {
+    if (typeof window !== 'undefined' && typeof window.withStructureUndo === 'function') {
+      return window.withStructureUndo(label, fn);
+    }
+    if (typeof global !== 'undefined' && typeof global.withStructureUndo === 'function') {
+      return global.withStructureUndo(label, fn);
+    }
+    return fn();
+  }
+
+  function requestRedraw() {
+    if (typeof redraw === 'function') redraw();
+    else if (typeof window !== 'undefined' && typeof window.requestRedraw === 'function') window.requestRedraw();
+  }
+
   // Safe configuration accessor referencing CFG from config.js
-  const getMotionCFG = () => {
-    if (typeof CFG !== 'undefined' && CFG && CFG.motion) return CFG;
-    if (typeof window !== 'undefined' && window.CFG && window.CFG.motion) return window.CFG;
-    if (typeof global !== 'undefined' && global.CFG && global.CFG.motion) return global.CFG;
-    try {
-      if (typeof require !== 'undefined') return require('./config.js').CFG;
-    } catch (e) {}
-    return {
-      version: 2,
-      image: { maxSide: 2048 },
-      loop: { seconds: 12, min: 8, max: 16 },
-      motion: {
-        limit: { breathe: 2, sway: 3, drift: 3, ripple: 2.5 },
-        defaultAmp: 1, defaultChaos: 0.15, chaosMax: 0.5,
-        cyclesMin: 1, cyclesMax: 4, warnRatio: 0.75
-      },
-      calm: { typingFactor: 0.2, recoverMs: 3000, tau: 0.5, blurFocus: 0.3 },
-      load: { green: 1.5, yellow: 3, maxActive: 3, scale: 2 },
-      undo: { maxSteps: 50, maxBytes: 200 * 1024 * 1024 },
-      safe: { featherPermille: 12 },
-      parallax: { maxPermille: 8, tau: 0.25, defaultEnabled: false }
-    };
-  };
+  const getMotionCFG = () => CFG;
 
   // =========================================================================
   // 1. FAST DETERMINISTIC SIMPLEX 2D NOISE GENERATOR (Pure Client-Side)
@@ -940,7 +1032,7 @@
           motionType: l.motionType || (l.motion && l.motion.type) || 'sway',
           amplitude: typeof l.amplitude === 'number' ? l.amplitude : (typeof l.intensity === 'number' ? l.intensity : 1.0),
           chaos: typeof l.chaos === 'number' ? Math.max(0, Math.min(0.5, l.chaos)) : 0.15,
-          loopSec: typeof l.loopSec === 'number' ? Math.max(8, Math.min(16, l.loopSec)) : 12,
+          loopSec: typeof l.loopSec === 'number' ? Math.max(getMotionCFG().loop.min, Math.min(getMotionCFG().loop.max, l.loopSec)) : getMotionCFG().loop.seconds,
           anchor: l.anchor ? { x: Number(l.anchor.x) || 0.5, y: Number(l.anchor.y) || 0.5 } : (l.pivot ? { x: Number(l.pivot.x) || 0.5, y: Number(l.pivot.y) || 0.5 } : { x: 0.5, y: 0.5 }),
           physics: l.physics ? JSON.parse(JSON.stringify(l.physics)) : { enabled: false, anchor: { x: 0.5, y: 0.1 }, stiffness: 1.0, damping: 0.7, lag: 0.4, maxDisplacement: 3.0 }
         }));
@@ -1467,7 +1559,15 @@
       }
     }
 
-    renderFrame(t = 0) {
+    renderFrame(arg1 = 0, arg2) {
+      if (arg1 && typeof arg1 === 'object') {
+        renderLayerMotion(arg1, arg2);
+        return { rendered: true, isWebGL: false };
+      }
+      return this._renderFrameEngine(arg1);
+    }
+
+    _renderFrameEngine(t = 0) {
       if (typeof t === 'number') this.currentTime = t;
       this._updateTypingFactor();
 
@@ -1984,7 +2084,7 @@
 
     measureLivePreviewSafeZones(previewWindowEl = null) {
       const doc = (typeof document !== 'undefined') ? document : null;
-      const win = previewWindowEl || (doc ? (doc.getElementById('previewWindow') || doc.querySelector('.preview-window')) : null);
+      const win = previewWindowEl || (doc ? ((typeof doc.getElementById === 'function' ? doc.getElementById('previewWindow') : null) || (typeof doc.querySelector === 'function' ? doc.querySelector('.preview-window') : null)) : null);
 
       if (!win || !doc || typeof win.getBoundingClientRect !== 'function') {
         return [
@@ -2135,6 +2235,48 @@
   instance.calculateLayerMotion = calculateLayerMotion;
   instance.calculateVisualLoad = calculateVisualLoad;
   instance.getTimeMs = getTimeMs;
+  instance.MOTION_LIMITS = MOTION_LIMITS;
+  instance.LOOP = LOOP;
+  instance.defaultMotion = defaultMotion;
+  instance.activeMotion = activeMotion;
+  instance.motionSignal = motionSignal;
+  instance.layerTransform = layerTransform;
+  instance.motionVector = motionVector;
+  instance.drawLayerMotion = drawLayerMotion;
+  instance.setMotion = setMotion;
+  instance.Clock = Clock;
+  instance.tickClock = tickClock;
+  instance.renderFrame = renderFrame;
+
+  if (typeof window !== 'undefined') {
+    window.MOTION_LIMITS = MOTION_LIMITS;
+    window.LOOP = LOOP;
+    window.defaultMotion = defaultMotion;
+    window.activeMotion = activeMotion;
+    window.motionSignal = motionSignal;
+    window.layerTransform = layerTransform;
+    window.motionVector = motionVector;
+    window.drawLayerMotion = drawLayerMotion;
+    window.setMotion = setMotion;
+    window.Clock = Clock;
+    window.tickClock = tickClock;
+    window.renderFrame = renderFrame;
+  }
+
+  if (typeof global !== 'undefined') {
+    global.MOTION_LIMITS = MOTION_LIMITS;
+    global.LOOP = LOOP;
+    global.defaultMotion = defaultMotion;
+    global.activeMotion = activeMotion;
+    global.motionSignal = motionSignal;
+    global.layerTransform = layerTransform;
+    global.motionVector = motionVector;
+    global.drawLayerMotion = drawLayerMotion;
+    global.setMotion = setMotion;
+    global.Clock = Clock;
+    global.tickClock = tickClock;
+    global.renderFrame = renderFrame;
+  }
 
   return instance;
 });

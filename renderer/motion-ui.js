@@ -32,26 +32,13 @@
 
   const getCFG = () => {
     if (typeof CFG !== 'undefined' && CFG && CFG.motion) return CFG;
+    if (typeof CFG !== 'undefined' && CFG && CFG.motion) return CFG;
     if (typeof window !== 'undefined' && window.CFG && window.CFG.motion) return window.CFG;
     if (typeof global !== 'undefined' && global.CFG && global.CFG.motion) return global.CFG;
     try {
       if (typeof require !== 'undefined') return require('./config.js').CFG;
     } catch (e) {}
-    return {
-      version: 2,
-      image: { maxSide: 2048 },
-      loop: { seconds: 12, min: 8, max: 16 },
-      motion: {
-        limit: { breathe: 2, sway: 3, drift: 3, ripple: 2.5 },
-        defaultAmp: 1, defaultChaos: 0.15, chaosMax: 0.5,
-        cyclesMin: 1, cyclesMax: 4, warnRatio: 0.75
-      },
-      calm: { typingFactor: 0.2, recoverMs: 3000, tau: 0.5, blurFocus: 0.3 },
-      load: { green: 1.5, yellow: 3, maxActive: 3, scale: 2 },
-      undo: { maxSteps: 50, maxBytes: 200 * 1024 * 1024 },
-      safe: { featherPermille: 12 },
-      parallax: { maxPermille: 8, tau: 0.25, defaultEnabled: false }
-    };
+    return (typeof window !== 'undefined' && window.CFG) ? window.CFG : ((typeof global !== 'undefined' && global.CFG) ? global.CFG : null);
   };
 
   const LAYER_PALETTE = ['#7DCFFF', '#73DACA', '#FF9E64', '#BB9AF7', '#E0AF68', '#F7768E', '#2AC3DE'];
@@ -1568,7 +1555,7 @@
                       const typeLimit = (cfgObj.motion && cfgObj.motion.limit && cfgObj.motion.limit[curType]) || 3.0;
                       const warnRatio = (cfgObj.motion && cfgObj.motion.warnRatio) || 0.75;
                       const curAmp = typeof layer.amplitude === 'number' ? layer.amplitude : 1.0;
-                      const isWarning = curAmp > (typeLimit * warnRatio);
+                      const isWarning = curAmp >= (typeLimit * warnRatio);
                       const curLoopSec = typeof layer.loopSec === 'number' ? layer.loopSec : 12;
                       const curChaos = typeof layer.chaos === 'number' ? layer.chaos : 0.15;
                       const curAnchor = layer.anchor || { x: 0.5, y: 0.5 };
@@ -1607,18 +1594,18 @@
 
                         <!-- Biên độ (Amplitude in ‰) -->
                         <div class="layer-slider-row">
-                          <label>Biên độ (‰):</label>
+                          <label>Biên độ: ‰ cạnh dài (≈ ${(curAmp * (typeof unitPx === 'function' ? unitPx() : 1)).toFixed(1)} px)</label>
                           <input type="range" class="slider-layer-amp" data-layer-id="${layer.id}" min="0.1" max="${typeLimit}" step="0.1" value="${curAmp}" />
-                          <span class="slider-val val-amp">${curAmp.toFixed(1)}‰</span>
+                          <span class="slider-val val-amp">${curAmp.toFixed(1)}‰ (≈ ${(curAmp * (typeof unitPx === 'function' ? unitPx() : 1)).toFixed(1)} px)</span>
                         </div>
                         <div class="motion-warning-banner" style="display: ${isWarning ? 'flex' : 'none'};" title="Biên độ vượt 75% ngưỡng khuyến nghị (${(typeLimit * warnRatio).toFixed(1)}‰), có thể gây khó chịu cho mắt">
                           ⚠️ Dễ gây rối mắt (Vượt ${(typeLimit * warnRatio).toFixed(1)}‰)
                         </div>
 
-                        <!-- Chu kỳ vòng lặp (8 - 16 giây) -->
+                        <!-- Chu kỳ vòng lặp (${cfgObj.loop.min} - ${cfgObj.loop.max} giây) -->
                         <div class="layer-slider-row">
                           <label>Chu kỳ lặp:</label>
-                          <input type="range" class="slider-layer-loop" data-layer-id="${layer.id}" min="8" max="16" step="1" value="${curLoopSec}" />
+                          <input type="range" class="slider-layer-loop" data-layer-id="${layer.id}" min="${cfgObj.loop.min}" max="${cfgObj.loop.max}" step="1" value="${curLoopSec}" />
                           <span class="slider-val">${curLoopSec} giây</span>
                         </div>
 
@@ -1999,8 +1986,11 @@
         sl.oninput = (e) => {
           const val = Number(e.target.value);
           this.setLayerAmplitude(e.target.dataset.layerId, val);
+          const px = (val * (typeof unitPx === 'function' ? unitPx() : 1)).toFixed(1);
           const s = e.target.parentNode.querySelector('.val-amp');
-          if (s) s.textContent = `${val.toFixed(1)}‰`;
+          if (s) s.textContent = `${val.toFixed(1)}‰ (≈ ${px} px)`;
+          const lbl = e.target.parentNode.querySelector('label');
+          if (lbl) lbl.textContent = `Biên độ: ‰ cạnh dài (≈ ${px} px)`;
           // Dynamically check warning
           const target = this.layers.find(l => l.id === e.target.dataset.layerId);
           const mType = (target && target.motionType) || 'sway';
@@ -2010,7 +2000,7 @@
           if (box) {
             const banner = box.querySelector('.motion-warning-banner');
             if (banner) {
-              banner.style.display = (val > lim * warn) ? 'flex' : 'none';
+              banner.style.display = (val >= lim * warn) ? 'flex' : 'none';
             }
           }
         };

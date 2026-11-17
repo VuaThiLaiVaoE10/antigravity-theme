@@ -201,10 +201,10 @@ async function runAllIOTests() {
   const err1 = ProjectIO.validateMeta(null);
   assert.ok(err1.length > 0, 'validateMeta null phải báo lỗi');
 
-  const err2 = ProjectIO.validateMeta({ version: 2 });
-  assert.ok(err2.some(e => e.includes('Phiên bản 2 không được hỗ trợ')), 'validateMeta version sai phải báo lỗi');
+  const err2 = ProjectIO.validateMeta({ version: 99 });
+  assert.ok(err2.some(e => e.includes('Phiên bản 99 không được hỗ trợ')), 'validateMeta version sai phải báo lỗi');
 
-  const err3 = ProjectIO.validateMeta({ version: 1, width: 10, height: 10, layers: [] });
+  const err3 = ProjectIO.validateMeta({ version: 2, width: 10, height: 10, layers: [] });
   assert.ok(err3.some(e => e.includes('không có lớp nào')), 'Dự án không có lớp phải báo lỗi');
 
   // 4. Kiểm tra zip nén bị từ chối trong unzipStore

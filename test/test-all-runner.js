@@ -10,6 +10,7 @@ const fs = require('fs');
 
 const TEST_FILES = [
   'test-config.js',
+  'test-card-c1.js',
   'test-layer-motion.js',
   'test-safezone-calm.js',
   'test-modular-architecture.js',

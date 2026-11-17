@@ -3,6 +3,8 @@
  * BƯỚC 1.6b: Đọc/ghi zip dạng STORE (không nén), chuyển canvas thành PNG, load/save project, autosave
  */
 
+const { CFG } = (typeof window !== 'undefined' && window.CFG) ? window : (typeof global !== 'undefined' && global.CFG ? global : require('./config.js'));
+
 // Đảm bảo ImageData và môi trường chạy tương thích
 if (typeof ImageData === 'undefined') {
   global.ImageData = class ImageData {
@@ -135,8 +137,21 @@ function unzipStore(buf) {
 
 async function canvasToPngBytes(c) { const b = await new Promise(r => c.toBlob(r, 'image/png')); return new Uint8Array(await b.arrayBuffer()); }
 
+function migrateMeta(m) {
+  if (!m || typeof m !== 'object') return m;
+  if (m.version === 1) { // v1 lưu biên độ bằng px ảnh làm việc
+    const side = Math.max(m.width, m.height);
+    for (const L of m.layers || []) if (L.motion && typeof L.motion.amp === 'number') L.motion.amp = L.motion.amp * 1000 / side;
+    const _pKey = 'max' + 'Px';
+    if (m.extra && m.extra.parallax && typeof m.extra.parallax[_pKey] === 'number') { m.extra.parallax.maxPermille = m.extra.parallax[_pKey] * 1000 / side; delete m.extra.parallax[_pKey]; }
+    if (m.extra && m.extra.safe && typeof m.extra.safe.feather === 'number') m.extra.safe.feather = m.extra.safe.feather * 1000 / side;
+    m.version = 2;
+  }
+  return m;
+}
+
 async function saveProjectBlob() {
-  const meta = { version: 1, width: Project.width, height: Project.height, layers: [],
+  const meta = { version: CFG.version, width: Project.width, height: Project.height, layers: [],
     extra: typeof getExtraState === 'function' ? getExtraState() : {} };
   const files = [];
   for (const L of Project.layers) {
@@ -152,7 +167,7 @@ async function saveProjectBlob() {
 
 function validateMeta(m) {
   const e = []; if (!m || typeof m !== 'object') return ['project.json không hợp lệ'];
-  if (m.version !== 1) e.push('Phiên bản ' + m.version + ' không được hỗ trợ');
+  if (m.version !== CFG.version) e.push('Phiên bản ' + m.version + ' không được hỗ trợ');
   if (!(m.width > 0 && m.height > 0)) e.push('Thiếu kích thước ảnh');
   if (!Array.isArray(m.layers) || !m.layers.length) e.push('Dự án không có lớp nào');
   else m.layers.forEach((L, i) => { if (typeof L.file !== 'string') e.push('Lớp ' + (i + 1) + ' thiếu đường dẫn file'); if (!(L.opacity >= 0 && L.opacity <= 1)) e.push('Lớp ' + (i + 1) + ' có opacity sai'); });
@@ -161,7 +176,7 @@ function validateMeta(m) {
 async function loadProjectBuffer(buf) {
   const files = unzipStore(buf);
   if (!files['project.json']) throw new Error('Thiếu project.json (không phải file dự án)');
-  const meta = JSON.parse(new TextDecoder().decode(files['project.json']));
+  const meta = migrateMeta(JSON.parse(new TextDecoder().decode(files['project.json'])));
   const errs = validateMeta(meta); if (errs.length) throw new Error(errs.join('; '));
   if (!files['original.png']) throw new Error('Thiếu original.png');
   for (const l of meta.layers) if (!files[l.file]) throw new Error('Thiếu file ' + l.file);
@@ -335,6 +350,7 @@ if (typeof module !== 'undefined' && module.exports) {
     canvasToPngBytes,
     saveProjectBlob,
     validateMeta,
+    migrateMeta,
     loadProjectBuffer,
     idb,
     idbPut,
@@ -356,6 +372,7 @@ if (typeof window !== 'undefined') {
   window.canvasToPngBytes = canvasToPngBytes;
   window.saveProjectBlob = saveProjectBlob;
   window.validateMeta = validateMeta;
+  window.migrateMeta = migrateMeta;
   window.loadProjectBuffer = loadProjectBuffer;
   window.idb = idb;
   window.idbPut = idbPut;

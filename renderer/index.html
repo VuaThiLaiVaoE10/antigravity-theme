@@ -37,53 +37,72 @@
 <body>
   <div class="app-layout">
     <!-- LEFT: Theme Studio Control Panel -->
-    <div class="studio-card">
+    <div class="studio-card" data-ui="panel">
       <!-- Topbar -->
-      <div class="topbar">
+      <div class="topbar" data-ui="header">
         <div class="topbar-left">
           <span class="studio-title">Theme Studio</span>
           <span class="palette-pill" id="badgePalette">midnight-aqua</span>
-          <button class="pill-btn mode-btn" id="btnToggleMode" title="Chuyển Dark / Light">
-            <span class="mode-icon">🌙</span> <span id="labelMode">Dark</span>
-          </button>
         </div>
         <div class="topbar-right">
-          <button class="pill-btn lang-btn" id="btnToggleLang" title="Ngôn ngữ / Language">VI</button>
-          <button class="primary-btn save-btn" id="btnSaveApply">
+          <button class="primary-btn save-btn" id="btnSaveApply" data-ui="studio-tool">
             <span class="btn-icon">💾</span> <span id="labelSave">Lưu & Chạy</span>
           </button>
+          <div class="studio-more-wrap" style="position: relative;">
+            <button class="pill-btn more-btn" id="btnStudioMenu" data-ui="studio-tool" title="Menu tùy chọn" aria-label="Menu tùy chọn">⋯</button>
+            <div class="studio-dropdown-menu" id="studioDropdownMenu" style="display: none;">
+              <button class="dropdown-item" id="btnToggleMode" data-ui="studio-tool">
+                <span class="mode-icon">🌙</span> <span id="labelMode">Dark</span>
+              </button>
+              <button class="dropdown-item" id="btnToggleLang" data-ui="studio-tool">
+                <span class="lang-icon">🌐</span> <span id="labelLang">Ngôn ngữ: VI</span>
+              </button>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item" id="btnMenuAdvanced" data-tab-target="tab-advanced" data-ui="studio-tool">
+                <span class="item-icon">⚙️</span> <span>Nâng cao</span>
+              </button>
+              <button class="dropdown-item" id="btnMenuTests" data-tab-target="tab-tests" data-ui="studio-tool">
+                <span class="item-icon">🧪</span> <span>Kiểm thử</span>
+              </button>
+              <button class="dropdown-item" id="btnMenuAcceptance" data-tab-target="tab-acceptance" data-ui="studio-tool">
+                <span class="item-icon">📋</span> <span>Nghiệm thu</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Navigation Tabs -->
-      <div class="tabs-nav">
-        <button class="tab-btn active" data-tab="tab-wallpaper">
-          <span class="tab-icon">🖼️</span> <span class="tab-text" data-i18n="tabWallpaper">Hình nền</span>
+      <div class="tabs-nav" data-ui="tabbar" role="tablist" aria-label="Thanh điều hướng Theme Studio">
+        <button class="tab-btn active" data-tab="tab-wallpaper" data-ui="tab" title="Hình nền" role="tab" aria-selected="true" tabindex="0">
+          <span class="tab-icon">🖼️</span>
+          <span class="tab-text">Nền</span>
         </button>
-        <button class="tab-btn" data-tab="tab-colors">
-          <span class="tab-icon">🎨</span> <span class="tab-text" data-i18n="tabColors">Màu & Avatar</span>
+        <button class="tab-btn" data-tab="tab-colors" data-ui="tab" title="Màu & Avatar" role="tab" aria-selected="false" tabindex="-1">
+          <span class="tab-icon">🎨</span>
+          <span class="tab-text">Màu</span>
         </button>
-        <button class="tab-btn" data-tab="tab-glass">
-          <span class="tab-icon">✨</span> <span class="tab-text" data-i18n="tabGlass">Kính & Mờ</span>
+        <button class="tab-btn" data-tab="tab-glass" data-ui="tab" title="Kính & Mờ" role="tab" aria-selected="false" tabindex="-1">
+          <span class="tab-icon">✨</span>
+          <span class="tab-text">Kính</span>
         </button>
-        <button class="tab-btn" data-tab="tab-pet">
-          <span class="tab-icon">🐾</span> <span class="tab-text">Pet & Khung Chat</span>
+        <button class="tab-btn" data-tab="tab-pet" data-ui="tab" title="Pet & Khung Chat" role="tab" aria-selected="false" tabindex="-1">
+          <span class="tab-icon">🐾</span>
+          <span class="tab-text">Pet</span>
         </button>
-        <button class="tab-btn" data-tab="tab-motion">
-          <span class="tab-icon">🌊</span> <span class="tab-text">Vẽ Chuyển Động</span>
+        <button class="tab-btn" data-tab="tab-motion" data-ui="tab" title="Vẽ Chuyển Động" role="tab" aria-selected="false" tabindex="-1">
+          <span class="tab-icon">🌊</span>
+          <span class="tab-text">Động</span>
         </button>
-        <button class="tab-btn" data-tab="tab-profiles">
-          <span class="tab-icon">📁</span> <span class="tab-text" data-i18n="tabProfiles">Hồ sơ</span>
+        <button class="tab-btn" data-tab="tab-profiles" data-ui="tab" title="Hồ sơ" role="tab" aria-selected="false" tabindex="-1">
+          <span class="tab-icon">📁</span>
+          <span class="tab-text">Hồ sơ</span>
         </button>
-        <button class="tab-btn" data-tab="tab-advanced">
-          <span class="tab-icon">⚙️</span> <span class="tab-text" data-i18n="tabAdvanced">Nâng cao</span>
-        </button>
-        <button class="tab-btn" data-tab="tab-tests" id="tabBtnTests">
-          <span class="tab-icon">🧪</span> <span class="tab-text">Kiểm thử</span>
-        </button>
-        <button class="tab-btn" data-tab="tab-acceptance" id="tabBtnAcceptance">
-          <span class="tab-icon">📋</span> <span class="tab-text">Nghiệm thu</span>
-        </button>
+      </div>
+
+      <!-- Active Tab Header Bar -->
+      <div class="tab-active-header">
+        <span class="tab-active-title" id="tabActiveTitle">Hình nền</span>
       </div>
 
       <!-- Tab Contents -->
@@ -712,6 +731,9 @@
           <!-- END Pet Builder Studio -->
 
           <!-- BẢNG PHẢN ỨNG SỰ KIỆN CHO PET (PET EVENTS TABLE) -->
+          <div class="section-title" style="margin-top: 18px;">THỬ PHẢN ỨNG (MÔ PHỎNG SỰ KIỆN PET)</div>
+          <div id="previewPetSimBar" class="pet-sim-mount"></div>
+
           <div id="petEventsMount"></div>
 
           <!-- GIAI ĐOẠN 5: XUẤT / NHẬP GÓI PET & KHUNG EXTENSION VSIX -->
@@ -842,12 +864,12 @@
         <span class="preview-badge" id="previewBadge">60 FPS Realtime</span>
       </div>
       
-      <div class="preview-window" id="previewWindow">
+      <div class="preview-window" id="previewWindow" data-ui="preview">
         <!-- Injected Wallpaper Layer -->
         <div class="preview-wallpaper" id="previewWallpaper"></div>
 
         <!-- Pet Overlay Mount (independent layer, no filter inheritance) -->
-        <div id="previewPetOverlayMount" style="position:absolute;inset:0;z-index:9999;pointer-events:none;overflow:hidden;"></div>
+        <div id="previewPetOverlayMount" style="position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden;"></div>
 
         <!-- Window Titlebar -->
         <div class="preview-titlebar">
@@ -1039,9 +1061,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- Live Pet Simulation Control Bar -->
-            <div id="previewPetSimBar"></div>
 
             <!-- Composer (.preview-composer): Floating command composer (.surface-composer & .surface-composer-card) -->
             <div class="preview-composer surface-composer" id="previewComposer">

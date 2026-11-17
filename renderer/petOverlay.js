@@ -40,9 +40,9 @@
     st.textContent = `
 /* ── AG Pet Overlay ── */
 #${OVERLAY_ID} {
-  position: fixed !important;
+  position: absolute !important;
   inset: 0 !important;
-  z-index: 999999 !important;
+  z-index: 5 !important;
   pointer-events: none !important;
   /* Explicitly NO backdrop-filter / filter / background so it is completely
      independent from the wallpaper/glass/blur pipeline. */
@@ -51,7 +51,7 @@
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   isolation: isolate !important;
-  overflow: visible !important;
+  overflow: hidden !important;
 }
 
 /* Pet entity wrapper – positioned via JS (foot-anchor) */
@@ -238,13 +238,13 @@
         if (overlay.style && typeof overlay.style.setProperty === 'function') {
           overlay.style.setProperty('position', 'absolute', 'important');
           overlay.style.setProperty('inset', '0', 'important');
-          overlay.style.setProperty('z-index', '9999', 'important');
+          overlay.style.setProperty('z-index', '5', 'important');
           overlay.style.setProperty('pointer-events', 'none', 'important');
           overlay.style.setProperty('overflow', 'hidden', 'important');
         } else if (overlay.style) {
           overlay.style.position = 'absolute';
           overlay.style.inset = '0';
-          overlay.style.zIndex = '9999';
+          overlay.style.zIndex = '5';
           overlay.style.pointerEvents = 'none';
           overlay.style.overflow = 'hidden';
         }

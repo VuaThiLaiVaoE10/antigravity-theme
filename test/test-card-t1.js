@@ -321,6 +321,75 @@ function createMockCanvas(w = 4, h = 4) {
   return canvas;
 }
 
+const mockPanel = {
+  style: { width: '520px' },
+  getBoundingClientRect() {
+    const w = parseFloat(this.style.width) || 520;
+    return { left: 0, top: 0, width: w, right: w, height: 800, bottom: 800 };
+  }
+};
+
+const mockHeader = {
+  getBoundingClientRect() {
+    return { left: 0, top: 0, width: parseFloat(mockPanel.style.width) || 520, height: 46, right: parseFloat(mockPanel.style.width) || 520, bottom: 46 };
+  }
+};
+
+const mockBar = {
+  getBoundingClientRect() {
+    const w = parseFloat(mockPanel.style.width) || 520;
+    return { left: 0, top: 46, width: w, right: w, height: 50, bottom: 96 };
+  }
+};
+
+const tabLabels = ['Nền', 'Màu', 'Kính', 'Pet', 'Động', 'Hồ sơ'];
+const mockTabs = tabLabels.map((lbl, idx) => ({
+  textContent: lbl,
+  get clientWidth() {
+    const w = parseFloat(mockPanel.style.width) || 520;
+    return w / tabLabels.length;
+  },
+  get scrollWidth() {
+    return 30;
+  },
+  getBoundingClientRect() {
+    const w = parseFloat(mockPanel.style.width) || 520;
+    const tabW = w / tabLabels.length;
+    const left = idx * tabW;
+    return { left, right: left + tabW, width: tabW, top: 46, bottom: 96, height: 50 };
+  }
+}));
+
+let activePetBubble = null;
+const mockPreview = {
+  getBoundingClientRect() {
+    return { left: 520, top: 0, right: 1200, bottom: 800, width: 680, height: 800 };
+  },
+  querySelector(sel) {
+    if (sel === '[data-ui="studio-tool"]') return null;
+    return null;
+  }
+};
+
+const mockPet = {
+  dispatchEvent(evt) {
+    if (evt && evt.type === 'click') {
+      activePetBubble = {
+        getBoundingClientRect() {
+          return { left: 600, top: 100, right: 720, bottom: 130, width: 120, height: 30 };
+        }
+      };
+    }
+  }
+};
+
+global.MouseEvent = class MouseEvent {
+  constructor(type, init = {}) {
+    this.type = type;
+    Object.assign(this, init);
+  }
+};
+
 global.document = {
   createElement(tag) {
     if (tag === 'canvas') return createMockCanvas();
@@ -334,8 +403,19 @@ global.document = {
     };
   },
   getElementById() { return null; },
-  querySelector() { return null; },
-  querySelectorAll() { return []; },
+  querySelector(sel) {
+    if (sel === '[data-ui="header"]') return mockHeader;
+    if (sel === '[data-ui="panel"]') return mockPanel;
+    if (sel === '[data-ui="tabbar"]') return mockBar;
+    if (sel === '[data-ui="preview"]') return mockPreview;
+    if (sel === '[data-ui="pet"]') return mockPet;
+    if (sel === '[data-ui="pet-bubble"]') return activePetBubble;
+    return null;
+  },
+  querySelectorAll(sel) {
+    if (sel === '[data-ui="tab"]') return mockTabs;
+    return [];
+  },
   head: { appendChild() {} }
 };
 

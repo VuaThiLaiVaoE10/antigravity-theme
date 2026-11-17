@@ -605,19 +605,19 @@
           <span class="pet-sim-label" title="Mô phỏng sự kiện Pet trong Live Preview">
             <span class="pet-sim-icon">🐾</span> Mô phỏng:
           </span>
-          <button type="button" class="pet-sim-btn btn-sim-thinking" data-event="ai-thinking" title="Ưu tiên 80 - AI đang suy nghĩ">
+          <button type="button" class="pet-sim-btn btn-sim-thinking" data-event="ai-thinking" data-ui="studio-tool" title="Ưu tiên 80 - AI đang suy nghĩ">
             Thinking
           </button>
-          <button type="button" class="pet-sim-btn btn-sim-typing" data-event="user-typing" title="Ưu tiên 60 - Người dùng đang gõ">
+          <button type="button" class="pet-sim-btn btn-sim-typing" data-event="user-typing" data-ui="studio-tool" title="Ưu tiên 60 - Người dùng đang gõ">
             Đang gõ
           </button>
-          <button type="button" class="pet-sim-btn btn-sim-done" data-event="ai-done" title="Ưu tiên 40 - AI đã hoàn thành">
+          <button type="button" class="pet-sim-btn btn-sim-done" data-event="ai-done" data-ui="studio-tool" title="Ưu tiên 40 - AI đã hoàn thành">
             Xong
           </button>
-          <button type="button" class="pet-sim-btn btn-sim-error" data-event="error" title="Ưu tiên 100 - Báo lỗi hệ thống">
+          <button type="button" class="pet-sim-btn btn-sim-error" data-event="error" data-ui="studio-tool" title="Ưu tiên 100 - Báo lỗi hệ thống">
             Lỗi
           </button>
-          <button type="button" class="pet-sim-btn btn-sim-idle" data-event="idle-long" title="Ưu tiên 10 - Chờ lâu / Nghỉ ngơi">
+          <button type="button" class="pet-sim-btn btn-sim-idle" data-event="idle-long" data-ui="studio-tool" title="Ưu tiên 10 - Chờ lâu / Nghỉ ngơi">
             Rảnh lâu
           </button>
         </div>

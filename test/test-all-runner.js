@@ -43,7 +43,8 @@ const TEST_FILES = [
   'test-pet-builder-studio.js',
   'test-pet-engine.js',
   'test-pet-models.js',
-  'test-pet-overlay.js'
+  'test-pet-overlay.js',
+  'test-header-layout.js'
 ];
 
 console.log('================================================================');

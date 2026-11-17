@@ -72,9 +72,16 @@ class MotionStudio {
         </div>
 
         <div class="motion-canvas-container" id="motionCanvasContainer">
-          <canvas id="motionEditorCanvas"></canvas>
+          <div class="motion-empty-guide" id="motionEmptyGuide" style="display:${this.imgUrl ? 'none' : 'flex'};flex-direction:column;align-items:center;justify-content:center;padding:48px 16px;text-align:center;gap:10px;min-height:240px;width:100%;">
+            <span style="font-size:40px;">🎨</span>
+            <div style="font-size:13px;font-weight:700;color:#7DCFFF;">Khung xem thử &amp; vẽ chuyển động</div>
+            <div style="font-size:11px;color:#94A3B8;max-width:360px;line-height:1.6;">
+              Nhấn <strong>"🖼️ Dùng ảnh Wallpaper"</strong>, <strong>"🐾 Dùng ảnh Pet"</strong> hoặc <strong>"📂 Chọn ảnh khác"</strong> ở trên để nạp ảnh vào khung vẽ và nhấn <strong>"▶️ Chạy xem thử"</strong>!
+            </div>
+          </div>
+          <canvas id="motionEditorCanvas" style="display:${this.imgUrl ? 'block' : 'none'};"></canvas>
           <canvas id="motionWebglCanvas" style="display:none;"></canvas>
-          <div class="motion-hint-badge" id="motionHintBadge">
+          <div class="motion-hint-badge" id="motionHintBadge" style="display:${this.imgUrl ? 'block' : 'none'};">
             💡 Kéo thả chuột để vẽ hướng tóc bay, nước chảy hoặc mây trôi.
           </div>
         </div>

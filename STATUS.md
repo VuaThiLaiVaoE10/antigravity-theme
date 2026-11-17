@@ -80,3 +80,31 @@
   - **Quản lý REQUIRED_TESTS**: Đã tích hợp danh sách 22 bài test từ các thẻ hoàn tất (`testConfig`, `testLayers`, `testView`, `testUndo`, `testWand`, `testBrush`, `testLasso`, `testMorph`, `testCut`, `testClone`, `testFill`, `testReveal`, `testZip`, `testSaveLoad`, `testMigrate`, `testMotion`, `testUnits`, `testSetMotion`, `testLoad`, `testSafe`, `testParallax`, `testPresets`).
   - **Giao diện panel "Kiểm thử"**: Tab `Kiểm thử` trên `tabs-nav`, nút "Chạy tất cả test" kèm hộp thoại xác nhận bảo lưu dự án, nút "Sao chép báo cáo" vào clipboard, vùng `<pre>` hiển thị báo cáo tô màu ngữ nghĩa (PASS xanh lá, FAIL/THIẾU đỏ, KHÔNG KẾT LUẬN vàng).
   - **Kiểm thử**: `selfCheckRunner()` đạt **PASS runner**. `runAllTests()` đạt **22/22 PASS (100.0%)**. Chạy tập trung toàn bộ dự án: **33/33 PASS (100.0%)**.
+
+---
+
+## 5. Tiến Độ Thẻ UI-1: Dọn Thanh Phía Trên Theme Studio (Worker 3 & Coordinator)
+- [x] **Bố cục Header (Top Bar)**:
+  - Header 1 hàng, chiều cao chuẩn hóa `46px` (tối đa `48px`).
+  - Bên trái: Tên "Theme Studio" và chip tên theme (`#badgePalette`).
+  - Bên phải: Nút nổi bật duy nhất "Lưu & Chạy" (`#btnSaveApply`) và nút menu "⋯" (`#btnStudioMenu`).
+  - Popover menu "⋯": Chứa Dark/Light, Ngôn ngữ, Nâng cao, Kiểm thử, Nghiệm thu.
+  - Đã bỏ nút Dark/Light độc lập khỏi Header (đã có trong tab Màu và menu).
+- [x] **Thanh Tab Navigation**:
+  - 1 hàng duy nhất, chiều cao chuẩn hóa `50px` (tối đa `52px`).
+  - 6 tab ngắn gọn chia đều: `Nền`, `Màu`, `Kính`, `Pet`, `Động`, `Hồ sơ`.
+  - `white-space: nowrap`, không bị bẻ dòng hay cắt viền ở dải bề rộng từ `420px` đến `560px`.
+  - Tiêu đề tab đầy đủ hiển thị trong tooltip và làm tiêu đề sub-header ngay dưới thanh tab.
+  - Trạng thái chọn rõ nét với gạch chân màu nhấn (`var(--accent-aqua)`), hỗ trợ điều hướng bàn phím đầy đủ (`ArrowLeft` / `ArrowRight` / `Home` / `End`).
+- [x] **Bé Pet & Bong Bóng Thoại**:
+  - Gắn vào `#previewPetOverlayMount` trong khung xem trước với `z-index: 5` (thấp hơn panel Studio `z-index: 10`).
+  - Gắn thuộc tính `data-ui="pet"` và `data-ui="pet-bubble"`.
+  - Thuật toán `_positionBubble` ưu tiên đặt phía trên pet, tự lật xuống dưới khi hết chỗ và kẹp chặt tọa độ bên trong khung xem trước (không bao giờ vẽ tràn ra ngoài).
+  - Tự động ẩn sau đúng `3` giây (`3000ms`).
+- [x] **Thanh Mô Phỏng Sự Kiện & Khung Xem Trước**:
+  - Chuyển thanh "Mô phỏng sự kiện" (`#previewPetSimBar`) vào tab Pet trong mục "Thử phản ứng", dọn sạch hoàn toàn khỏi khung xem trước.
+  - Khung xem trước (`#previewWindow`) chỉ chứa mô phỏng Antigravity và Pet, không còn nút công cụ nào của Studio.
+  - Gắn `data-ui="studio-tool"` cho tất cả công cụ Studio ngoài khung xem trước.
+- [x] **Kiểm thử Toàn Diện**:
+  - Hàm `testHeaderLayout()` chép nguyên văn vào `renderer/tests.js`, đăng ký vào `REQUIRED_TESTS` và bộ chạy `test-all-runner.js`: **PASS layout**.
+  - Toàn bộ 36/36 bài test toàn dự án đạt **100% PASS (0 FAIL)**.

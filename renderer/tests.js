@@ -80,11 +80,38 @@ const COMPLETED_CARD_TESTS = [
   'testBrush', 'testLasso', 'testMorph', 'testCut', 'testClone',
   'testFill', 'testReveal', 'testZip', 'testSaveLoad', 'testMigrate',
   'testMotion', 'testUnits', 'testSetMotion', 'testLoad', 'testSafe',
-  'testParallax', 'testPresets', 'testGolden', 'testAcceptanceAuto'
+  'testParallax', 'testPresets', 'testGolden', 'testAcceptanceAuto',
+  'testHeaderLayout'
 ];
 COMPLETED_CARD_TESTS.forEach(n => {
   if (!REQUIRED_TESTS.includes(n)) REQUIRED_TESTS.push(n);
 });
+
+async function testHeaderLayout() {
+  const bad = [], q = s => document.querySelector('[data-ui="' + s + '"]'), all = s => [...document.querySelectorAll('[data-ui="' + s + '"]')];
+  const header = q('header'), panel = q('panel'), bar = q('tabbar'), preview = q('preview');
+  if (!header || !panel || !bar || !preview) { console.log('FAIL layout: thiếu data-ui header/panel/tabbar/preview'); return; }
+  if (header.getBoundingClientRect().height > 56) bad.push('header cao ' + Math.round(header.getBoundingClientRect().height));
+  const tabs = all('tab'); if (tabs.length < 5) bad.push('ít hơn 5 tab');
+  const oldW = panel.style.width;
+  for (const w of [420, 520, 560]) {
+    panel.style.width = w + 'px'; await new Promise(r => setTimeout(r, 50));
+    const br = bar.getBoundingClientRect();
+    if (br.height > 60) bad.push(w + 'px: thanh tab cao ' + Math.round(br.height));
+    tabs.forEach(t => { const r = t.getBoundingClientRect();
+      if (t.scrollWidth > t.clientWidth + 1) bad.push(w + 'px: tab bị cắt "' + t.textContent.trim() + '"');
+      if (r.left < br.left - 1 || r.right > br.right + 1) bad.push(w + 'px: tab tràn thanh "' + t.textContent.trim() + '"'); });
+  }
+  panel.style.width = oldW;
+  if (preview.querySelector('[data-ui="studio-tool"]')) bad.push('nút công cụ của Studio nằm trong khung xem trước');
+  const pet = q('pet');
+  if (pet) { pet.dispatchEvent(new MouseEvent('click', { bubbles: true })); await new Promise(r => setTimeout(r, 200));
+    const b = q('pet-bubble');
+    if (!b) bad.push('bấm pet không hiện bong bóng thoại');
+    else { const r = b.getBoundingClientRect(), p = preview.getBoundingClientRect();
+      if (r.left < p.left - 1 || r.right > p.right + 1 || r.top < p.top - 1 || r.bottom > p.bottom + 1) bad.push('bong bóng thoại nằm ngoài khung xem trước'); } }
+  console.log(bad.length ? 'FAIL layout ' + bad.join('; ') : 'PASS layout');
+}
 
 // -----------------------------------------------------------------------------
 // GIAO DIỆN PANEL "KIỂM THỬ"
@@ -284,7 +311,8 @@ if (typeof module !== 'undefined' && module.exports) {
     testReport,
     selfCheckRunner,
     renderReportHTML,
-    renderTestsPanel
+    renderTestsPanel,
+    testHeaderLayout
   };
 }
 
@@ -298,6 +326,7 @@ if (typeof window !== 'undefined') {
   window.selfCheckRunner = selfCheckRunner;
   window.renderReportHTML = renderReportHTML;
   window.renderTestsPanel = renderTestsPanel;
+  window.testHeaderLayout = testHeaderLayout;
   Tests.testReport = testReport;
 }
 
@@ -311,5 +340,6 @@ if (typeof global !== 'undefined') {
   global.selfCheckRunner = selfCheckRunner;
   global.renderReportHTML = renderReportHTML;
   global.renderTestsPanel = renderTestsPanel;
+  global.testHeaderLayout = testHeaderLayout;
   Tests.testReport = testReport;
 }

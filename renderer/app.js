@@ -190,6 +190,8 @@ const previewComposer = document.getElementById('previewComposer');
 // === INITIALIZATION ===
 async function init() {
   setupTabs();
+  setupTabbarKeyboard();
+  setupStudioMenu();
   setupEvents();
 
   if (window.api) {
@@ -263,24 +265,49 @@ async function init() {
 }
 
 // === TABS SETUP ===
+const TAB_TITLES = {
+  'tab-wallpaper': 'Hình nền',
+  'tab-colors': 'Màu & Avatar',
+  'tab-glass': 'Kính & Mờ',
+  'tab-pet': 'Pet & Khung Chat',
+  'tab-motion': 'Vẽ Chuyển Động',
+  'tab-profiles': 'Hồ sơ',
+  'tab-advanced': 'Nâng cao',
+  'tab-tests': 'Kiểm thử',
+  'tab-acceptance': 'Nghiệm thu'
+};
+
 function switchToTab(targetId) {
-  tabButtons.forEach(b => {
-    if (b.getAttribute('data-tab') === targetId) {
+  const currentTabButtons = document.querySelectorAll('.tab-btn');
+  const currentTabPanes = document.querySelectorAll('.tab-pane');
+  currentTabButtons.forEach(b => {
+    const isTarget = b.getAttribute('data-tab') === targetId;
+    if (isTarget) {
       b.classList.add('active');
+      b.setAttribute('aria-selected', 'true');
+      b.setAttribute('tabindex', '0');
       if (typeof b.scrollIntoView === 'function') {
         b.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
       }
     } else {
       b.classList.remove('active');
+      b.setAttribute('aria-selected', 'false');
+      b.setAttribute('tabindex', '-1');
     }
   });
-  tabPanes.forEach(p => {
+  currentTabPanes.forEach(p => {
     if (p.id === targetId) {
       p.classList.add('active');
     } else {
       p.classList.remove('active');
     }
   });
+
+  const titleEl = document.getElementById('tabActiveTitle');
+  if (titleEl) {
+    titleEl.textContent = TAB_TITLES[targetId] || targetId;
+  }
+
   if (targetId === 'tab-motion') {
     if (typeof window.initMotionStudio === 'function') {
       window.initMotionStudio();
@@ -290,7 +317,8 @@ function switchToTab(targetId) {
 window.switchToTab = switchToTab;
 
 function setupTabs() {
-  tabButtons.forEach(btn => {
+  const currentTabButtons = document.querySelectorAll('.tab-btn');
+  currentTabButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const targetId = btn.getAttribute('data-tab');
       switchToTab(targetId);
@@ -313,6 +341,65 @@ function setupTabs() {
     renderColorTokens();
     renderGradientTokens();
     updateLivePreview();
+  });
+}
+
+function setupTabbarKeyboard() {
+  const bar = document.querySelector('[data-ui="tabbar"]');
+  if (!bar) return;
+  bar.addEventListener('keydown', (e) => {
+    const tabs = Array.from(bar.querySelectorAll('[data-ui="tab"]'));
+    if (!tabs.length) return;
+    const activeIndex = tabs.findIndex(t => t.classList.contains('active') || t === document.activeElement);
+    if (activeIndex === -1) return;
+
+    let targetIndex = -1;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      targetIndex = (activeIndex + 1) % tabs.length;
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      targetIndex = (activeIndex - 1 + tabs.length) % tabs.length;
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      targetIndex = 0;
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      targetIndex = tabs.length - 1;
+    }
+
+    if (targetIndex !== -1 && tabs[targetIndex]) {
+      tabs[targetIndex].focus();
+      tabs[targetIndex].click();
+    }
+  });
+}
+
+function setupStudioMenu() {
+  const btnMenu = document.getElementById('btnStudioMenu');
+  const dropdown = document.getElementById('studioDropdownMenu');
+  if (!btnMenu || !dropdown) return;
+
+  btnMenu.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isHidden = dropdown.style.display === 'none' || !dropdown.style.display;
+    dropdown.style.display = isHidden ? 'flex' : 'none';
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target) && e.target !== btnMenu) {
+      dropdown.style.display = 'none';
+    }
+  });
+
+  dropdown.querySelectorAll('[data-tab-target]').forEach(item => {
+    item.addEventListener('click', () => {
+      const target = item.getAttribute('data-tab-target');
+      if (target) {
+        switchToTab(target);
+      }
+      dropdown.style.display = 'none';
+    });
   });
 }
 
@@ -1815,9 +1902,10 @@ function updateLivePreview() {
         b = document.createElement('div');
         b.id = 'previewSpeechBubble';
         b.className = 'preview-speech-bubble';
+        b.setAttribute('data-ui', 'pet-bubble');
         b.textContent = appState.petSpeech || 'Chủ nhân cố lên nhé! Hôm nay code gì thế ạ? ✨';
         previewComposer.appendChild(b);
-        setTimeout(() => { if (b) b.remove(); }, 3500);
+        setTimeout(() => { if (b) b.remove(); }, 3000);
       };
     } else {
       mascotBadge.style.display = 'none';

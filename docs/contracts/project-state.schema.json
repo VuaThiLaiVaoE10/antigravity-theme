@@ -1,0 +1,130 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AntigravityProjectState",
+  "description": "Canonical immutable project state schema for Antigravity Theme Studio",
+  "type": "object",
+  "required": ["schemaVersion", "image", "layers", "settings"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 2,
+      "description": "Schema contract version matching CFG.version"
+    },
+    "image": {
+      "type": "object",
+      "required": ["url", "width", "height"],
+      "properties": {
+        "url": { "type": "string" },
+        "width": { "type": "number", "minimum": 1 },
+        "height": { "type": "number", "minimum": 1 },
+        "name": { "type": "string" }
+      }
+    },
+    "layers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "color", "visible", "locked", "depth"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "color": { "type": "string" },
+          "visible": { "type": "boolean" },
+          "locked": { "type": "boolean" },
+          "mask": { "type": ["object", "null"] },
+          "depth": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+          "speed": { "type": "number", "default": 1.0 },
+          "intensity": { "type": "number", "default": 1.0 },
+          "direction": { "type": "number", "default": 0 },
+          "feather": { "type": "number", "default": 12 },
+          "maxShift": { "type": "number", "default": 24 },
+          "motionType": {
+            "type": "string",
+            "enum": ["breathe", "sway", "drift", "ripple"]
+          },
+          "amplitude": { "type": "number", "minimum": 0 },
+          "chaos": { "type": "number", "minimum": 0, "maximum": 0.5 },
+          "loopSec": { "type": "number", "minimum": 8, "maximum": 16 },
+          "anchor": {
+            "type": "object",
+            "required": ["x", "y"],
+            "properties": {
+              "x": { "type": "number", "minimum": 0, "maximum": 1 },
+              "y": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          },
+          "arrows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["x1", "y1", "x2", "y2", "speed"],
+              "properties": {
+                "x1": { "type": "number" },
+                "y1": { "type": "number" },
+                "x2": { "type": "number" },
+                "y2": { "type": "number" },
+                "speed": { "type": "number" }
+              }
+            }
+          },
+          "pins": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["x", "y", "radius"],
+              "properties": {
+                "x": { "type": "number" },
+                "y": { "type": "number" },
+                "radius": { "type": "number" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "required": ["loopPeriodSec", "calm", "parallax", "safeZones"],
+      "properties": {
+        "loopPeriodSec": { "type": "number", "default": 12 },
+        "naturalness": { "type": "number", "default": 50 },
+        "calm": {
+          "type": "object",
+          "required": ["preset", "focusShieldEnabled", "typingFactor"],
+          "properties": {
+            "preset": { "type": "string", "enum": ["subtle", "medium", "lively"] },
+            "focusShieldEnabled": { "type": "boolean", "default": true },
+            "typingFactor": { "type": "number", "default": 0.2 },
+            "blurFocus": { "type": "boolean", "default": false },
+            "backgroundAttenuated": { "type": "boolean", "default": false }
+          }
+        },
+        "parallax": {
+          "type": "object",
+          "required": ["enabled", "maxPermille", "tau"],
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "maxPermille": { "type": "number", "default": 8 },
+            "tau": { "type": "number", "default": 0.25 }
+          }
+        },
+        "safeZones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "x", "y", "width", "height", "enabled"],
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "x": { "type": "number" },
+              "y": { "type": "number" },
+              "width": { "type": "number" },
+              "height": { "type": "number" },
+              "enabled": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

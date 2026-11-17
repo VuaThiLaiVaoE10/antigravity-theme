@@ -54,3 +54,18 @@
     - Khi người dùng dừng gõ sau 3 giây (`CFG.calm.recoverMs: 3000`), biên độ nhẹ nhàng hồi phục dần về 100% theo hàm mũ mượt mà $\tau = 0.5$ (`CFG.calm.tau`).
     - Có công tắc Bật/Tắt `Focus Shield` trong bảng điều khiển.
   - **Kiểm thử**: Viết mới `test/test-safezone-calm.js`, tích hợp vào bộ chạy tập trung `test/test-all-runner.js`: **30/30 PASS (100.0%)**. Tiêu chí hoàn thành đạt: chữ và code trong Live Preview hoàn toàn sắc nét, dễ đọc, không bị nền động làm xao nhãng.
+- [x] **KIẾN TRÚC MÔ-ĐUN ĐA AGENT (GIAI ĐOẠN 4 PREP)**:
+  - **Hợp đồng & Đặc tả**:
+    - `docs/contracts/project-state.schema.json`: Schema chuẩn mô tả toàn bộ state (lớp, mask, chuyển động, cài đặt).
+    - `docs/contracts/events.md`: Catalog sự kiện Event Bus phân quyền cho các agent song song.
+    - `docs/contracts/module-spec.md`: Quy chuẩn giao diện Module Interface và bảo vệ chống sửa chéo state.
+  - **Tầng Core Độc Lập (`renderer/modules/core/`)**:
+    - `eventBus.js`: Pub/Sub phi tập trung, hỗ trợ wildcard và telemetry.
+    - `projectState.js`: Trình quản lý trạng thái bất biến, ngăn ngừa đột biến trực tiếp (Immutable State Manager).
+    - `moduleManager.js`: Đăng ký và nạp/gỡ module động theo Open-Closed Principle (OCP).
+  - **3 Mô-đun Chuyên Biệt**:
+    1. `renderer/modules/parallax/`: Parallax dịch theo chuột theo chiều sâu (`depth`), làm mượt bằng Lerp exponential, bật/tắt an toàn.
+    2. `renderer/modules/calm/`: Quản lý 3 mức Tinh tế / Vừa / Sống động theo `CFG.presets`, tự giảm tải 20% khi window blur / mất tiêu điểm.
+    3. `renderer/modules/export-compare/`: Giữ so sánh trước/sau (hold/split), xem chậm slow-mo 0.25x-2x, xuất video WebM/MP4/APNG tuần hoàn.
+  - **Tiêu Chí Hoàn Thành (OCP)**: Thử nghiệm nạp module thứ 4 (`ambient-particles`) động mà **không phải sửa dù chỉ 1 ký tự code của module cũ**.
+  - **Kiểm thử**: Viết mới `test/test-modular-architecture.js`, tích hợp vào bộ chạy tập trung: **31/31 PASS (100.0%)**.

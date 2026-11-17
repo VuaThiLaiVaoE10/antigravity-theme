@@ -29,7 +29,20 @@ function initProject(img) { // img: Image, ImageBitmap hoặc canvas
 function addLayer(name, canvas, index) {
   const L = { id: Project.nextId++, name, visible: true, locked: false, opacity: 1,
     canvas: canvas || makeCanvas(Project.width, Project.height),
-    pivot: { x: Project.width / 2, y: Project.height / 2 }, motion: null, depth: 0 };
+    pivot: { x: Project.width / 2, y: Project.height / 2 },
+    motion: {
+      type: 'sway',
+      amplitude: 1.0,
+      chaos: 0.15,
+      loopSec: 12,
+      anchor: { x: 0.5, y: 0.5 }
+    },
+    motionType: 'sway',
+    amplitude: 1.0,
+    chaos: 0.15,
+    loopSec: 12,
+    anchor: { x: 0.5, y: 0.5 },
+    depth: 0 };
   Project.layers.splice(index === undefined ? Project.layers.length : index, 0, L);
   return L;
 }
@@ -298,6 +311,8 @@ function renderLayersPanel(container) {
       <div class="layers-panel-header">
         <span class="layers-panel-title">DANH SÁCH LỚP (${Project.layers.length})</span>
         <div class="layers-panel-actions">
+          <button type="button" class="layer-action-btn" id="btnSaveProject" title="Lưu dự án thành file .tszip">💾 Lưu</button>
+          <button type="button" class="layer-action-btn" id="btnOpenProject" title="Mở dự án từ file .tszip">📂 Mở</button>
           <button type="button" class="layer-action-btn btn-undo" id="btnUndo" title="Hoàn tác (Ctrl+Z)" disabled>↩ Hoàn tác</button>
           <button type="button" class="layer-action-btn btn-redo" id="btnRedo" title="Làm lại (Ctrl+Y)" disabled>↪ Làm lại</button>
           <button type="button" class="layer-action-btn" id="btnLayersAddEmpty" title="Thêm lớp trống">➕ Thêm</button>
@@ -308,6 +323,22 @@ function renderLayersPanel(container) {
       <div class="layers-list" id="layersList"></div>
     </div>
   `;
+
+  // Gán sự kiện nút Lưu / Mở dự án
+  const btnSave = el.querySelector('#btnSaveProject');
+  if (btnSave) {
+    btnSave.onclick = () => {
+      if (typeof exportProjectFile === 'function') exportProjectFile();
+      else if (typeof window !== 'undefined' && typeof window.exportProjectFile === 'function') window.exportProjectFile();
+    };
+  }
+  const btnOpen = el.querySelector('#btnOpenProject');
+  if (btnOpen) {
+    btnOpen.onclick = () => {
+      if (typeof openProjectFileDialog === 'function') openProjectFileDialog();
+      else if (typeof window !== 'undefined' && typeof window.openProjectFileDialog === 'function') window.openProjectFileDialog();
+    };
+  }
 
   // Gán sự kiện nút Hoàn tác / Làm lại
   const btnUndo = el.querySelector('#btnUndo');

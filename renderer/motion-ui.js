@@ -30,6 +30,30 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
+  const getCFG = () => {
+    if (typeof CFG !== 'undefined' && CFG && CFG.motion) return CFG;
+    if (typeof window !== 'undefined' && window.CFG && window.CFG.motion) return window.CFG;
+    if (typeof global !== 'undefined' && global.CFG && global.CFG.motion) return global.CFG;
+    try {
+      if (typeof require !== 'undefined') return require('./config.js').CFG;
+    } catch (e) {}
+    return {
+      version: 2,
+      image: { maxSide: 2048 },
+      loop: { seconds: 12, min: 8, max: 16 },
+      motion: {
+        limit: { breathe: 2, sway: 3, drift: 3, ripple: 2.5 },
+        defaultAmp: 1, defaultChaos: 0.15, chaosMax: 0.5,
+        cyclesMin: 1, cyclesMax: 4, warnRatio: 0.75
+      },
+      calm: { typingFactor: 0.2, recoverMs: 3000, tau: 0.5, blurFocus: 0.3 },
+      load: { green: 1.5, yellow: 3, maxActive: 3, scale: 2 },
+      undo: { maxSteps: 50, maxBytes: 200 * 1024 * 1024 },
+      safe: { featherPermille: 12 },
+      parallax: { maxPermille: 8, tau: 0.25, defaultEnabled: false }
+    };
+  };
+
   const LAYER_PALETTE = ['#7DCFFF', '#73DACA', '#FF9E64', '#BB9AF7', '#E0AF68', '#F7768E', '#2AC3DE'];
 
   // Preset Layer Templates
@@ -37,6 +61,11 @@
     'hair-wind': {
       name: 'Tóc bay',
       color: '#7DCFFF',
+      motionType: 'sway',
+      amplitude: 1.2,
+      chaos: 0.15,
+      loopSec: 12,
+      anchor: { x: 0.5, y: 0.15 },
       speed: 1.2,
       intensity: 1.4,
       direction: 15,
@@ -59,6 +88,11 @@
     'waterfall': {
       name: 'Suối nước',
       color: '#73DACA',
+      motionType: 'ripple',
+      amplitude: 1.5,
+      chaos: 0.15,
+      loopSec: 12,
+      anchor: { x: 0.5, y: 0.10 },
       speed: 1.8,
       intensity: 2.0,
       direction: 90,
@@ -82,6 +116,11 @@
     'clouds': {
       name: 'Mây trôi',
       color: '#BB9AF7',
+      motionType: 'drift',
+      amplitude: 1.0,
+      chaos: 0.10,
+      loopSec: 14,
+      anchor: { x: 0.5, y: 0.50 },
       speed: 0.7,
       intensity: 0.8,
       direction: 0,
@@ -103,6 +142,11 @@
     'sway-fabric': {
       name: 'Váy lay động',
       color: '#FF9E64',
+      motionType: 'sway',
+      amplitude: 1.2,
+      chaos: 0.20,
+      loopSec: 12,
+      anchor: { x: 0.5, y: 0.40 },
       speed: 0.9,
       intensity: 1.2,
       direction: 45,
@@ -135,6 +179,9 @@
       this.compareActive = false;
       this.compareRatio = 0.5;
 
+      // Seam check state
+      this.isSeamCheckActive = false;
+
       // Depth Brush mode
       this.depthBrushActive = false;
 
@@ -158,6 +205,11 @@
           feather: 12,
           maxShift: 24,
           depth: 0.85,
+          motionType: 'sway',
+          amplitude: 1.0,
+          chaos: 0.15,
+          loopSec: 12,
+          anchor: { x: 0.5, y: 0.15 },
           physics: {
             enabled: true,
             anchor: { x: 0.5, y: 0.15 },
@@ -348,6 +400,48 @@
             isActive ? 1.0 : 0.2
           );
         }
+
+        // Render Anchor / Pivot Point (crosshair + coordinates tag)
+        const anc = layer.anchor || (layer.physics && layer.physics.anchor) || { x: 0.5, y: 0.5 };
+        const ax = anc.x * w;
+        const ay = anc.y * h;
+        ctx.save();
+        ctx.globalAlpha = isActive ? 0.95 : 0.3;
+        ctx.strokeStyle = layer.color;
+        ctx.fillStyle = layer.color;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(ax, ay, 7, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(ax - 10, ay);
+        ctx.lineTo(ax + 10, ay);
+        ctx.moveTo(ax, ay - 10);
+        ctx.lineTo(ax, ay + 10);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(ax, ay, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        if (isActive && typeof ctx.fillText === 'function') {
+          ctx.font = '10px sans-serif';
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillText(`🎯 Neo (${Math.round(anc.x * 100)}%, ${Math.round(anc.y * 100)}%)`, ax + 12, ay - 4);
+        }
+        ctx.restore();
+      }
+
+      // Seam Check Mode Overlay Tag
+      if (this.isSeamCheckActive && typeof ctx.fillText === 'function') {
+        ctx.save();
+        ctx.fillStyle = 'rgba(255, 204, 0, 0.95)';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('🔄 KIỂM TRA VÒNG LẶP: 0 NHẢY KHUNG', w - 240, 24);
+        if (typeof ctx.arc === 'function') {
+          ctx.beginPath();
+          ctx.arc(w - 250, 20, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
       }
 
       ctx.globalAlpha = 1.0;
@@ -669,6 +763,11 @@
         feather: 10,
         maxShift: 20,
         depth: 0.50,
+        motionType: 'sway',
+        amplitude: 1.0,
+        chaos: 0.15,
+        loopSec: 12,
+        anchor: { x: 0.5, y: 0.5 },
         physics: {
           enabled: false,
           anchor: { x: 0.5, y: 0.1 },
@@ -709,6 +808,11 @@
         feather: src.feather,
         maxShift: src.maxShift,
         depth: src.depth,
+        motionType: src.motionType || 'sway',
+        amplitude: src.amplitude ?? 1.0,
+        chaos: src.chaos ?? 0.15,
+        loopSec: src.loopSec ?? 12,
+        anchor: src.anchor ? { ...src.anchor } : { x: 0.5, y: 0.5 },
         physics: src.physics ? JSON.parse(JSON.stringify(src.physics)) : {
           enabled: false,
           anchor: { x: 0.5, y: 0.1 },
@@ -805,7 +909,12 @@
         direction: tmpl.direction,
         feather: tmpl.feather,
         maxShift: tmpl.maxShift,
-        depth: tmpl.depth
+        depth: tmpl.depth,
+        motionType: tmpl.motionType || 'sway',
+        amplitude: tmpl.amplitude ?? 1.0,
+        chaos: tmpl.chaos ?? 0.15,
+        loopSec: tmpl.loopSec ?? 12,
+        anchor: tmpl.anchor ? { ...tmpl.anchor } : { x: 0.5, y: 0.5 }
       };
 
       this.layers.push(newLayer);
@@ -939,6 +1048,68 @@
       if (typeof window !== 'undefined' && window.appState) {
         window.appState.motionFlow = this.getConfig();
       }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // GIAI ĐOẠN 2: Layer Motion Type, Anchor & Seam Check
+    // ─────────────────────────────────────────────────────────────
+
+    setLayerMotionType(layerId, motionType) {
+      const target = this.layers.find(l => l.id === layerId) || this.getActiveLayer();
+      if (!target) return null;
+      target.motionType = motionType;
+      if (!target.motion) target.motion = {};
+      target.motion.type = motionType;
+      const limit = (getCFG().motion.limit && getCFG().motion.limit[motionType]) || 3.0;
+      if (typeof target.amplitude === 'number' && target.amplitude > limit) {
+        target.amplitude = limit;
+      }
+      this._saveSnapshot();
+      this._syncToEngine();
+      this.render();
+      return target.motionType;
+    }
+
+    setLayerAmplitude(layerId, amplitude) {
+      const target = this.layers.find(l => l.id === layerId) || this.getActiveLayer();
+      if (!target) return null;
+      target.amplitude = Number(amplitude);
+      if (!target.motion) target.motion = {};
+      target.motion.amplitude = Number(amplitude);
+      this._syncToEngine();
+      return target.amplitude;
+    }
+
+    setLayerAnchor(layerId, anchor) {
+      const target = this.layers.find(l => l.id === layerId) || this.getActiveLayer();
+      if (!target) return null;
+      const ax = Math.max(0, Math.min(1, Number(anchor.x) || 0.5));
+      const ay = Math.max(0, Math.min(1, Number(anchor.y) || 0.5));
+      target.anchor = { x: ax, y: ay };
+      if (!target.motion) target.motion = {};
+      target.motion.anchor = { x: ax, y: ay };
+      if (target.physics) {
+        target.physics.anchor = { x: ax, y: ay };
+      }
+      this._saveSnapshot();
+      this._syncToEngine();
+      if (this.studioInstance && this.studioInstance.redrawEditor) {
+        this.studioInstance.redrawEditor();
+      }
+      return target.anchor;
+    }
+
+    toggleSeamCheck() {
+      this.isSeamCheckActive = !this.isSeamCheckActive;
+      let res = null;
+      if (typeof window !== 'undefined' && window.MotionEngine && typeof window.MotionEngine.seamCheck === 'function') {
+        res = window.MotionEngine.seamCheck();
+      }
+      this.render();
+      if (this.studioInstance && this.studioInstance.redrawEditor) {
+        this.studioInstance.redrawEditor();
+      }
+      return res;
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -1126,6 +1297,9 @@
               <button type="button" id="btnToggleCompare" class="motion-btn-compare ${this.compareActive ? 'is-active' : ''}" title="So sánh Trước / Sau với vạch chia màn hình">
                 <span class="icon">🌓</span> ${this.compareActive ? 'Tắt so sánh' : 'So sánh Trước / Sau'}
               </button>
+              <button type="button" id="btnMotionSeamCheck" class="motion-btn-seam ${this.isSeamCheckActive ? 'is-active' : ''}" title="Chạy qua điểm nối 0s/12s và kiểm tra độ liền mạch (0 nhảy khung)">
+                <span class="icon">🔄</span> ${this.isSeamCheckActive ? 'Đang kiểm tra vòng lặp' : 'Kiểm tra vòng lặp'}
+              </button>
             </div>
             <div class="motion-bar-right">
               <button type="button" id="btnMotionUndo" class="motion-btn-hist" ${!this.canUndo() ? 'disabled' : ''} title="Hoàn tác (Ctrl+Z)">
@@ -1243,8 +1417,72 @@
                     </div>
 
                     <!-- Per-layer Dedicated Sliders: Speed, Intensity, Direction, Depth -->
-                    ${isActive ? `
+                    ${isActive ? (() => {
+                      const cfgObj = getCFG();
+                      const curType = layer.motionType || (layer.motion && layer.motion.type) || 'sway';
+                      const typeLimit = (cfgObj.motion && cfgObj.motion.limit && cfgObj.motion.limit[curType]) || 3.0;
+                      const warnRatio = (cfgObj.motion && cfgObj.motion.warnRatio) || 0.75;
+                      const curAmp = typeof layer.amplitude === 'number' ? layer.amplitude : 1.0;
+                      const isWarning = curAmp > (typeLimit * warnRatio);
+                      const curLoopSec = typeof layer.loopSec === 'number' ? layer.loopSec : 12;
+                      const curChaos = typeof layer.chaos === 'number' ? layer.chaos : 0.15;
+                      const curAnchor = layer.anchor || { x: 0.5, y: 0.5 };
+
+                      return `
                       <div class="layer-sliders-box">
+                        <!-- GIAI ĐOẠN 2: Kiểu chuyển động mềm (Thở, Đung đưa, Trôi, Gợn) -->
+                        <div class="layer-motion-type-group">
+                          <label class="layer-control-label" style="font-weight:600;color:#7DCFFF;font-size:11px;">Kiểu chuyển động mềm:</label>
+                          <div class="motion-type-btn-group">
+                            <button type="button" class="motion-type-btn ${curType === 'sway' ? 'is-active' : ''}" data-layer-id="${layer.id}" data-motion-type="sway" title="Đung đưa: Xoay quanh điểm neo (gốc tóc/váy cố định, ngọn đung đưa)">
+                              🌾 Đung đưa
+                            </button>
+                            <button type="button" class="motion-type-btn ${curType === 'breathe' ? 'is-active' : ''}" data-layer-id="${layer.id}" data-motion-type="breathe" title="Thở: Co giãn và nhấp nhô nhẹ quanh tâm neo">
+                              🫁 Thở
+                            </button>
+                            <button type="button" class="motion-type-btn ${curType === 'drift' ? 'is-active' : ''}" data-layer-id="${layer.id}" data-motion-type="drift" title="Trôi: Dịch chuyển ngang/dọc theo hướng dòng chảy">
+                              🍃 Trôi
+                            </button>
+                            <button type="button" class="motion-type-btn ${curType === 'ripple' ? 'is-active' : ''}" data-layer-id="${layer.id}" data-motion-type="ripple" title="Gợn: Uốn lượn bề mặt bằng sóng sin hài âm">
+                              🌊 Gợn
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Điểm neo (Pivot / Anchor) cho từng lớp -->
+                        <div class="layer-anchor-row">
+                          <label>Điểm neo (Pivot):</label>
+                          <div class="layer-anchor-controls">
+                            <span class="anchor-coords-badge">(${Math.round(curAnchor.x * 100)}%, ${Math.round(curAnchor.y * 100)}%)</span>
+                            <button type="button" class="btn-pick-layer-anchor ${this.pickingAnchorLayerId === layer.id ? 'is-picking' : ''}" data-layer-id="${layer.id}" title="Nhấp chuột lên ảnh để chọn điểm neo (gốc cố định)">
+                              ${this.pickingAnchorLayerId === layer.id ? '📍 Đang chọn (Nhấp lên ảnh)...' : '🎯 Đặt neo'}
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Biên độ (Amplitude in ‰) -->
+                        <div class="layer-slider-row">
+                          <label>Biên độ (‰):</label>
+                          <input type="range" class="slider-layer-amp" data-layer-id="${layer.id}" min="0.1" max="${typeLimit}" step="0.1" value="${curAmp}" />
+                          <span class="slider-val val-amp">${curAmp.toFixed(1)}‰</span>
+                        </div>
+                        <div class="motion-warning-banner" style="display: ${isWarning ? 'flex' : 'none'};" title="Biên độ vượt 75% ngưỡng khuyến nghị (${(typeLimit * warnRatio).toFixed(1)}‰), có thể gây khó chịu cho mắt">
+                          ⚠️ Dễ gây rối mắt (Vượt ${(typeLimit * warnRatio).toFixed(1)}‰)
+                        </div>
+
+                        <!-- Chu kỳ vòng lặp (8 - 16 giây) -->
+                        <div class="layer-slider-row">
+                          <label>Chu kỳ lặp:</label>
+                          <input type="range" class="slider-layer-loop" data-layer-id="${layer.id}" min="8" max="16" step="1" value="${curLoopSec}" />
+                          <span class="slider-val">${curLoopSec} giây</span>
+                        </div>
+
+                        <!-- Độ hỗn loạn (Chaos Noise 0 - 50%) -->
+                        <div class="layer-slider-row">
+                          <label>Độ hỗn loạn:</label>
+                          <input type="range" class="slider-layer-chaos" data-layer-id="${layer.id}" min="0" max="50" step="1" value="${Math.round(curChaos * 100)}" />
+                          <span class="slider-val">${Math.round(curChaos * 100)}%</span>
+                        </div>
                         <div class="layer-slider-row">
                           <label>Tốc độ:</label>
                           <input type="range" class="slider-layer-speed" data-layer-id="${layer.id}" min="0.1" max="5.0" step="0.1" value="${layer.speed}" />
@@ -1309,7 +1547,8 @@
                           ` : ''}
                         </div>
                       </div>
-                    ` : ''}
+                      `;
+                    })() : ''}
                   </div>
                 `;
               }).join('')}
@@ -1543,6 +1782,83 @@
           e.stopPropagation();
           this.removeLayer(btn.dataset.layerId);
         };
+      });
+
+      // ─────────────────────────────────────────────────────────────
+      // GIAI ĐOẠN 2: Motion Type, Anchor, Amplitude, Loop & Chaos
+      // ─────────────────────────────────────────────────────────────
+      const btnSeamCheck = this.container.querySelector('#btnMotionSeamCheck');
+      if (btnSeamCheck) {
+        btnSeamCheck.onclick = () => this.toggleSeamCheck();
+      }
+
+      const typeBtns = this.container.querySelectorAll('.motion-type-btn');
+      typeBtns.forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          this.setLayerMotionType(btn.dataset.layerId, btn.dataset.motionType);
+        };
+      });
+
+      const layerAnchorBtns = this.container.querySelectorAll('.btn-pick-layer-anchor');
+      layerAnchorBtns.forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const layerId = btn.dataset.layerId;
+          this.pickingAnchorLayerId = this.pickingAnchorLayerId === layerId ? null : layerId;
+          this.render();
+          if (this.studioInstance && this.studioInstance.redrawEditor) {
+            this.studioInstance.redrawEditor();
+          }
+        };
+      });
+
+      const ampSliders = this.container.querySelectorAll('.slider-layer-amp');
+      ampSliders.forEach(sl => {
+        sl.oninput = (e) => {
+          const val = Number(e.target.value);
+          this.setLayerAmplitude(e.target.dataset.layerId, val);
+          const s = e.target.parentNode.querySelector('.val-amp');
+          if (s) s.textContent = `${val.toFixed(1)}‰`;
+          // Dynamically check warning
+          const target = this.layers.find(l => l.id === e.target.dataset.layerId);
+          const mType = (target && target.motionType) || 'sway';
+          const lim = (getCFG().motion.limit && getCFG().motion.limit[mType]) || 3.0;
+          const warn = getCFG().motion.warnRatio || 0.75;
+          const box = e.target.closest('.layer-sliders-box');
+          if (box) {
+            const banner = box.querySelector('.motion-warning-banner');
+            if (banner) {
+              banner.style.display = (val > lim * warn) ? 'flex' : 'none';
+            }
+          }
+        };
+        sl.onchange = () => {
+          this._saveSnapshot();
+          this.render();
+        };
+      });
+
+      const loopSliders = this.container.querySelectorAll('.slider-layer-loop');
+      loopSliders.forEach(sl => {
+        sl.oninput = (e) => {
+          const val = Number(e.target.value);
+          this.updateLayerProperty(e.target.dataset.layerId, 'loopSec', val);
+          const s = e.target.parentNode.querySelector('.slider-val');
+          if (s) s.textContent = `${val} giây`;
+        };
+        sl.onchange = () => this._saveSnapshot();
+      });
+
+      const chaosSliders = this.container.querySelectorAll('.slider-layer-chaos');
+      chaosSliders.forEach(sl => {
+        sl.oninput = (e) => {
+          const val = Number(e.target.value) / 100;
+          this.updateLayerProperty(e.target.dataset.layerId, 'chaos', val);
+          const s = e.target.parentNode.querySelector('.slider-val');
+          if (s) s.textContent = `${Math.round(val * 100)}%`;
+        };
+        chaosSliders.onchange = () => this._saveSnapshot();
       });
 
       // Sliders: Speed, Intensity, Direction, Depth

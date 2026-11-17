@@ -30,10 +30,14 @@
 
 ## 4. Nhật Ký Tiến Độ Các Thẻ Việc
 - [x] **BƯỚC 0 & BƯỚC 1**: Khảo sát hiện trạng, phân tích chồng lấn vật lý tóc, duyệt kế hoạch, chạy 100% test dự án, lập `DECISIONS.md`. **HOÀN TẤT**.
-- [ ] **Thẻ C0 (`config.js`)**: Chờ User gửi mã thẻ C0.
-- [ ] **Thẻ Lớp, Canvas, Hoàn tác**: Nối `CFG`, chuyển biên độ sang ‰.
-- [ ] **Thẻ Công cụ Chọn, Cắt, Lấp nền, Lưu/Nạp**: Nối `CFG`, kiểm tra tích hợp.
-- [ ] **Thẻ Động cơ Chuyển động (4 kiểu dao động ‰)**: Triển khai Thở, Đung đưa, Trôi, Gợn.
-- [ ] **Thẻ Bảng Điều Khiển**: Nối UI điều khiển lớp động.
-- [ ] **Thẻ Chống Rối Mắt**: Vùng an toàn Live Preview, Đồng hồ tải mắt, Giảm khi gõ.
-- [ ] **Thẻ Runner Kiểm Thử, Cảnh Mẫu Golden & Nghiệm Thu 8 Điểm**.
+- [x] **Thẻ C0 (`config.js`)**: Nạp đầu tiên, `deepFreeze(CFG)` v2, đơn vị ‰ (`ampPx(type, amp)`). **HOÀN TẤT** (28/28 test PASS).
+- [x] **GIAI ĐOẠN 2 (Động cơ chuyển động mềm cho từng lớp)**:
+  - 4 Kiểu chuyển động: Thở (`breathe`), Đung đưa (`sway`), Trôi (`drift`), Gợn (`ripple`).
+  - Đơn vị ‰ chuẩn hóa từ `CFG.motion.limit`, kẹp biên độ mượt bằng $\tanh$ theo D-007.
+  - Điểm neo (Pivot/Anchor) cho từng lớp: Gốc neo cố định (0 dịch chuyển ở Sway/Thở), ngọn dao động tự do.
+  - Vòng lặp liền mạch 0 Jerk: tuần hoàn hoàn hảo $f(0) \equiv f(T)$ và $f'(0) \equiv f'(T)$, nhiễu tròn Simplex 2D.
+  - Cảnh báo "Dễ gây rối mắt" tự động bật khi biên độ vượt 75% ngưỡng khuyến nghị (`CFG.motion.warnRatio`).
+  - Nút "Kiểm tra vòng lặp" (`seamCheck()`) kiểm tra điểm nối 0s/12s và báo 0 nhảy khung.
+  - 29/29 bài test toàn dự án đạt **100% PASS (0 FAIL)**.
+- [ ] **GIAI ĐOẠN 3 (Parallax độ sâu & So sánh trước/sau)**: Tách ảnh, lớp động, vùng an toàn Live Preview.
+- [ ] **Thẻ Chống Rối Mắt**: Vùng an toàn Live Preview, Đồng hồ tải mắt, Focus Shield (`CFG.calm`).

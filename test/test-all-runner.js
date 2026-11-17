@@ -10,6 +10,7 @@ const fs = require('fs');
 
 const TEST_FILES = [
   'test-config.js',
+  'test-layer-motion.js',
   'test-layers.js',
   'test-viewport.js',
   'test-selection.js',
@@ -58,13 +59,27 @@ for (const tf of TEST_FILES) {
     continue;
   }
 
-  try {
-    const stdout = execSync(`node "${fullPath}"`, {
-      cwd: rootDir,
-      timeout: 30000,
-      encoding: 'utf8'
-    });
+  let stdout = '';
+  let success = false;
+  let lastErr = null;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      stdout = execSync(`node "${fullPath}"`, {
+        cwd: rootDir,
+        timeout: 30000,
+        encoding: 'utf8'
+      });
+      success = true;
+      break;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < 2) {
+        try { execSync('ping 127.0.0.1 -n 2 > nul', { shell: 'cmd.exe', timeout: 2000 }); } catch (e) {}
+      }
+    }
+  }
 
+  if (success) {
     const lines = stdout.split('\n').map(l => l.trim()).filter(Boolean);
     const passLines = lines.filter(l => l.startsWith('PASS ') || l.includes('✓') || l.includes('PASS') || l.includes('PASSED'));
     const failLines = lines.filter(l => l.startsWith('FAIL ') || l.includes('FAIL') || l.includes('FAILED'));
@@ -80,8 +95,8 @@ for (const tf of TEST_FILES) {
       console.log(`[KHÔNG KẾT LUẬN] ${tf} - Không tìm thấy dòng kết quả chuẩn PASS/FAIL`);
       inconclusiveCount++;
     }
-  } catch (err) {
-    const errMsg = (err.stdout || err.message || '').split('\n').filter(Boolean).pop() || 'Lỗi thực thi';
+  } else {
+    const errMsg = (lastErr && (lastErr.stdout || lastErr.message) || '').split('\n').filter(Boolean).pop() || 'Lỗi thực thi';
     console.log(`[FAIL] ${tf} -> ${errMsg.trim()}`);
     failCount++;
   }

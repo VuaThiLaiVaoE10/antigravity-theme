@@ -957,3 +957,143 @@
   background: rgba(255, 180, 0, 0.35);
   box-shadow: 0 0 12px rgba(255, 209, 102, 0.4);
 }
+
+/* ───────────────────────────────────────────────────────────── */
+/* GIAI ĐOẠN 2: Kiểu chuyển động mềm, Điểm neo & Vòng lặp       */
+/* ───────────────────────────────────────────────────────────── */
+
+.motion-btn-seam {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 204, 0, 0.12);
+  border: 1px solid rgba(255, 204, 0, 0.4);
+  color: #FFCC00;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.motion-btn-seam:hover {
+  background: rgba(255, 204, 0, 0.25);
+  box-shadow: 0 0 10px rgba(255, 204, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+.motion-btn-seam.is-active {
+  background: #FFCC00;
+  color: #081826;
+  border-color: #FFCC00;
+  box-shadow: 0 0 14px rgba(255, 204, 0, 0.7);
+}
+
+.layer-motion-type-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 0 8px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.motion-type-btn-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.motion-type-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.motion-type-btn:hover {
+  background: rgba(125, 207, 255, 0.15);
+  border-color: rgba(125, 207, 255, 0.4);
+  color: #fff;
+}
+
+.motion-type-btn.is-active {
+  background: rgba(125, 207, 255, 0.22);
+  border-color: #7DCFFF;
+  color: #7DCFFF;
+  font-weight: 700;
+  box-shadow: 0 0 8px rgba(125, 207, 255, 0.35);
+}
+
+.layer-anchor-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.layer-anchor-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.anchor-coords-badge {
+  font-size: 10.5px;
+  color: #9ece6a;
+  background: rgba(158, 206, 106, 0.12);
+  border: 1px solid rgba(158, 206, 106, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.btn-pick-layer-anchor {
+  background: rgba(125, 207, 255, 0.12);
+  border: 1px solid rgba(125, 207, 255, 0.35);
+  color: #7DCFFF;
+  font-size: 10.5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-pick-layer-anchor:hover {
+  background: rgba(125, 207, 255, 0.25);
+  color: #fff;
+}
+
+.btn-pick-layer-anchor.is-picking {
+  background: #FF9E64;
+  color: #081826;
+  border-color: #FF9E64;
+  font-weight: 700;
+  animation: pulse-picker 1s infinite alternate;
+}
+
+@keyframes pulse-picker {
+  from { box-shadow: 0 0 4px #FF9E64; }
+  to { box-shadow: 0 0 12px #FF9E64; }
+}
+
+.motion-warning-banner {
+  background: rgba(255, 160, 0, 0.12);
+  border: 1px solid rgba(255, 160, 0, 0.4);
+  color: #FFA000;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}

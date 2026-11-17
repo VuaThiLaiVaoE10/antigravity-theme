@@ -74,6 +74,31 @@
     return Date.now();
   };
 
+  // Safe configuration accessor referencing CFG from config.js
+  const getMotionCFG = () => {
+    if (typeof CFG !== 'undefined' && CFG && CFG.motion) return CFG;
+    if (typeof window !== 'undefined' && window.CFG && window.CFG.motion) return window.CFG;
+    if (typeof global !== 'undefined' && global.CFG && global.CFG.motion) return global.CFG;
+    try {
+      if (typeof require !== 'undefined') return require('./config.js').CFG;
+    } catch (e) {}
+    return {
+      version: 2,
+      image: { maxSide: 2048 },
+      loop: { seconds: 12, min: 8, max: 16 },
+      motion: {
+        limit: { breathe: 2, sway: 3, drift: 3, ripple: 2.5 },
+        defaultAmp: 1, defaultChaos: 0.15, chaosMax: 0.5,
+        cyclesMin: 1, cyclesMax: 4, warnRatio: 0.75
+      },
+      calm: { typingFactor: 0.2, recoverMs: 3000, tau: 0.5, blurFocus: 0.3 },
+      load: { green: 1.5, yellow: 3, maxActive: 3, scale: 2 },
+      undo: { maxSteps: 50, maxBytes: 200 * 1024 * 1024 },
+      safe: { featherPermille: 12 },
+      parallax: { maxPermille: 8, tau: 0.25, defaultEnabled: false }
+    };
+  };
+
   // =========================================================================
   // 1. FAST DETERMINISTIC SIMPLEX 2D NOISE GENERATOR (Pure Client-Side)
   // =========================================================================
@@ -207,6 +232,175 @@
     const nat = Math.max(0, Math.min(100, naturalness)) / 100;
     const combined = (1 - nat) * waveSynth + nat * (waveSynth * 0.65 + noiseEased * 0.35 * (1.0 + noiseAmp));
     return combined;
+  }
+
+  // =========================================================================
+  // 2.1 LAYER MOTION ENGINE (GIAI ĐOẠN 2: THỞ, ĐUNG ĐƯA, TRÔI, GỢN)
+  // =========================================================================
+  function calculateLayerMotion({
+    layer,
+    x = 0.5,
+    y = 0.5,
+    timeSec = 0,
+    loopPeriodSec = 12,
+    imageWidth = 1920,
+    imageHeight = 1080,
+    simplexNoise = null,
+    cfg = null
+  }) {
+    const currentCfg = cfg || getMotionCFG();
+    const motionType = (layer && (layer.motionType || (layer.motion && layer.motion.type))) || 'sway';
+    const limitPermille = (currentCfg.motion && currentCfg.motion.limit && currentCfg.motion.limit[motionType]) || 3.0;
+
+    // 1. Raw amplitude in permille (‰)
+    const rawAmp = (layer && typeof layer.amplitude === 'number')
+      ? layer.amplitude
+      : ((layer && layer.motion && typeof layer.motion.amplitude === 'number')
+        ? layer.motion.amplitude
+        : (currentCfg.motion ? currentCfg.motion.defaultAmp : 1.0));
+
+    // Clamp amplitude to limitPermille (Hard limit)
+    const ampPermille = Math.min(rawAmp, limitPermille);
+
+    // 2. Scaling: 1‰ of maximum image dimension
+    const maxSide = Math.max(imageWidth, imageHeight) || 1000;
+    const unitPxVal = maxSide / 1000.0;
+    const ampPxVal = ampPermille * unitPxVal;
+    const limitPxVal = limitPermille * unitPxVal;
+
+    // 3. Warning condition (exceeding warnRatio threshold, e.g. 75%)
+    const warnRatio = (currentCfg.motion && currentCfg.motion.warnRatio) || 0.75;
+    const isWarning = rawAmp > (limitPermille * warnRatio);
+
+    // 4. Normalized time & periodic parameter theta in [0, 2*PI)
+    const T = Math.max(0.1, (layer && typeof layer.loopSec === 'number')
+      ? layer.loopSec
+      : ((layer && layer.motion && typeof layer.motion.loopSec === 'number')
+        ? layer.motion.loopSec
+        : loopPeriodSec));
+    const normT = ((timeSec % T) + T) % T;
+    const theta = (normT / T) * Math.PI * 2; // [0, 2*PI)
+
+    // 5. Periodic smooth noise (Circular Simplex Sampling, 0 Jerk)
+    const chaos = (layer && typeof layer.chaos === 'number')
+      ? Math.max(0, Math.min(currentCfg.motion ? currentCfg.motion.chaosMax : 0.5, layer.chaos))
+      : ((layer && layer.motion && typeof layer.motion.chaos === 'number')
+        ? Math.max(0, Math.min(currentCfg.motion ? currentCfg.motion.chaosMax : 0.5, layer.motion.chaos))
+        : (currentCfg.motion ? currentCfg.motion.defaultChaos : 0.15));
+
+    let periodicNoise = 0;
+    if (simplexNoise) {
+      const circX = Math.cos(theta);
+      const circY = Math.sin(theta);
+      const n1 = simplexNoise.noise2D(x * 2.5 + circX * 0.7, y * 2.5 + circY * 0.7);
+      const n2 = simplexNoise.noise2D(x * 5.0 - circX * 1.2, y * 5.0 - circY * 1.2);
+      const rawN = n1 * 0.7 + n2 * 0.3;
+      const absN = Math.min(1.0, Math.abs(rawN));
+      // Quintic smootherstep easing: 6u^5 - 15u^4 + 10u^3
+      periodicNoise = Math.sign(rawN) * (absN * absN * absN * (absN * (absN * 6.0 - 15.0) + 10.0));
+    } else {
+      periodicNoise = 0.7 * Math.sin(theta * 2.0 + x * 3.14159) + 0.3 * Math.cos(theta * 3.0 - y * 3.14159);
+    }
+    const noisePerturb = chaos * periodicNoise;
+
+    // 6. Anchor / Pivot Point (normalized 0..1)
+    let ax = 0.5;
+    let ay = 0.5;
+    if (layer) {
+      if (layer.anchor && typeof layer.anchor.x === 'number') {
+        ax = layer.anchor.x;
+        ay = layer.anchor.y;
+      } else if (layer.motion && layer.motion.anchor && typeof layer.motion.anchor.x === 'number') {
+        ax = layer.motion.anchor.x;
+        ay = layer.motion.anchor.y;
+      } else if (layer.pivot && typeof layer.pivot.x === 'number') {
+        ax = layer.pivot.x > 1.0 ? layer.pivot.x / (imageWidth || 1) : layer.pivot.x;
+        ay = layer.pivot.y > 1.0 ? layer.pivot.y / (imageHeight || 1) : layer.pivot.y;
+      }
+    }
+
+    let rawDx = 0;
+    let rawDy = 0;
+
+    switch (motionType) {
+      case 'breathe': {
+        // THỞ (Breathe): Scale and subtle translate around anchor
+        const scaleWave = (Math.sin(theta) + noisePerturb) * (ampPxVal / maxSide) * 1.5;
+        const relX = (x - ax) * imageWidth;
+        const relY = (y - ay) * imageHeight;
+        rawDx = relX * scaleWave;
+        rawDy = relY * scaleWave + Math.sin(theta) * (ampPxVal * 0.25);
+        break;
+      }
+
+      case 'sway': {
+        // ĐUNG ĐƯA (Sway): Rotation around anchor.
+        // Root at anchor is fixed (0 displacement). Tip sways more with distance.
+        const distToAnchor = Math.hypot(x - ax, y - ay);
+        const distFactor = Math.min(2.0, distToAnchor * 1.5);
+        const maxAngleRad = (ampPxVal / maxSide) * 2.2;
+        const angle = (Math.sin(theta) + noisePerturb) * maxAngleRad * distFactor;
+
+        const relX = (x - ax) * imageWidth;
+        const relY = (y - ay) * imageHeight;
+        const cosA = Math.cos(angle);
+        const sinA = Math.sin(angle);
+        rawDx = relX * (cosA - 1.0) - relY * sinA;
+        rawDy = relX * sinA + relY * (cosA - 1.0);
+        break;
+      }
+
+      case 'drift': {
+        // TRÔI (Drift): Directional smooth cyclic translation
+        let dirDeg = (layer && typeof layer.direction === 'number') ? layer.direction : 0;
+        if (Array.isArray(layer && layer.arrows) && layer.arrows.length > 0) {
+          const arr = layer.arrows[0];
+          dirDeg = Math.atan2(arr.y2 - arr.y1, arr.x2 - arr.x1) * (180 / Math.PI);
+        }
+        const dirRad = dirDeg * (Math.PI / 180);
+        const driftWave = Math.sin(theta) + 0.15 * Math.sin(theta * 2.0) * chaos + noisePerturb * 0.5;
+        rawDx = Math.cos(dirRad) * ampPxVal * driftWave;
+        rawDy = Math.sin(dirRad) * ampPxVal * driftWave;
+        break;
+      }
+
+      case 'ripple':
+      default: {
+        // GỢN (Ripple): Displacement warp with harmonic multi-sine waves
+        const w1 = Math.sin(theta * 1.0 + x * 3.14159 * 3.0 + y * 3.14159 * 2.0);
+        const w2 = Math.sin(theta * 2.0 - x * 3.14159 * 2.5 + y * 3.14159 * 4.0 + 0.5);
+        const synth = (w1 * 0.65 + w2 * 0.35 + noisePerturb * 0.6);
+        let dirRad = ((layer && typeof layer.direction === 'number') ? layer.direction : 45) * (Math.PI / 180);
+        rawDx = Math.cos(dirRad) * ampPxVal * synth;
+        rawDy = Math.sin(dirRad) * ampPxVal * synth;
+        break;
+      }
+    }
+
+    // 7. Hyperbolic tangent soft saturation (D-007)
+    // Guarantees displacement magnitude strictly never exceeds limitPxVal
+    const rawDist = Math.hypot(rawDx, rawDy);
+    let dx = rawDx;
+    let dy = rawDy;
+    if (rawDist > 0.0001 && limitPxVal > 0.0001) {
+      const clampedDist = limitPxVal * Math.tanh(rawDist / limitPxVal);
+      const scale = clampedDist / rawDist;
+      dx = rawDx * scale;
+      dy = rawDy * scale;
+    }
+
+    return {
+      dx,
+      dy,
+      displacement: Math.hypot(dx, dy),
+      rawDisplacement: rawDist,
+      motionType,
+      ampPermille,
+      ampPx: ampPxVal,
+      limitPx: limitPxVal,
+      isWarning,
+      theta
+    };
   }
 
   // =========================================================================
@@ -623,7 +817,13 @@
           direction: typeof l.direction === 'number' ? l.direction : 0,
           feather: typeof l.feather === 'number' ? l.feather : 15,
           maxShift: typeof l.maxShift === 'number' ? l.maxShift : 25,
-          depth: typeof l.depth === 'number' ? Math.max(0, Math.min(1, l.depth)) : 0.5
+          depth: typeof l.depth === 'number' ? Math.max(0, Math.min(1, l.depth)) : 0.5,
+          motionType: l.motionType || (l.motion && l.motion.type) || 'sway',
+          amplitude: typeof l.amplitude === 'number' ? l.amplitude : (typeof l.intensity === 'number' ? l.intensity : 1.0),
+          chaos: typeof l.chaos === 'number' ? Math.max(0, Math.min(0.5, l.chaos)) : 0.15,
+          loopSec: typeof l.loopSec === 'number' ? Math.max(8, Math.min(16, l.loopSec)) : 12,
+          anchor: l.anchor ? { x: Number(l.anchor.x) || 0.5, y: Number(l.anchor.y) || 0.5 } : (l.pivot ? { x: Number(l.pivot.x) || 0.5, y: Number(l.pivot.y) || 0.5 } : { x: 0.5, y: 0.5 }),
+          physics: l.physics ? JSON.parse(JSON.stringify(l.physics)) : { enabled: false, anchor: { x: 0.5, y: 0.1 }, stiffness: 1.0, damping: 0.7, lag: 0.4, maxDisplacement: 3.0 }
         }));
       }
 
@@ -1265,16 +1465,35 @@
         simplexNoise: this.noiseGen
       });
 
-      // Modulate displacement when physics is enabled on any active layer
+      // Modulate displacement when physics is enabled on any active layer (bypassed in seam check mode to guarantee 0-jerk seam per D-007)
       const pe = this._getPhysicsEngine();
       let physicsShiftX = 0;
       let physicsShiftY = 0;
-      const physicsLayer = this.config.layers.find(l => l.visible !== false && l.physics && l.physics.enabled);
+      const physicsLayer = (!this.isSeamCheckMode) && this.config.layers.find(l => l.visible !== false && l.physics && l.physics.enabled);
       if (physicsLayer && pe && typeof pe.applyPhysics === 'function') {
         const physRes = pe.applyPhysics({ x: 0.5, y: 0.5 }, physicsLayer, timeSec, this.config.loopPeriodMs || 4000, disp);
         physicsShiftX = physRes.dx;
         physicsShiftY = physRes.dy;
         disp = physRes.displacement;
+      }
+
+      // Compute individual layer motion (GIAI ĐOẠN 2: Thở, Đung đưa, Trôi, Gợn)
+      let layerShiftX = 0;
+      let layerShiftY = 0;
+      const activeMotionLayer = this.config.layers.find(l => l.visible !== false && (l.motionType || (l.motion && l.motion.type)));
+      if (activeMotionLayer) {
+        const lm = calculateLayerMotion({
+          layer: activeMotionLayer,
+          x: 0.5,
+          y: 0.5,
+          timeSec,
+          loopPeriodSec: (activeMotionLayer.loopSec || loopPeriodSec),
+          imageWidth: w,
+          imageHeight: h,
+          simplexNoise: this.noiseGen
+        });
+        layerShiftX = lm.dx;
+        layerShiftY = lm.dy;
       }
 
       // Mouse Parallax offset in 2D
@@ -1285,8 +1504,8 @@
         mouseShiftY = this.mousePos.y * 12.0;
       }
 
-      const shiftX = Math.round(disp * 8.0 * intensityMult + mouseShiftX + physicsShiftX * 0.5);
-      const shiftY = Math.round(disp * 4.0 * intensityMult + mouseShiftY + physicsShiftY * 0.5);
+      const shiftX = Math.round(disp * 8.0 * intensityMult + mouseShiftX + physicsShiftX * 0.5 + layerShiftX);
+      const shiftY = Math.round(disp * 4.0 * intensityMult + mouseShiftY + physicsShiftY * 0.5 + layerShiftY);
 
       if (this.compareRatio !== null && this.compareRatio >= 0 && this.compareRatio <= 1) {
         const splitX = Math.round(w * this.compareRatio);
@@ -1595,6 +1814,7 @@
   instance.MotionEngineCore = MotionEngineCore;
   instance.SimplexNoise2D = SimplexNoise2D;
   instance.calculateDisplacement = calculateDisplacement;
+  instance.calculateLayerMotion = calculateLayerMotion;
 
   return instance;
 });

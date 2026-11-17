@@ -4,7 +4,8 @@
  * 
  * 1. Chạy testAcceptanceAuto(): kỳ vọng in ra 'PASS acceptance (5/5 tự động)'.
  * 2. Kiểm tra cấu trúc 8 dòng của runAcceptance(): 5 dòng PASS, 3 dòng TAY.
- * 3. Kiểm tra logic chuyển trạng thái huy hiệu "ĐẠT" / "CHƯA ĐẠT" theo 3 ô checkbox tay.
+ * 3. Kiểm tra logic chuyển trạng thái huy hiệu "ĐẠT" / "CHƯA ĐẠT" theo 3 ô checkbox tay bằng updateAcceptanceVerdict(mount).
+ * 4. Kiểm tra điều kiện biên dự án rỗng (w = 0, h = 0) không gây crash.
  */
 
 const assert = require('assert');
@@ -392,8 +393,10 @@ global.revealMap = revealMap;
 const Acceptance = require('../renderer/acceptance.js');
 const {
   buildSampleScene, layerAlpha, belowAlpha, checkReveal,
-  runAcceptance, testAcceptanceAuto, renderAcceptancePanel, AcceptanceState
+  runAcceptance, testAcceptanceAuto, renderAcceptancePanel, AcceptanceState,
+  updateAcceptanceVerdict
 } = Acceptance;
+global.updateAcceptanceVerdict = updateAcceptanceVerdict;
 
 // ---------------------------------------------------------------------------
 // 3. THỰC THI KIỂM THỬ THẺ A1
@@ -408,8 +411,18 @@ async function runCardA1Tests() {
 
   // TEST 1: testAcceptanceAuto()
   console.log('--- 1. KIỂM TRA testAcceptanceAuto() (TỰ ĐỘNG NẠP CẢNH VÀ ĐO ĐẠC) ---');
-  const autoResult = await testAcceptanceAuto();
-  assert.strictEqual(autoResult, true, 'testAcceptanceAuto() phải trả về true (5/5 tiêu chí tự động PASS)');
+  let capturedLog = '';
+  const origLog = console.log;
+  try {
+    console.log = (...args) => {
+      capturedLog += args.join(' ') + '\n';
+      origLog(...args);
+    };
+    await testAcceptanceAuto();
+  } finally {
+    console.log = origLog;
+  }
+  assert.ok(capturedLog.includes('PASS acceptance (5/5 tự động)'), 'testAcceptanceAuto() phải in ra PASS acceptance (5/5 tự động)');
   console.log('✓ TEST 1 PASS: testAcceptanceAuto() hoàn thành với 5/5 tiêu chí tự động đạt chuẩn.\n');
   passed++;
 
@@ -435,7 +448,7 @@ async function runCardA1Tests() {
   passed++;
 
   // TEST 3: Logic chuyển đổi huy hiệu "ĐẠT" / "CHƯA ĐẠT"
-  console.log('--- 3. KIỂM TRA LOGIC TÍNH TOÁN HUY HIỆU "ĐẠT" CHUNG ---');
+  console.log('--- 3. KIỂM TRA LOGIC TÍNH TOÁN HUY HIỆU "ĐẠT" CHUNG (updateAcceptanceVerdict) ---');
   
   // Mock element container để render panel
   const fakeMount = {
@@ -459,37 +472,70 @@ async function runCardA1Tests() {
   renderAcceptancePanel(fakeMount);
   AcceptanceState.lastRows = rows;
 
-  // Trường hợp 1: Chưa tick ô nào -> CHƯA ĐẠT
+  // Trường hợp 1: Chưa tick ô nào -> ⏳ CHƯA ĐẠT
   AcceptanceState.manualChecks = { 6: false, 7: false, 8: false };
-  const { updateAcceptanceVerdict } = require('../renderer/acceptance.js');
-  
-  // Gọi hàm cập nhật verdict
   fakeMount._badge.textContent = '';
-  // Tái hiện logic tính toán verdict từ AcceptanceState
-  const checkVerdict = () => {
-    const autoPassed = AcceptanceState.lastRows.filter(r => r.id <= 5).every(r => r.status === 'PASS');
-    const manualPassed = [6, 7, 8].every(id => !!AcceptanceState.manualChecks[id]);
-    return autoPassed && manualPassed ? 'ĐẠT' : 'CHƯA ĐẠT';
-  };
+  updateAcceptanceVerdict(fakeMount);
+  assert.strictEqual(fakeMount._badge.textContent, '⏳ CHƯA ĐẠT', 'Khi chưa tick đủ 3 ô, verdict badge phải là ⏳ CHƯA ĐẠT');
+  console.log('  ✓ 0/3 ô tick -> ⏳ CHƯA ĐẠT');
 
-  assert.strictEqual(checkVerdict(), 'CHƯA ĐẠT', 'Khi chưa tick đủ 3 ô, verdict phải là CHƯA ĐẠT');
-  console.log('  ✓ 0/3 ô tick -> CHƯA ĐẠT');
-
-  // Trường hợp 2: Tick 2/3 ô -> CHƯA ĐẠT
+  // Trường hợp 2: Tick 2/3 ô -> ⏳ CHƯA ĐẠT
   AcceptanceState.manualChecks = { 6: true, 7: true, 8: false };
-  assert.strictEqual(checkVerdict(), 'CHƯA ĐẠT', 'Khi mới tick 2/3 ô, verdict vẫn phải là CHƯA ĐẠT');
-  console.log('  ✓ 2/3 ô tick -> CHƯA ĐẠT');
+  fakeMount._badge.textContent = '';
+  updateAcceptanceVerdict(fakeMount);
+  assert.strictEqual(fakeMount._badge.textContent, '⏳ CHƯA ĐẠT', 'Khi mới tick 2/3 ô, verdict badge vẫn phải là ⏳ CHƯA ĐẠT');
+  console.log('  ✓ 2/3 ô tick -> ⏳ CHƯA ĐẠT');
 
   // Trường hợp 3: Tick đủ cả 3 ô (6, 7, 8) VÀ 5/5 tự động PASS -> 🎉 ĐẠT
   AcceptanceState.manualChecks = { 6: true, 7: true, 8: true };
-  assert.strictEqual(checkVerdict(), 'ĐẠT', 'Khi cả 5/5 tự động PASS và 3/3 ô tick được bật, verdict phải là ĐẠT');
-  console.log('  ✓ 3/3 ô tick + 5/5 PASS tự động -> 🎉 ĐẠT (Chính xác theo yêu cầu đề bài!)');
+  fakeMount._badge.textContent = '';
+  updateAcceptanceVerdict(fakeMount);
+  assert.strictEqual(fakeMount._badge.textContent, '🎉 ĐẠT', 'Khi cả 5/5 tự động PASS và 3/3 ô tick được bật, verdict badge phải là 🎉 ĐẠT');
+  console.log('  ✓ 3/3 ô tick + 5/5 PASS tự động -> 🎉 ĐẠT');
+
+  // Trường hợp 4: Có kiểm tra tự động chưa đạt dù tick đủ 3 ô -> ⏳ CHƯA ĐẠT
+  AcceptanceState.lastRows = rows.map(r => r.id === 1 ? { ...r, status: 'FAIL' } : r);
+  fakeMount._badge.textContent = '';
+  updateAcceptanceVerdict(fakeMount);
+  assert.strictEqual(fakeMount._badge.textContent, '⏳ CHƯA ĐẠT', 'Khi có kiểm tra tự động chưa đạt dù tick đủ 3 ô, verdict badge phải là ⏳ CHƯA ĐẠT');
+  console.log('  ✓ Có kiểm tra tự động chưa đạt dù đủ tick -> ⏳ CHƯA ĐẠT');
+  // Khôi phục rows chuẩn
+  AcceptanceState.lastRows = rows;
 
   console.log('\n✓ TEST 3 PASS: Logic điều kiện nghiệm thu ĐẠT hoạt động hoàn hảo.\n');
   passed++;
 
+  // TEST 4: Điều kiện biên dự án rỗng (w = 0, h = 0)
+  console.log('--- 4. KIỂM TRA ĐIỀU KIỆN BIÊN: DỰ ÁN RỖNG (w = 0, h = 0) ---');
+  const savedW = Project.width, savedH = Project.height, savedLayers = Project.layers;
+  try {
+    Project.width = 0;
+    Project.height = 0;
+    Project.layers = [];
+    const emptyRows = await runAcceptance();
+    assert.ok(Array.isArray(emptyRows), 'runAcceptance() phải trả về mảng kết quả khi w=0, h=0');
+    assert.strictEqual(emptyRows.length, 8, 'runAcceptance() trên dự án rỗng phải trả về đúng 8 dòng');
+    const autoEmpty = emptyRows.slice(0, 5);
+    autoEmpty.forEach(r => {
+      assert.strictEqual(r.status, 'FAIL', `Dòng ${r.id} (${r.label}) phải là FAIL khi dự án rỗng`);
+    });
+    const manualEmpty = emptyRows.slice(5, 8);
+    manualEmpty.forEach(r => {
+      assert.strictEqual(r.status, 'TAY', `Dòng ${r.id} (${r.label}) phải là TAY khi dự án rỗng`);
+    });
+    console.log('  ✓ 5 tiêu chí tự động trả về trạng thái chưa đạt an toàn kèm ghi chú rõ ràng.');
+    console.log('  ✓ 3 tiêu chí thủ công giữ trạng thái TAY.');
+    console.log('  ✓ runAcceptance() xử lý an toàn điều kiện biên w=0, h=0: trả về 8 dòng, không crash.');
+    console.log('✓ TEST 4 PASS: Điều kiện biên dự án rỗng được xử lý an toàn và hoàn hảo.\n');
+    passed++;
+  } finally {
+    Project.width = savedW;
+    Project.height = savedH;
+    Project.layers = savedLayers;
+  }
+
   console.log('----------------------------------------------------------------');
-  console.log(`TỔNG KẾT THẺ A1: ${passed}/3 BÀI TEST ĐẠT (100.0%)`);
+  console.log(`TỔNG KẾT THẺ A1: ${passed}/4 BÀI TEST ĐẠT (100.0%)`);
   console.log('================================================================\n');
   return true;
 }

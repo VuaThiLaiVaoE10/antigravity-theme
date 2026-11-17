@@ -29,8 +29,9 @@ function renderWithSafe(ctx, u) {
   }
   const rects = Safe.rects || Safe.zones;
   if (!rects || !rects.length) return;
-  const w = (typeof Project !== 'undefined' && Project.width) || (ctx.canvas && ctx.canvas.width) || 1600;
-  const h = (typeof Project !== 'undefined' && Project.height) || (ctx.canvas && ctx.canvas.height) || 900;
+  const _maxSide = CFG.image.maxSide || 1920;
+  const w = (typeof Project !== 'undefined' && Project.width) || (ctx.canvas && ctx.canvas.width) || _maxSide;
+  const h = (typeof Project !== 'undefined' && Project.height) || (ctx.canvas && ctx.canvas.height) || Math.round(_maxSide * 9 / 16);
 
   const staticC = makeCanvas(w, h), g = staticC.getContext('2d');
   if (typeof Project !== 'undefined' && Project.layers) {

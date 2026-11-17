@@ -40,6 +40,18 @@ function checkReveal() {
 
 async function runAcceptance() { // trả về các dòng: {id, label, status: 'PASS'|'FAIL'|'TAY', note}
   const rows = [], add = (id, label, status, note) => rows.push({ id, label, status, note });
+  const w = Project.width, h = Project.height;
+  if (w <= 0 || h <= 0) {
+    add(1, 'Vòng lặp liền mạch', 'FAIL', 'Dự án chưa có kích thước hợp lệ (w=' + w + ', h=' + h + ')');
+    add(2, 'Tải mắt không đỏ', 'FAIL', 'Không thể đo tải (kích thước ảnh trống)');
+    add(3, 'Số lớp động không quá ' + CFG.load.maxActive, 'FAIL', 'Không thể đếm lớp (kích thước ảnh trống)');
+    add(4, 'Vùng chữ đứng yên', 'FAIL', 'Không thể kiểm tra (w=' + w + ', h=' + h + ')');
+    add(5, 'Không lộ vết rách', 'FAIL', 'Không thể kiểm tra (kích thước ảnh trống)');
+    add(6, 'Xem 3 vòng liên tiếp, không thấy chỗ "nhảy"', 'TAY', 'bạn tự xem');
+    add(7, 'Đọc chữ trong khung chat và ô nhập thoải mái 1 phút', 'TAY', 'bạn tự xem ở Live Preview');
+    add(8, 'Giữ phím \\ so ảnh gốc: không méo mặt/nét, tóc không rách', 'TAY', 'bạn tự xem');
+    return rows;
+  }
   const loop = checkLoop();
   add(1, 'Vòng lặp liền mạch', loop.length && loop.every(r => r.ok) ? 'PASS' : 'FAIL', loop.map(r => r.name + ' ' + r.ratio.toFixed(2)).join(', ') || 'không có lớp động');
   const el = eyeLoad(); add(2, 'Tải mắt không đỏ', loadLevel(el) !== 'red' ? 'PASS' : 'FAIL', 'tải ' + el.toFixed(2) + ' (' + loadLevel(el) + ')');
@@ -69,7 +81,6 @@ async function testAcceptanceAuto() {
   buildSampleScene(); const rows = await runAcceptance();
   const bad = rows.filter(r => r.status === 'FAIL');
   console.log(bad.length ? 'FAIL acceptance ' + bad.map(r => r.id + ':' + r.note).join('; ') : 'PASS acceptance (' + rows.filter(r => r.status === 'PASS').length + '/5 tự động)');
-  return bad.length === 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -292,6 +303,7 @@ if (typeof window !== 'undefined') {
   window.runAcceptance = runAcceptance;
   window.testAcceptanceAuto = testAcceptanceAuto;
   window.renderAcceptancePanel = renderAcceptancePanel;
+  window.updateAcceptanceVerdict = updateAcceptanceVerdict;
   window.AcceptanceState = AcceptanceState;
 }
 
@@ -303,6 +315,7 @@ if (typeof global !== 'undefined') {
   global.runAcceptance = runAcceptance;
   global.testAcceptanceAuto = testAcceptanceAuto;
   global.renderAcceptancePanel = renderAcceptancePanel;
+  global.updateAcceptanceVerdict = updateAcceptanceVerdict;
   global.AcceptanceState = AcceptanceState;
 }
 
@@ -315,6 +328,7 @@ if (typeof module !== 'undefined' && module.exports) {
     runAcceptance,
     testAcceptanceAuto,
     renderAcceptancePanel,
+    updateAcceptanceVerdict,
     AcceptanceState
   };
 }

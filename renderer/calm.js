@@ -44,14 +44,16 @@ function layerCoverage(L, totalW, totalH) {
     }
     return Math.min(1, Math.max(0.01, nonZero / total));
   } catch (e) {
+    console.warn('[calm] layerCoverage error:', e);
     return 0.2;
   }
 }
 
 function eyeLoad(layers = (typeof Project !== 'undefined' ? Project.layers : []), loopSec = (typeof LOOP !== 'undefined' && LOOP.seconds) ? LOOP.seconds : CFG.loop.seconds) {
   if (!layers || !layers.length) return 0;
-  const totalW = (typeof Project !== 'undefined' && Project.width) ? Project.width : 1600;
-  const totalH = (typeof Project !== 'undefined' && Project.height) ? Project.height : 900;
+  const _maxSide = CFG.image.maxSide || 1920;
+  const totalW = (typeof Project !== 'undefined' && Project.width) ? Project.width : (typeof document !== 'undefined' && document.getElementById('mainCanvas') ? document.getElementById('mainCanvas').width : _maxSide);
+  const totalH = (typeof Project !== 'undefined' && Project.height) ? Project.height : (typeof document !== 'undefined' && document.getElementById('mainCanvas') ? document.getElementById('mainCanvas').height : Math.round(_maxSide * 9 / 16));
   const items = [];
   for (const L of layers) {
     if (L.visible === false) continue;

@@ -169,6 +169,7 @@
      */
     constructor(opts = {}) {
       this._doc          = opts.doc || (typeof document !== 'undefined' ? document : null);
+      this._container    = opts.container    || null;
       this._animEngine   = opts.animEngine   || null;
       this._appState     = opts.appState     || null;
       this.posX          = opts.posX         ?? 100;
@@ -210,21 +211,44 @@
     }
 
     /* ─────────────── Mount / unmount ─────────────── */
-    mount() {
+    mount(container) {
       const doc = this._doc;
       if (!doc) return this;
 
       injectStyle(doc);
+
+      const mountMount = (typeof doc.getElementById === 'function' && (doc.getElementById('previewPetOverlayMount') || doc.getElementById('previewWindow'))) || null;
+      const targetParent = container || this._container || mountMount || (doc.body || doc.documentElement);
 
       /* Overlay container */
       let overlay = doc.getElementById(OVERLAY_ID);
       if (!overlay) {
         overlay = doc.createElement('div');
         overlay.id = OVERLAY_ID;
-        doc.body.appendChild(overlay);
+        if (targetParent && typeof targetParent.appendChild === 'function') {
+          targetParent.appendChild(overlay);
+        }
+      } else if (targetParent && overlay.parentNode !== targetParent && typeof targetParent.appendChild === 'function') {
+        targetParent.appendChild(overlay);
       }
       this._overlay = overlay;
       this._applyFilterScope();
+
+      if (targetParent !== doc.body) {
+        if (overlay.style && typeof overlay.style.setProperty === 'function') {
+          overlay.style.setProperty('position', 'absolute', 'important');
+          overlay.style.setProperty('inset', '0', 'important');
+          overlay.style.setProperty('z-index', '9999', 'important');
+          overlay.style.setProperty('pointer-events', 'none', 'important');
+          overlay.style.setProperty('overflow', 'hidden', 'important');
+        } else if (overlay.style) {
+          overlay.style.position = 'absolute';
+          overlay.style.inset = '0';
+          overlay.style.zIndex = '9999';
+          overlay.style.pointerEvents = 'none';
+          overlay.style.overflow = 'hidden';
+        }
+      }
 
       /* Pet entity */
       let entity = doc.getElementById(PET_ENTITY_ID);
@@ -232,6 +256,9 @@
         entity = doc.createElement('div');
         entity.id = PET_ENTITY_ID;
         overlay.appendChild(entity);
+      }
+      if (typeof entity.setAttribute === 'function') {
+        entity.setAttribute('data-ui', 'pet');
       }
       this._entity = entity;
 
@@ -498,12 +525,18 @@
 
       this._hitbox.addEventListener('mousedown', this._onMouseDown);
       this._hitbox.addEventListener('click',     this._onClick);
+      if (this._entity) {
+        this._entity.addEventListener('click', this._onClick);
+      }
     }
 
     _unbindEvents() {
       if (this._hitbox) {
         this._hitbox.removeEventListener('mousedown', this._onMouseDown);
         this._hitbox.removeEventListener('click',     this._onClick);
+      }
+      if (this._entity) {
+        this._entity.removeEventListener('click', this._onClick);
       }
       const doc = this._doc || (typeof document !== 'undefined' ? document : null);
       if (doc) {
@@ -599,13 +632,77 @@
       const doc  = this._doc || document;
       const bub  = doc.createElement('div');
       bub.className = BUBBLE_CLS;
+      if (typeof bub.setAttribute === 'function') {
+        bub.setAttribute('data-ui', 'pet-bubble');
+      }
       bub.textContent = this.speechLines[this._speechIdx % this.speechLines.length];
       this._speechIdx++;
       this._entity.appendChild(bub);
       this._bubble = bub;
 
+      this._positionBubble(bub);
+
       clearTimeout(this._bubbleTimer);
-      this._bubbleTimer = setTimeout(() => this._removeBubble(), 3500);
+      this._bubbleTimer = setTimeout(() => this._removeBubble(), 3000);
+    }
+
+    _positionBubble(bub) {
+      if (!bub || !this._entity) return;
+      const doc = this._doc || (typeof document !== 'undefined' ? document : null);
+      if (!doc) return;
+
+      const preview = (typeof doc.querySelector === 'function' && doc.querySelector('[data-ui="preview"]')) ||
+                      (typeof doc.getElementById === 'function' && doc.getElementById('previewWindow')) ||
+                      this._overlay;
+
+      bub.style.position = 'absolute';
+      bub.style.zIndex = '100';
+      bub.style.whiteSpace = 'nowrap';
+      bub.style.pointerEvents = 'none';
+
+      if (preview && typeof preview.getBoundingClientRect === 'function' && typeof bub.getBoundingClientRect === 'function' && typeof this._entity.getBoundingClientRect === 'function') {
+        const pRect = preview.getBoundingClientRect();
+        const eRect = this._entity.getBoundingClientRect();
+        const bRect = bub.getBoundingClientRect();
+
+        const bW = bRect.width || 120;
+        const bH = bRect.height || 32;
+
+        // Prefer above pet
+        let top = -bH - 8;
+        // Flip below if not enough room above entity inside preview
+        if (eRect.top - bH - 8 < pRect.top + 2) {
+          top = eRect.height + 8;
+        }
+
+        // Center horizontally relative to entity
+        let left = (eRect.width - bW) / 2;
+
+        // Clamp horizontally relative to preview
+        const globalLeft = eRect.left + left;
+        if (globalLeft < pRect.left + 4) {
+          left += (pRect.left + 4 - globalLeft);
+        } else if (globalLeft + bW > pRect.right - 4) {
+          left -= (globalLeft + bW - (pRect.right - 4));
+        }
+
+        // Clamp vertically relative to preview
+        const globalTop = eRect.top + top;
+        if (globalTop < pRect.top + 4) {
+          top += (pRect.top + 4 - globalTop);
+        } else if (globalTop + bH > pRect.bottom - 4) {
+          top -= (globalTop + bH - (pRect.bottom - 4));
+        }
+
+        bub.style.left = Math.round(left) + 'px';
+        bub.style.top = Math.round(top) + 'px';
+        bub.style.bottom = 'auto';
+        bub.style.right = 'auto';
+      } else {
+        bub.style.bottom = 'calc(100% + 8px)';
+        bub.style.left = '50%';
+        bub.style.transform = 'translateX(-50%)';
+      }
     }
 
     _removeBubble() {

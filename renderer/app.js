@@ -267,6 +267,9 @@ function switchToTab(targetId) {
   tabButtons.forEach(b => {
     if (b.getAttribute('data-tab') === targetId) {
       b.classList.add('active');
+      if (typeof b.scrollIntoView === 'function') {
+        b.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      }
     } else {
       b.classList.remove('active');
     }
@@ -2610,18 +2613,26 @@ function updateLivePreview() {
   function _mountPetOverlayInPreview() {
     if (typeof window.PetOverlay !== 'function') return;
     try {
+      const mount = document.getElementById('previewPetOverlayMount');
       if (!window._globalPetOverlay) {
         window._globalPetOverlay = new window.PetOverlay({
           doc: document,
+          container: mount,
           appState: typeof appState !== 'undefined' ? appState : null,
-          posX: (typeof appState !== 'undefined' && appState && appState.petOffsetX) || 120,
-          posY: (typeof appState !== 'undefined' && appState && appState.petOffsetY) || 120,
+          posX: (typeof appState !== 'undefined' && appState && appState.petOffsetX) || 0,
+          posY: (typeof appState !== 'undefined' && appState && appState.petOffsetY) || 0,
           showPedestal: (typeof appState !== 'undefined' && appState && appState.petPedestal) ?? true,
           pedestalColor: (typeof appState !== 'undefined' && appState && appState.petPedestalColor) || '#7DCFFF',
           petDataUrl: (typeof appState !== 'undefined' && appState && appState.mascotUrl) || '',
           filterOnPet: (typeof appState !== 'undefined' && appState && appState.filterTargets && appState.filterTargets.pet) || false
         });
-        window._globalPetOverlay.mount();
+        if (mount) {
+          window._globalPetOverlay.mount(mount);
+          const overlayEl = document.getElementById('ag-pet-overlay-container');
+          if (overlayEl) {
+            overlayEl.style.display = 'none'; // Live preview mascot is rendered via previewMascotBadge
+          }
+        }
         window.PetOverlayInstance = window._globalPetOverlay;
         if (typeof window.PetEventsUI !== 'undefined' && window.PetEventsUI.init) {
           window.PetEventsUI.init();

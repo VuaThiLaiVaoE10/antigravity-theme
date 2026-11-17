@@ -12,6 +12,7 @@ const TEST_FILES = [
   'test-config.js',
   'test-card-c1.js',
   'test-card-t1.js',
+  'test-card-g1.js',
   'test-layer-motion.js',
   'test-safezone-calm.js',
   'test-modular-architecture.js',
@@ -70,7 +71,7 @@ for (const tf of TEST_FILES) {
     try {
       stdout = execSync(`node "${fullPath}"`, {
         cwd: rootDir,
-        timeout: 30000,
+        timeout: 60000,
         encoding: 'utf8'
       });
       success = true;

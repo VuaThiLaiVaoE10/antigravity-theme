@@ -152,22 +152,23 @@
     if (Clock.u < 0) Clock.u += 1;
   }
 
-  function renderLayerMotion(ctx, u) {
+  function renderLayerMotion(ctx, u, opts = {}) {
     if (!ctx || typeof ctx.clearRect !== 'function') return;
     const w = (typeof Project !== 'undefined' && Project.width) || (ctx.canvas && ctx.canvas.width) || 1000;
     const h = (typeof Project !== 'undefined' && Project.height) || (ctx.canvas && ctx.canvas.height) || 1000;
     ctx.clearRect(0, 0, w, h);
     const layers = (typeof Project !== 'undefined' && Project.layers) || [];
+    const ampScale = (opts && typeof opts.ampScale === 'number') ? opts.ampScale : 1;
     for (const L of layers) {
       if (L.visible !== false) {
-        drawLayerMotion(ctx, L, u, 1, { dx: 0, dy: 0 });
+        drawLayerMotion(ctx, L, u, ampScale, { dx: 0, dy: 0 });
       }
     }
   }
 
-  function renderFrame(arg1 = 0, arg2) {
+  function renderFrame(arg1 = 0, arg2, arg3) {
     if (arg1 && typeof arg1 === 'object') {
-      renderLayerMotion(arg1, arg2);
+      renderLayerMotion(arg1, arg2, arg3);
       return { rendered: true, isWebGL: false };
     }
     return instance._renderFrameEngine(arg1);
@@ -1559,9 +1560,9 @@
       }
     }
 
-    renderFrame(arg1 = 0, arg2) {
+    renderFrame(arg1 = 0, arg2, arg3) {
       if (arg1 && typeof arg1 === 'object') {
-        renderLayerMotion(arg1, arg2);
+        renderLayerMotion(arg1, arg2, arg3);
         return { rendered: true, isWebGL: false };
       }
       return this._renderFrameEngine(arg1);

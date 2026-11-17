@@ -80,7 +80,7 @@ const COMPLETED_CARD_TESTS = [
   'testBrush', 'testLasso', 'testMorph', 'testCut', 'testClone',
   'testFill', 'testReveal', 'testZip', 'testSaveLoad', 'testMigrate',
   'testMotion', 'testUnits', 'testSetMotion', 'testLoad', 'testSafe',
-  'testParallax', 'testPresets'
+  'testParallax', 'testPresets', 'testGolden'
 ];
 COMPLETED_CARD_TESTS.forEach(n => {
   if (!REQUIRED_TESTS.includes(n)) REQUIRED_TESTS.push(n);
@@ -122,6 +122,12 @@ function renderTestsPanel(container) {
           <button type="button" class="secondary-btn" id="btnSelfCheckRunner" style="display:inline-flex;align-items:center;gap:6px;padding:9px 12px;font-size:12px;background:rgba(30,30,46,0.7);color:#a6adc8;border:1px solid #313244;border-radius:8px;cursor:pointer;transition:all 0.2s ease;">
             🔍 Tự kiểm tra bộ chạy (Self-Check)
           </button>
+          <button type="button" class="secondary-btn" id="btnViewGoldenScene" style="display:inline-flex;align-items:center;gap:6px;padding:9px 12px;font-size:12px;background:rgba(30,30,46,0.7);color:#a6adc8;border:1px solid #313244;border-radius:8px;cursor:pointer;transition:all 0.2s ease;">
+            👁️ Xem cảnh chuẩn
+          </button>
+          <button type="button" class="secondary-btn" id="btnRecordGolden" style="display:inline-flex;align-items:center;gap:6px;padding:9px 12px;font-size:12px;background:rgba(30,30,46,0.7);color:#a6adc8;border:1px solid #313244;border-radius:8px;cursor:pointer;transition:all 0.2s ease;">
+            💾 Ghi ảnh chuẩn
+          </button>
         </div>
         <div id="testsStatusIndicator" style="font-size:13px;font-weight:600;color:#a6adc8;">
           Chưa chạy kiểm thử
@@ -136,6 +142,8 @@ function renderTestsPanel(container) {
   const btnRun = container.querySelector('#btnRunAllTests');
   const btnCopy = container.querySelector('#btnCopyTestReport');
   const btnCheck = container.querySelector('#btnSelfCheckRunner');
+  const btnViewGolden = container.querySelector('#btnViewGoldenScene');
+  const btnRecordGolden = container.querySelector('#btnRecordGolden');
   const pre = container.querySelector('#testReportPre');
   const statusInd = container.querySelector('#testsStatusIndicator');
 
@@ -199,6 +207,52 @@ function renderTestsPanel(container) {
       } finally {
         btnCheck.disabled = false;
         btnCheck.textContent = "🔍 Tự kiểm tra bộ chạy (Self-Check)";
+      }
+    };
+  }
+
+  if (btnViewGolden) {
+    btnViewGolden.onclick = () => {
+      if (typeof buildGoldenScene === 'function') {
+        buildGoldenScene();
+        if (typeof Clock !== 'undefined') Clock.playing = true;
+        if (typeof MotionEngine !== 'undefined' && typeof MotionEngine.play === 'function') {
+          try { MotionEngine.play(); } catch (e) {}
+        }
+        if (typeof fitToView === 'function') fitToView();
+        if (typeof requestRedraw === 'function') requestRedraw();
+        if (statusInd) statusInd.textContent = "Đã dựng Cảnh chuẩn (Golden Scene). Đang phát xem thử.";
+      } else {
+        alert("Chưa tìm thấy hàm buildGoldenScene");
+      }
+    };
+  }
+
+  if (btnRecordGolden) {
+    btnRecordGolden.onclick = async () => {
+      const ok = confirm("Chỉ bấm khi bạn đã xem chuyển động bằng mắt và thấy đúng ý");
+      if (!ok) return;
+      btnRecordGolden.disabled = true;
+      btnRecordGolden.textContent = "⏳ Đang ghi...";
+      try {
+        if (typeof recordGolden === 'function') {
+          const data = await recordGolden();
+          const frameCount = data && data.frames ? Object.keys(data.frames).length : 0;
+          if (statusInd) {
+            statusInd.innerHTML = `<span style="color:#4ade80;font-weight:bold;">Đã ghi ảnh chuẩn thành công (${frameCount} khung hình, sai số tối đa: ${data.tol})</span>`;
+          }
+          alert("Đã ghi ảnh chuẩn thành công vào cơ sở dữ liệu!");
+        } else {
+          throw new Error("Chưa tìm thấy hàm recordGolden");
+        }
+      } catch (e) {
+        if (statusInd) {
+          statusInd.innerHTML = `<span style="color:#f7768e;">Lỗi khi ghi ảnh chuẩn: ${e.message}</span>`;
+        }
+        alert("Lỗi khi ghi ảnh chuẩn: " + e.message);
+      } finally {
+        btnRecordGolden.disabled = false;
+        btnRecordGolden.textContent = "💾 Ghi ảnh chuẩn";
       }
     };
   }

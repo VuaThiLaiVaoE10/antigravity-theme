@@ -23,6 +23,9 @@ function createMockCanvas(w = 4, h = 4) {
   let height = h || 4;
   let buffer = new Uint8ClampedArray(Math.max(1, width * height * 4));
   let currentPath = [];
+  let stateStack = [];
+  let currentTx = 0;
+  let currentTy = 0;
 
   const canvas = {
     get width() { return width; },
@@ -56,9 +59,25 @@ function createMockCanvas(w = 4, h = 4) {
           globalAlpha: 1.0,
           filter: 'none',
           globalCompositeOperation: 'source-over',
-          save() {},
-          restore() {},
-          translate() {},
+          createLinearGradient(x0, y0, x1, y1) {
+            return {
+              stops: [],
+              addColorStop(offset, color) { this.stops.push({ offset, color }); }
+            };
+          },
+          save() {
+            stateStack.push({ tx: currentTx, ty: currentTy, alpha: this.globalAlpha });
+          },
+          restore() {
+            const st = stateStack.pop() || { tx: 0, ty: 0, alpha: 1.0 };
+            currentTx = st.tx;
+            currentTy = st.ty;
+            this.globalAlpha = st.alpha;
+          },
+          translate(dx, dy) {
+            currentTx += dx;
+            currentTy += dy;
+          },
           rotate() {},
           scale() {},
           beginPath() { currentPath = []; },
@@ -82,15 +101,30 @@ function createMockCanvas(w = 4, h = 4) {
           },
           fillRect(x, y, rw, rh) {
             let r = 0, g = 0, b = 0, a = 255;
-            if (this.fillStyle === '#f00' || this.fillStyle === '#ff0000') {
-              r = 255;
-            } else if (this.fillStyle === '#0f0' || this.fillStyle === '#00ff00') {
-              g = 255;
-            } else if (this.fillStyle === '#00f' || this.fillStyle === '#0000ff') {
-              b = 255;
+            if (typeof this.fillStyle === 'string') {
+              if (this.fillStyle.startsWith('#')) {
+                const hex = this.fillStyle.slice(1);
+                if (hex.length === 6) {
+                  r = parseInt(hex.substring(0, 2), 16) || 0;
+                  g = parseInt(hex.substring(2, 4), 16) || 0;
+                  b = parseInt(hex.substring(4, 6), 16) || 0;
+                } else if (hex.length === 3) {
+                  r = parseInt(hex[0] + hex[0], 16) || 0;
+                  g = parseInt(hex[1] + hex[1], 16) || 0;
+                  b = parseInt(hex[2] + hex[2], 16) || 0;
+                }
+              } else if (this.fillStyle === 'red' || this.fillStyle === '#f00') r = 255;
+              else if (this.fillStyle === 'green' || this.fillStyle === '#0f0') g = 255;
+              else if (this.fillStyle === 'blue' || this.fillStyle === '#00f') b = 255;
+            } else if (this.fillStyle && typeof this.fillStyle === 'object') {
+              r = 37; g = 39; b = 74;
             }
-            for (let py = y; py < y + rh && py < height; py++) {
-              for (let px = x; px < x + rw && px < width; px++) {
+            const x0 = Math.max(0, Math.floor(x));
+            const y0 = Math.max(0, Math.floor(y));
+            const x1 = Math.min(width, Math.floor(x + rw));
+            const y1 = Math.min(height, Math.floor(y + rh));
+            for (let py = y0; py < y1; py++) {
+              for (let px = x0; px < x1; px++) {
                 const idx = (py * width + px) * 4;
                 buffer[idx] = r;
                 buffer[idx + 1] = g;
@@ -107,7 +141,24 @@ function createMockCanvas(w = 4, h = 4) {
               }
             }
           },
-          drawImage(src, x = 0, y = 0, dw, dh) {
+          drawImage(...args) {
+            let src, sx = 0, sy = 0, sw, sh, dx = 0, dy = 0, dw, dh;
+            if (args.length === 3) {
+              [src, dx, dy] = args;
+              sw = src.naturalWidth || src.width;
+              sh = src.naturalHeight || src.height;
+              dw = sw;
+              dh = sh;
+            } else if (args.length === 5) {
+              [src, dx, dy, dw, dh] = args;
+              sw = src.naturalWidth || src.width;
+              sh = src.naturalHeight || src.height;
+            } else if (args.length >= 9) {
+              [src, sx, sy, sw, sh, dx, dy, dw, dh] = args;
+            } else {
+              return;
+            }
+
             let srcWidth = src.naturalWidth || src.width;
             let srcHeight = src.naturalHeight || src.height;
             let srcData = null;
@@ -117,14 +168,57 @@ function createMockCanvas(w = 4, h = 4) {
               srcData = src.getContext('2d').getImageData(0, 0, srcWidth, srcHeight).data;
             }
             if (!srcData) return;
-            for (let py = 0; py < srcHeight && py + y < height; py++) {
-              for (let px = 0; px < srcWidth && px + x < width; px++) {
-                const sIdx = (py * srcWidth + px) * 4;
-                const dIdx = ((py + y) * width + (px + x)) * 4;
-                buffer[dIdx] = srcData[sIdx];
-                buffer[dIdx + 1] = srcData[sIdx + 1];
-                buffer[dIdx + 2] = srcData[sIdx + 2];
-                buffer[dIdx + 3] = srcData[sIdx + 3];
+
+            const finalDx = Math.round(dx + currentTx);
+            const finalDy = Math.round(dy + currentTy);
+
+            if (sw === dw && sh === dh) {
+              const yStart = Math.max(0, -finalDy);
+              const yEnd = Math.min(dh, height - finalDy);
+              const xStart = Math.max(0, -finalDx);
+              const xEnd = Math.min(dw, width - finalDx);
+              const copyLen = xEnd - xStart;
+              if (copyLen <= 0 || yEnd <= yStart) return;
+
+              for (let iy = yStart; iy < yEnd; iy++) {
+                const sRow = (sy + iy) * srcWidth * 4 + (sx + xStart) * 4;
+                const dRow = (finalDy + iy) * width * 4 + (finalDx + xStart) * 4;
+                for (let i = 0; i < copyLen * 4; i += 4) {
+                  const sa = srcData[sRow + i + 3];
+                  if (sa > 0) {
+                    buffer[dRow + i] = srcData[sRow + i];
+                    buffer[dRow + i + 1] = srcData[sRow + i + 1];
+                    buffer[dRow + i + 2] = srcData[sRow + i + 2];
+                    buffer[dRow + i + 3] = sa;
+                  }
+                }
+              }
+              return;
+            }
+
+            for (let iy = 0; iy < dh; iy++) {
+              const srcY = Math.floor(sy + (iy * sh) / dh);
+              const dstY = finalDy + iy;
+              if (dstY < 0 || dstY >= height || srcY < 0 || srcY >= srcHeight) continue;
+
+              const srcRow = srcY * srcWidth * 4;
+              const dstRow = dstY * width * 4;
+
+              for (let ix = 0; ix < dw; ix++) {
+                const srcX = Math.floor(sx + (ix * sw) / dw);
+                const dstX = finalDx + ix;
+                if (dstX < 0 || dstX >= width || srcX < 0 || srcX >= srcWidth) continue;
+
+                const sIdx = srcRow + srcX * 4;
+                const dIdx = dstRow + dstX * 4;
+                const sa = srcData[sIdx + 3];
+
+                if (sa > 0) {
+                  buffer[dIdx] = srcData[sIdx];
+                  buffer[dIdx + 1] = srcData[sIdx + 1];
+                  buffer[dIdx + 2] = srcData[sIdx + 2];
+                  buffer[dIdx + 3] = sa;
+                }
               }
             }
           },
@@ -132,6 +226,9 @@ function createMockCanvas(w = 4, h = 4) {
             return new ImageData(cw, ch);
           },
           getImageData(x, y, rw, rh) {
+            if (x === 0 && y === 0 && rw === width && rh === height) {
+              return new ImageData(buffer.slice(), rw, rh);
+            }
             const sub = new Uint8ClampedArray(rw * rh * 4);
             let s = 0;
             for (let py = y; py < y + rh; py++) {
@@ -243,6 +340,7 @@ const Calm = require('../renderer/calm.js');
 const Safe = require('../renderer/safe.js');
 const Parallax = require('../renderer/parallax.js');
 const CalmPresets = require('../renderer/calm-presets.js');
+const Golden = require('../renderer/golden.js');
 
 // Gán toàn cục cho các hàm kiểm thử
 global.window.makeCanvas = Layers.makeCanvas;
@@ -297,6 +395,11 @@ global.window.testLoad = Calm.testLoad;
 global.window.testSafe = Safe.testSafe;
 global.window.testParallax = Parallax.testParallax;
 global.window.testPresets = CalmPresets.testPresets;
+global.window.testGolden = Golden.testGolden;
+global.window.recordGolden = Golden.recordGolden;
+global.window.buildGoldenScene = Golden.buildGoldenScene;
+global.window.frameSignature = Golden.frameSignature;
+global.window.sigMaxDiff = Golden.sigMaxDiff;
 
 // 3. Nạp tests.js
 const TestsModule = require('../renderer/tests.js');
@@ -336,6 +439,9 @@ async function runCardT1Tests() {
 
   // Test 3: runAllTests() và testReport()
   console.log('\n--- 3. CHẠY TẤT CẢ TEST QUA runAllTests() ---');
+  if (typeof Golden.recordGolden === 'function') {
+    await Golden.recordGolden();
+  }
   const results = await runAllTests();
   const report = testReport();
   console.log(report);

@@ -193,10 +193,29 @@ async function loadProjectBuffer(buf) {
   if (typeof fitToView === 'function') fitToView(); requestRedraw();
 }
 
-// Tự lưu nháp vào IndexedDB
-function idb() { return new Promise((res, rej) => { const r = indexedDB.open('theme-studio', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
-async function idbPut(k, v) { const d = await idb(); return new Promise((res, rej) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); }); }
-async function idbGet(k) { const d = await idb(); return new Promise((res, rej) => { const q = d.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); }
+// Tự lưu nháp vào IndexedDB (kèm bộ nhớ đệm an toàn khi môi trường thiếu indexedDB)
+const _idbMemoryStore = new Map();
+function idb() {
+  if (typeof indexedDB === 'undefined') {
+    return Promise.resolve(null);
+  }
+  return new Promise((res, rej) => { const r = indexedDB.open('theme-studio', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+}
+async function idbPut(k, v) {
+  if (typeof indexedDB === 'undefined') {
+    _idbMemoryStore.set(k, v);
+    return;
+  }
+  const d = await idb();
+  return new Promise((res, rej) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); });
+}
+async function idbGet(k) {
+  if (typeof indexedDB === 'undefined') {
+    return _idbMemoryStore.get(k);
+  }
+  const d = await idb();
+  return new Promise((res, rej) => { const q = d.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+}
 const _autosaveTimer = setInterval(async () => { if (!projectDirty || !Project.width) return; try { await idbPut('autosave', await (await saveProjectBlob()).arrayBuffer()); projectDirty = false; } catch (e) { console.warn('Autosave lỗi', e); } }, 30000);
 if (typeof _autosaveTimer !== 'undefined' && typeof _autosaveTimer.unref === 'function') {
   _autosaveTimer.unref();
@@ -397,3 +416,26 @@ if (typeof window !== 'undefined') {
   window.testSaveLoad = testSaveLoad;
   window.testMigrate = testMigrate;
 }
+
+if (typeof global !== 'undefined') {
+  global.CRC_T = CRC_T;
+  global.crc32 = crc32;
+  global.zipStore = zipStore;
+  global.unzipStore = unzipStore;
+  global.canvasToPngBytes = canvasToPngBytes;
+  global.saveProjectBlob = saveProjectBlob;
+  global.validateMeta = validateMeta;
+  global.migrateMeta = migrateMeta;
+  global.loadProjectBuffer = loadProjectBuffer;
+  global.idb = idb;
+  global.idbPut = idbPut;
+  global.idbGet = idbGet;
+  global.exportProjectFile = exportProjectFile;
+  global.importProjectFile = importProjectFile;
+  global.openProjectFileDialog = openProjectFileDialog;
+  global.checkAutosaveOnStartup = checkAutosaveOnStartup;
+  global.testZip = testZip;
+  global.testSaveLoad = testSaveLoad;
+  global.testMigrate = testMigrate;
+}
+
